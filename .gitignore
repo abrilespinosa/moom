@@ -1,0 +1,20 @@
+# Variables de entorno y credenciales (NUNCA subir esto a git)
+.env
+
+# Entornos virtuales de Python
+venv/
+env/
+.venv/
+
+# Archivos compilados / cache de Python
+__pycache__/
+*.pyc
+
+# Archivos del sistema (macOS)
+.DS_Store
+
+# Archivos de VS Code (configuración personal del editor)
+.vscode/
+
+# Logs
+*.log
