@@ -32,9 +32,8 @@
     // URL de tu servidor FastAPI corriendo en local
     const URL_BACKEND = "http://127.0.0.1:8000";
 
-    // Número de parada que vamos a consultar por ahora.
-    // Más adelante esto podrá ser dinámico (varias paradas, líneas, etc.)
-    const STOP_ID = "72";
+    // Número de parada que vamos a consultar
+    let STOP_ID = null;
 
     // Creamos el mapa centrado en Madrid, con un zoom inicial razonable.
     const mapa = L.map("mapa").setView([40.4168, -3.7038], 13);
@@ -45,11 +44,36 @@
       attribution: "&copy; OpenStreetMap contributors",
     }).addTo(mapa);
 
+    async function dibujarParadas() {
+      const respuesta = await fetch(`${URL_BACKEND}/paradas`);
+      const paradas = await respuesta.json();
+
+      paradas.forEach((parada) => {
+        const circulo = L.circleMarker([parada.lat, parada.lon], {
+          radius: 6,
+          color: "gray",
+          fillColor: "gray",
+          fillOpacity: 0.8,
+        }).addTo(mapa);
+
+        circulo.on("click", () => {
+          STOP_ID = parada.id;
+          actualizarAutobuses();
+        });
+      });
+    }
+
+    dibujarParadas();
+
     // Guardamos los marcadores actuales para poder borrarlos y
     // redibujarlos cada vez que llegan datos nuevos.
     let marcadoresActuales = [];
 
     async function actualizarAutobuses() {
+      if (STOP_ID === null) {
+        return; // todavía no se ha seleccionado ninguna parada
+      }
+      
       try {
         const respuesta = await fetch(`${URL_BACKEND}/parada/${STOP_ID}`);
         const datos = await respuesta.json();
@@ -82,11 +106,8 @@
       }
     }
 
-    // Llamamos una vez al cargar la página...
-    actualizarAutobuses();
-
-    // ...y luego cada 10 segundos, para simular "tiempo real".
     setInterval(actualizarAutobuses, 10000);
+  
   </script>
 
 </body>
