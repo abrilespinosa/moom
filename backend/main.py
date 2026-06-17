@@ -12,6 +12,7 @@ Luego puedes visitar en el navegador, por ejemplo:
 """
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from backend.emt_client import obtener_llegadas_parada
 
 # Esta variable "app" es el corazón de FastAPI: representa nuestro servidor.
@@ -19,6 +20,14 @@ from backend.emt_client import obtener_llegadas_parada
 # llamada "app" en este archivo.
 app = FastAPI(title="Moom API")
 
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # En desarrollo, permitimos cualquier origen
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 def inicio():

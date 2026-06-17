@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Moom — Autobuses de Madrid en tiempo real</title>
+
+  <!-- Hoja de estilos de Leaflet, necesaria para que el mapa se vea bien -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+
+  <style>
+    /* El mapa necesita una altura explícita, si no, queda invisible */
+    #mapa {
+      height: 100vh;
+      width: 100%;
+    }
+    body {
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="mapa"></div>
+
+  <!-- Librería de Leaflet -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    // URL de tu servidor FastAPI corriendo en local
+    const URL_BACKEND = "http://127.0.0.1:8000";
+
+    // Número de parada que vamos a consultar por ahora.
+    // Más adelante esto podrá ser dinámico (varias paradas, líneas, etc.)
+    const STOP_ID = "72";
+
+    // Creamos el mapa centrado en Madrid, con un zoom inicial razonable.
+    const mapa = L.map("mapa").setView([40.4168, -3.7038], 13);
+
+    // Añadimos las "teselas" del mapa base (el fondo visual),
+    // usando OpenStreetMap, que es gratuito y no requiere API key.
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "&copy; OpenStreetMap contributors",
+    }).addTo(mapa);
+
+    // Guardamos los marcadores actuales para poder borrarlos y
+    // redibujarlos cada vez que llegan datos nuevos.
+    let marcadoresActuales = [];
+
+    async function actualizarAutobuses() {
+      try {
+        const respuesta = await fetch(`${URL_BACKEND}/parada/${STOP_ID}`);
+        const datos = await respuesta.json();
+
+        // La estructura real es: datos.data[0].Arrive es la lista de autobuses
+        const autobuses = datos.data[0].Arrive;
+
+        // Quitamos los marcadores anteriores antes de dibujar los nuevos
+        marcadoresActuales.forEach((marcador) => mapa.removeLayer(marcador));
+        marcadoresActuales = [];
+
+        autobuses.forEach((bus) => {
+          const [lon, lat] = bus.geometry.coordinates;
+
+          // Si las coordenadas son [0, 0], el bus no tiene posición válida.
+          // Lo ignoramos para no dibujarlo en mitad del océano Atlántico.
+          if (lon === 0 && lat === 0) {
+            return;
+          }
+
+          const marcador = L.marker([lat, lon]).addTo(mapa);
+          marcador.bindPopup(
+            `Línea ${bus.line} → ${bus.destination}<br>Llega en ${bus.estimateArrive} segundos`
+          );
+
+          marcadoresActuales.push(marcador);
+        });
+      } catch (error) {
+        console.error("Error al actualizar los autobuses:", error);
+      }
+    }
+
+    // Llamamos una vez al cargar la página...
+    actualizarAutobuses();
+
+    // ...y luego cada 10 segundos, para simular "tiempo real".
+    setInterval(actualizarAutobuses, 10000);
+  </script>
+
+</body>
+</html>
