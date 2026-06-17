@@ -26,6 +26,7 @@ load_dotenv()
 EMAIL = os.getenv("EMT_EMAIL")
 PASSWORD = os.getenv("EMT_PASSWORD")
 
+BASE_URL = "https://openapi.emtmadrid.es/v1"
 LOGIN_URL = "https://openapi.emtmadrid.es/v1/mobilitylabs/user/login/"
 
 
@@ -59,8 +60,45 @@ def obtener_token():
 
     return token
 
+def obtener_llegadas_parada(token, stop_id):
+    """
+    Consulta qué autobuses se acercan a una parada concreta.
+
+    Parámetros:
+        token: el accessToken obtenido en obtener_token()
+        stop_id: el número de la parada (por ejemplo, "72")
+
+    Devuelve la lista de autobuses que se acercan, cada uno con su línea,
+    posición (coordenadas), distancia a la parada y tiempo estimado de llegada.
+    """
+    url = f"{BASE_URL}/transport/busemtmad/stops/{stop_id}/arrives/"
+
+    headers = {
+        "accessToken": token,
+    }
+
+    # Este endpoint requiere un POST con un pequeño cuerpo JSON,
+    # aunque no estemos filtrando por una línea concreta.
+    cuerpo = {
+        "cultureInfo": "ES",
+        "Text_StopRequired_YN": "N",
+        "Text_EstimationsRequired_YN": "Y",
+        "Text_IncidencesRequired_YN": "N",
+    }
+
+    respuesta = requests.post(url, headers=headers, json=cuerpo)
+    respuesta.raise_for_status()
+
+    datos = respuesta.json()
+    return datos
 
 if __name__ == "__main__":
     token = obtener_token()
     print("Conexión exitosa. Token obtenido:")
     print(token)
+
+    STOP_ID = "72"
+
+    resultado = obtener_llegadas_parada(token, STOP_ID)
+    print(f"Llegadas a la parada {STOP_ID}:")
+    print(resultado)
