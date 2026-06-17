@@ -18,6 +18,7 @@ en tiempo real de los autobuses.
 """
 
 import os
+import time
 import requests
 from dotenv import load_dotenv
 
@@ -29,12 +30,42 @@ PASSWORD = os.getenv("EMT_PASSWORD")
 BASE_URL = "https://openapi.emtmadrid.es/v1"
 LOGIN_URL = "https://openapi.emtmadrid.es/v1/mobilitylabs/user/login/"
 
+# El token dura unas 24h (86399 segundos según la API).
+# Le restamos un margen de seguridad de 1 hora para renovarlo antes de que
+# caduque realmente, evitando que una petición falle justo en el límite.
+MARGEN_SEGURIDAD_SEGUNDOS = 60 * 60
+
+# --- Estado en memoria (caché del token) ---
+# Estas dos variables viven a nivel de módulo, fuera de cualquier función,
+# así que su valor persiste mientras el servidor esté corriendo.
+_token_cacheado = None
+_token_obtenido_en = None
+
+def _token_sigue_siendo_valido():
+    """
+    Comprueba si el token que tenemos guardado todavía se puede usar,
+    es decir, si no tenemos ninguno guardado, o si ya pasó demasiado tiempo.
+    """
+    if _token_cacheado is None or _token_obtenido_en is None:
+        return False
+
+    segundos_transcurridos = time.time() - _token_obtenido_en
+    return segundos_transcurridos < (86399 - MARGEN_SEGURIDAD_SEGUNDOS)
+
 
 def obtener_token():
     """
-    Hace login contra la API de EMT y devuelve el accessToken si todo va bien.
-    Si algo falla, lanza un error explicando qué pasó.
+    Devuelve un token válido para usar contra la API de EMT.
+
+    Si ya tenemos uno guardado en memoria y sigue siendo válido, lo devuelve
+    directamente sin hacer ninguna llamada de red. Si no, pide uno nuevo
+    haciendo login, lo guarda en memoria, y lo devuelve.
     """
+    global _token_cacheado, _token_obtenido_en
+
+    if _token_sigue_siendo_valido():
+        return _token_cacheado
+    
     if not EMAIL or not PASSWORD:
         raise ValueError(
             "Faltan las credenciales. Revisa que tu archivo .env tenga "
@@ -58,19 +89,25 @@ def obtener_token():
         print(datos)
         raise
 
+    # Guardamos el nuevo token y el momento en que lo conseguimos,
+    # para que las próximas llamadas a esta función puedan reutilizarlo.
+    _token_cacheado = token
+    _token_obtenido_en = time.time()
+
     return token
 
-def obtener_llegadas_parada(token, stop_id):
+def obtener_llegadas_parada(stop_id):
     """
     Consulta qué autobuses se acercan a una parada concreta.
 
     Parámetros:
-        token: el accessToken obtenido en obtener_token()
         stop_id: el número de la parada (por ejemplo, "72")
 
     Devuelve la lista de autobuses que se acercan, cada uno con su línea,
     posición (coordenadas), distancia a la parada y tiempo estimado de llegada.
     """
+    token = obtener_token()
+
     url = f"{BASE_URL}/transport/busemtmad/stops/{stop_id}/arrives/"
 
     headers = {
@@ -93,12 +130,7 @@ def obtener_llegadas_parada(token, stop_id):
     return datos
 
 if __name__ == "__main__":
-    token = obtener_token()
-    print("Conexión exitosa. Token obtenido:")
-    print(token)
-
     STOP_ID = "72"
-
-    resultado = obtener_llegadas_parada(token, STOP_ID)
+    resultado = obtener_llegadas_parada(STOP_ID)
     print(f"Llegadas a la parada {STOP_ID}:")
     print(resultado)
