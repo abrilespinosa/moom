@@ -19,10 +19,82 @@
     body {
       margin: 0;
     }
+
+        /* El panel flota sobre el mapa, en la esquina superior izquierda */
+    #panel-busqueda {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 1000; /* por encima de Leaflet, si no quedaría tapado */
+      width: 280px;
+    }
+ 
+    #input-buscar {
+      width: 100%;
+      padding: 8px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+ 
+    #lista-resultados {
+      list-style: none;
+      margin: 4px 0 0 0;
+      padding: 0;
+      background: white;
+      border-radius: 4px;
+      max-height: 250px;
+      overflow-y: auto;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+ 
+    #lista-resultados li {
+      padding: 8px;
+      cursor: pointer;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
+    }
+ 
+    #lista-resultados li:hover {
+      background: #f0f0f0;
+    }
+
+     /* Quitamos el fondo blanco que Leaflet pone por defecto a los divIcon */
+    .icono-bus {
+      background: transparent;
+      border: none;
+    }
+ 
+    /* El círculo azul con el número de línea dentro */
+    .circulo-bus {
+      width: 30px;
+      height: 30px;
+      background-color: #0178BC; /* azul corporativo oficial de EMT */
+      color: white;
+      border-radius: 50%; /* esto convierte el cuadrado en círculo */
+      border: 2px solid white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: bold;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+    }
   </style>
 </head>
 <body>
-
+ 
+  <!-- Panel de búsqueda de paradas: input + lista de resultados -->
+  <div id="panel-busqueda">
+    <input
+      type="text"
+      id="input-buscar"
+      placeholder="Buscar parada por nombre o número..."
+    />
+    <ul id="lista-resultados"></ul>
+  </div>
+ 
   <div id="mapa"></div>
 
   <!-- Librería de Leaflet -->
@@ -34,6 +106,10 @@
 
     // Número de parada que vamos a consultar
     let STOP_ID = null;
+
+    // Guardamos aquí todas las paradas descargadas, para poder
+    // buscarlas localmente sin volver a llamar al backend.
+    let TODAS_LAS_PARADAS = [];
 
     // Creamos el mapa centrado en Madrid, con un zoom inicial razonable.
     const mapa = L.map("mapa").setView([40.4168, -3.7038], 13);
@@ -47,6 +123,9 @@
     async function dibujarParadas() {
       const respuesta = await fetch(`${URL_BACKEND}/paradas`);
       const paradas = await respuesta.json();
+
+      // Guardamos la lista completa para que el buscador pueda usarla.
+      TODAS_LAS_PARADAS = paradas;
 
       paradas.forEach((parada) => {
         const circulo = L.circleMarker([parada.lat, parada.lon], {
@@ -64,6 +143,48 @@
     }
 
     dibujarParadas();
+
+      // --- Lógica del panel de búsqueda ---
+ 
+    const inputBuscar = document.getElementById("input-buscar");
+    const listaResultados = document.getElementById("lista-resultados");
+ 
+    inputBuscar.addEventListener("input", () => {
+      const texto = inputBuscar.value.toLowerCase().trim();
+ 
+      // Limpiamos resultados anteriores
+      listaResultados.innerHTML = "";
+ 
+      if (texto === "") {
+        return;
+      }
+ 
+      // Filtramos por nombre o por id, igual que hace buscar_paradas() en Python
+      const coincidencias = TODAS_LAS_PARADAS.filter(
+        (parada) =>
+          parada.nombre.toLowerCase().includes(texto) ||
+          parada.id.includes(texto)
+      ).slice(0, 15); // máximo 15 resultados, para no saturar la lista
+ 
+      coincidencias.forEach((parada) => {
+        const item = document.createElement("li");
+        item.textContent = `${parada.nombre} (parada ${parada.id})`;
+ 
+        item.addEventListener("click", () => {
+          STOP_ID = parada.id;
+          actualizarAutobuses();
+ 
+          // Centramos el mapa en la parada elegida, con buen zoom
+          mapa.setView([parada.lat, parada.lon], 17);
+ 
+          // Limpiamos el buscador tras seleccionar
+          inputBuscar.value = "";
+          listaResultados.innerHTML = "";
+        });
+ 
+        listaResultados.appendChild(item);
+      });
+    });
 
     // Guardamos los marcadores actuales para poder borrarlos y
     // redibujarlos cada vez que llegan datos nuevos.
@@ -94,7 +215,16 @@
             return;
           }
 
-          const marcador = L.marker([lat, lon]).addTo(mapa);
+          // En vez del pin genérico de Leaflet, creamos un círculo con
+          // el número de línea escrito dentro, usando un "divIcon"
+          // (un <div> con HTML/CSS propio en vez de una imagen fija).
+          const iconoLinea = L.divIcon({
+            className: "icono-bus",
+            html: `<div class="circulo-bus">${bus.line}</div>`,
+            iconSize: [30, 30],
+          });
+ 
+          const marcador = L.marker([lat, lon], { icon: iconoLinea }).addTo(mapa);
           marcador.bindPopup(
             `Línea ${bus.line} → ${bus.destination}<br>Llega en ${bus.estimateArrive} segundos`
           );
