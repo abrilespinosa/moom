@@ -35,11 +35,12 @@ LOGIN_URL = "https://openapi.emtmadrid.es/v1/mobilitylabs/user/login/"
 # caduque realmente, evitando que una petición falle justo en el límite.
 MARGEN_SEGURIDAD_SEGUNDOS = 60 * 60
 
-# --- Estado en memoria (caché del token) ---
-# Estas dos variables viven a nivel de módulo, fuera de cualquier función,
+# --- Estado en memoria (caché) ---
+# Estas variables viven a nivel de módulo, fuera de cualquier función,
 # así que su valor persiste mientras el servidor esté corriendo.
 _token_cacheado = None
 _token_obtenido_en = None
+_cache_paradas = {}
 
 def _token_sigue_siendo_valido():
     """
@@ -96,6 +97,16 @@ def obtener_token():
 
     return token
 
+def _cache_parada_sigue_siendo_valido(stop_id):
+    if stop_id not in _cache_paradas:
+        return False
+    
+    datos, momento_guardado = _cache_paradas[stop_id]
+    
+    segundos_transcurridos = time.time() - momento_guardado
+    
+    return segundos_transcurridos < 30
+
 def obtener_llegadas_parada(stop_id):
     """
     Consulta qué autobuses se acercan a una parada concreta.
@@ -106,13 +117,16 @@ def obtener_llegadas_parada(stop_id):
     Devuelve la lista de autobuses que se acercan, cada uno con su línea,
     posición (coordenadas), distancia a la parada y tiempo estimado de llegada.
     """
+    global _cache_paradas
+
+    if _cache_parada_sigue_siendo_valido(stop_id):
+        datos, momento_guardado = _cache_paradas[stop_id]
+        return datos
+
+    # Si el caché es válido para esta parada, devolver lo que ya tenemos guardado
     token = obtener_token()
-
     url = f"{BASE_URL}/transport/busemtmad/stops/{stop_id}/arrives/"
-
-    headers = {
-        "accessToken": token,
-    }
+    headers = {"accessToken": token,}
 
     # Este endpoint requiere un POST con un pequeño cuerpo JSON,
     # aunque no estemos filtrando por una línea concreta.
@@ -125,12 +139,13 @@ def obtener_llegadas_parada(stop_id):
 
     respuesta = requests.post(url, headers=headers, json=cuerpo)
     respuesta.raise_for_status()
-
+    
     datos = respuesta.json()
+    
+    _cache_paradas[stop_id] = (datos, time.time())
+    
     return datos
 
 if __name__ == "__main__":
     STOP_ID = "72"
     resultado = obtener_llegadas_parada(STOP_ID)
-    print(f"Llegadas a la parada {STOP_ID}:")
-    print(resultado)
