@@ -1,0 +1,204 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+
+  /* --- LAYOUT PRINCIPAL ---
+     Dos columnas: el panel (380px fijos) y el mapa (el resto del espacio).
+     height: 100vh hace que el grid ocupe toda la altura de la ventana. */
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  height: 100vh;
+}
+
+#mapa {
+  height: 100%;
+  width: 100%;
+}
+
+/* --- PANEL IZQUIERDO ---
+   Ya no flota sobre el mapa: ahora es una columna real del grid,
+   con su propio fondo y scroll independiente si la lista es larga. */
+#panel {
+  background: #f7f7f8;
+  border-right: 1px solid #ddd;
+  height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Cabecera del panel: cambia de texto según el estado (buscar / llegadas) */
+#panel-header {
+  padding: 16px;
+  border-bottom: 1px solid #ddd;
+  background: white;
+}
+
+#panel-header h1 {
+  font-size: 16px;
+  margin: 0 0 4px 0;
+  color: #1a1a1a;
+}
+
+#panel-header p {
+  font-size: 12px;
+  color: #777;
+  margin: 0;
+}
+
+#input-buscar {
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+/* --- VISTA: LISTA DE RESULTADOS DE BÚSQUEDA --- */
+#lista-resultados {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+#lista-resultados li {
+  padding: 12px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid #eee;
+  font-size: 14px;
+  background: white;
+}
+
+#lista-resultados li:hover {
+  background: #f0f0f0;
+}
+
+/* --- VISTA: LLEGADAS A LA PARADA SELECCIONADA --- */
+#vista-llegadas {
+  display: none; /* oculta hasta que se seleccione una parada */
+  flex-direction: column;
+}
+
+#boton-volver {
+  background: none;
+  border: none;
+  color: #0178bc;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 6px;
+  text-align: left;
+}
+
+#boton-volver:hover {
+  text-decoration: underline;
+}
+
+#nombre-parada-actual {
+  font-weight: bold;
+  font-size: 15px;
+  color: #1a1a1a;
+}
+
+#lista-llegadas {
+  list-style: none;
+  margin: 0;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Cada bus es una "tarjeta": línea coloreada + destino + minutos */
+.tarjeta-bus {
+  display: flex;
+  align-items: center;
+  background: white;
+  border-radius: 8px;
+  padding: 10px 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  gap: 12px;
+}
+
+.tarjeta-linea {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0; /* no se encoge aunque el destino sea largo */
+  background-color: #0178bc;
+  color: white;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.tarjeta-info {
+  flex: 1; /* ocupa todo el espacio disponible entre el icono y los minutos */
+  min-width: 0; /* permite que el texto largo trunque en vez de desbordar */
+}
+
+.tarjeta-destino {
+  font-size: 13px;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis; /* "Plaza de Castilla..." si no cabe */
+}
+
+.tarjeta-tiempos {
+  font-size: 12px;
+  color: #888;
+  margin-top: 2px;
+}
+
+/* El primer tiempo (el más próximo) se destaca en color y tamaño */
+.tiempo-proximo {
+  font-size: 18px;
+  font-weight: bold;
+  color: #0178bc;
+  flex-shrink: 0;
+  text-align: right;
+  min-width: 50px;
+}
+
+.tiempo-proximo .unidad {
+  font-size: 11px;
+  font-weight: normal;
+  color: #888;
+  display: block;
+}
+
+#mensaje-vacio {
+  padding: 20px 16px;
+  color: #888;
+  font-size: 13px;
+  text-align: center;
+}
+
+/* Quitamos el fondo blanco que Leaflet pone por defecto a los divIcon */
+.icono-bus {
+  background: transparent;
+  border: none;
+}
+
+/* El círculo azul con el número de línea dentro, sobre el mapa */
+.circulo-bus {
+  width: 30px;
+  height: 30px;
+  background-color: #0178bc;
+  color: white;
+  border-radius: 50%;
+  border: 2px solid white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: bold;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
