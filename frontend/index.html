@@ -3,22 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <title>Moom — Autobuses de Madrid en tiempo real</title>
- 
+
   <!-- Hoja de estilos de Leaflet, necesaria para que el mapa se vea bien -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
   />
- 
+
   <style>
     * {
       box-sizing: border-box;
     }
- 
+
     body {
       margin: 0;
       font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
- 
+
       /* --- LAYOUT PRINCIPAL ---
          Dos columnas: el panel (380px fijos) y el mapa (el resto del espacio).
          height: 100vh hace que el grid ocupe toda la altura de la ventana. */
@@ -26,12 +26,12 @@
       grid-template-columns: 380px 1fr;
       height: 100vh;
     }
- 
+
     #mapa {
       height: 100%;
       width: 100%;
     }
- 
+
     /* --- PANEL IZQUIERDO ---
        Ya no flota sobre el mapa: ahora es una columna real del grid,
        con su propio fondo y scroll independiente si la lista es larga. */
@@ -43,26 +43,26 @@
       display: flex;
       flex-direction: column;
     }
- 
+
     /* Cabecera del panel: cambia de texto según el estado (buscar / llegadas) */
     #panel-header {
       padding: 16px;
       border-bottom: 1px solid #ddd;
       background: white;
     }
- 
+
     #panel-header h1 {
       font-size: 16px;
       margin: 0 0 4px 0;
       color: #1a1a1a;
     }
- 
+
     #panel-header p {
       font-size: 12px;
       color: #777;
       margin: 0;
     }
- 
+
     #input-buscar {
       width: 100%;
       padding: 10px;
@@ -70,14 +70,14 @@
       border: 1px solid #ccc;
       border-radius: 6px;
     }
- 
+
     /* --- VISTA: LISTA DE RESULTADOS DE BÚSQUEDA --- */
     #lista-resultados {
       list-style: none;
       margin: 0;
       padding: 0;
     }
- 
+
     #lista-resultados li {
       padding: 12px 16px;
       cursor: pointer;
@@ -85,17 +85,17 @@
       font-size: 14px;
       background: white;
     }
- 
+
     #lista-resultados li:hover {
       background: #f0f0f0;
     }
- 
+
     /* --- VISTA: LLEGADAS A LA PARADA SELECCIONADA --- */
     #vista-llegadas {
       display: none; /* oculta hasta que se seleccione una parada */
       flex-direction: column;
     }
- 
+
     #boton-volver {
       background: none;
       border: none;
@@ -106,17 +106,17 @@
       margin-bottom: 6px;
       text-align: left;
     }
- 
+
     #boton-volver:hover {
       text-decoration: underline;
     }
- 
+
     #nombre-parada-actual {
       font-weight: bold;
       font-size: 15px;
       color: #1a1a1a;
     }
- 
+
     #lista-llegadas {
       list-style: none;
       margin: 0;
@@ -125,7 +125,7 @@
       flex-direction: column;
       gap: 8px;
     }
- 
+
     /* Cada bus es una "tarjeta": línea coloreada + destino + minutos */
     .tarjeta-bus {
       display: flex;
@@ -136,7 +136,7 @@
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
       gap: 12px;
     }
- 
+
     .tarjeta-linea {
       width: 38px;
       height: 38px;
@@ -150,12 +150,12 @@
       font-size: 13px;
       font-weight: bold;
     }
- 
+
     .tarjeta-info {
       flex: 1; /* ocupa todo el espacio disponible entre el icono y los minutos */
       min-width: 0; /* permite que el texto largo trunque en vez de desbordar */
     }
- 
+
     .tarjeta-destino {
       font-size: 13px;
       color: #333;
@@ -163,13 +163,13 @@
       overflow: hidden;
       text-overflow: ellipsis; /* "Plaza de Castilla..." si no cabe */
     }
- 
+
     .tarjeta-tiempos {
       font-size: 12px;
       color: #888;
       margin-top: 2px;
     }
- 
+
     /* El primer tiempo (el más próximo) se destaca en color y tamaño */
     .tiempo-proximo {
       font-size: 18px;
@@ -179,27 +179,27 @@
       text-align: right;
       min-width: 50px;
     }
- 
+
     .tiempo-proximo .unidad {
       font-size: 11px;
       font-weight: normal;
       color: #888;
       display: block;
     }
- 
+
     #mensaje-vacio {
       padding: 20px 16px;
       color: #888;
       font-size: 13px;
       text-align: center;
     }
- 
+
     /* Quitamos el fondo blanco que Leaflet pone por defecto a los divIcon */
     .icono-bus {
       background: transparent;
       border: none;
     }
- 
+
     /* El círculo azul con el número de línea dentro, sobre el mapa */
     .circulo-bus {
       width: 30px;
@@ -218,15 +218,15 @@
   </style>
 </head>
 <body>
- 
+
   <!-- PANEL IZQUIERDO: contiene dos vistas, solo una visible a la vez -->
   <div id="panel">
- 
+
     <div id="panel-header">
       <h1>🚌 Moom</h1>
       <p id="subtitulo-header">Busca una parada para ver sus llegadas</p>
     </div>
- 
+
     <!-- VISTA 1: buscador -->
     <div id="vista-busqueda">
       <div style="padding: 12px 16px 0 16px;">
@@ -238,7 +238,7 @@
       </div>
       <ul id="lista-resultados"></ul>
     </div>
- 
+
     <!-- VISTA 2: llegadas a la parada seleccionada (oculta al inicio) -->
     <div id="vista-llegadas">
       <div style="padding: 12px 16px 0 16px;">
@@ -247,55 +247,101 @@
       </div>
       <ul id="lista-llegadas"></ul>
     </div>
- 
+
   </div>
- 
+
   <!-- PANEL DERECHO: el mapa -->
   <div id="mapa"></div>
- 
+
   <!-- Librería de Leaflet -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
- 
+
   <script>
     // URL de tu servidor FastAPI corriendo en local
     const URL_BACKEND = "http://127.0.0.1:8000";
- 
+
     // Número de parada que vamos a consultar
     let STOP_ID = null;
- 
+
     // Guardamos aquí todas las paradas descargadas, para poder
     // buscarlas localmente sin volver a llamar al backend.
     let TODAS_LAS_PARADAS = [];
- 
-    // Creamos el mapa centrado en Madrid, con un zoom inicial razonable.
-    const mapa = L.map("mapa").setView([40.4168, -3.7038], 13);
- 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "&copy; OpenStreetMap contributors",
-    }).addTo(mapa);
- 
+
+    // Creamos el mapa centrado en Madrid. Zoom 14 muestra ya el detalle
+    // de la ciudad (barrios, calles principales) en vez de toda la
+    // Comunidad de Madrid, que se veía vacía con el estilo minimalista.
+    const mapa = L.map("mapa").setView([40.4168, -3.7038], 14);
+
+    // CartoDB "Voyager": más detalle y calidez que Positron (colores
+    // suaves en parques/agua, nombres de barrio) sin llegar a la
+    // densidad del OSM estándar. Mismo proveedor, gratuito, sin API key.
+    L.tileLayer(
+      "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+      {
+        attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
+      }
+    ).addTo(mapa);
+
+    // Nivel de zoom a partir del cual se muestran las paradas. Por debajo
+    // de este nivel, Madrid entera tendría miles de puntos superpuestos,
+    // así que las ocultamos hasta que el usuario haga zoom a un barrio.
+    const ZOOM_MINIMO_PARADAS = 15;
+
+    // Guardamos aquí cada círculo de parada junto con su marcador Leaflet,
+    // para poder añadirlo o quitarlo del mapa según el zoom actual.
+    let marcadoresParadas = [];
+
     async function dibujarParadas() {
       const respuesta = await fetch(`${URL_BACKEND}/paradas`);
       const paradas = await respuesta.json();
- 
+
       TODAS_LAS_PARADAS = paradas;
- 
+
       paradas.forEach((parada) => {
+        // OJO: ya no usamos ".addTo(mapa)" aquí. Creamos el círculo pero
+        // no lo añadimos todavía — eso lo decide actualizarVisibilidadParadas().
         const circulo = L.circleMarker([parada.lat, parada.lon], {
           radius: 6,
           color: "gray",
           fillColor: "gray",
           fillOpacity: 0.8,
-        }).addTo(mapa);
- 
+        });
+
         circulo.on("click", () => {
           seleccionarParada(parada);
         });
+
+        marcadoresParadas.push(circulo);
+      });
+
+      // Una vez creados todos los círculos, decidimos cuáles mostrar
+      // según el zoom con el que arrancó el mapa.
+      actualizarVisibilidadParadas();
+    }
+
+    // Añade o quita los círculos de parada del mapa según el zoom actual.
+    // Se llama al cargar las paradas y cada vez que el usuario hace zoom.
+    function actualizarVisibilidadParadas() {
+      const zoomActual = mapa.getZoom();
+      const debenVerse = zoomActual >= ZOOM_MINIMO_PARADAS;
+
+      marcadoresParadas.forEach((circulo) => {
+        const estaEnElMapa = mapa.hasLayer(circulo);
+
+        if (debenVerse && !estaEnElMapa) {
+          circulo.addTo(mapa);
+        } else if (!debenVerse && estaEnElMapa) {
+          mapa.removeLayer(circulo);
+        }
       });
     }
- 
+
+    // Cada vez que el usuario termina de hacer zoom (rueda del ratón,
+    // botones +/-, o doble clic), reevaluamos qué paradas mostrar.
+    mapa.on("zoomend", actualizarVisibilidadParadas);
+
     dibujarParadas();
- 
+
     // --- Referencias a los elementos del DOM que vamos a manipular ---
     const inputBuscar = document.getElementById("input-buscar");
     const listaResultados = document.getElementById("lista-resultados");
@@ -305,22 +351,22 @@
     const listaLlegadas = document.getElementById("lista-llegadas");
     const botonVolver = document.getElementById("boton-volver");
     const subtituloHeader = document.getElementById("subtitulo-header");
- 
+
     // --- Lógica del buscador ---
     inputBuscar.addEventListener("input", () => {
       const texto = inputBuscar.value.toLowerCase().trim();
       listaResultados.innerHTML = "";
- 
+
       if (texto === "") {
         return;
       }
- 
+
       const coincidencias = TODAS_LAS_PARADAS.filter(
         (parada) =>
           parada.nombre.toLowerCase().includes(texto) ||
           parada.id.includes(texto)
       ).slice(0, 15);
- 
+
       coincidencias.forEach((parada) => {
         const item = document.createElement("li");
         item.textContent = `${parada.nombre} (parada ${parada.id})`;
@@ -328,81 +374,88 @@
         listaResultados.appendChild(item);
       });
     });
- 
+
     // Se llama tanto al hacer clic en el mapa como al elegir un resultado
     // de búsqueda. Centraliza el cambio de vista para no repetir código.
     function seleccionarParada(parada) {
       STOP_ID = parada.id;
- 
+
       // Centramos el mapa en la parada elegida, con buen zoom
       mapa.setView([parada.lat, parada.lon], 17);
- 
+
       // Cambiamos de vista: ocultamos buscador, mostramos llegadas
       vistaBusqueda.style.display = "none";
       vistaLlegadas.style.display = "flex";
       subtituloHeader.textContent = "Próximas llegadas";
       nombreParadaActual.textContent = `${parada.nombre} · parada ${parada.id}`;
- 
+
       // Limpiamos el buscador para la próxima vez que se use
       inputBuscar.value = "";
       listaResultados.innerHTML = "";
- 
+
       actualizarAutobuses();
     }
- 
+
     // Botón para volver del estado "llegadas" al estado "buscador"
     botonVolver.addEventListener("click", () => {
       STOP_ID = null;
       vistaLlegadas.style.display = "none";
       vistaBusqueda.style.display = "block";
       subtituloHeader.textContent = "Busca una parada para ver sus llegadas";
+
+      // Limpiamos las tarjetas de la parada anterior...
+      listaLlegadas.innerHTML = "";
+
+      // ...y también los marcadores de bus que quedaban en el mapa.
+      marcadoresActuales.forEach((marcador) => mapa.removeLayer(marcador));
+      marcadoresActuales = [];
     });
- 
+
     // Convierte segundos en un texto legible: "En camino" si está muy
     // cerca, o "X min" en caso contrario.
     function formatearMinutos(segundos) {
       const minutos = Math.floor(segundos / 60);
       return minutos < 1 ? "En camino" : `${minutos}`;
     }
- 
+
     // Guardamos los marcadores actuales del mapa para poder borrarlos y
     // redibujarlos cada vez que llegan datos nuevos.
     let marcadoresActuales = [];
- 
+
     async function actualizarAutobuses() {
       if (STOP_ID === null) {
         return; // todavía no se ha seleccionado ninguna parada
       }
- 
+
       try {
         const respuesta = await fetch(`${URL_BACKEND}/parada/${STOP_ID}`);
         const datos = await respuesta.json();
         const autobuses = datos.data[0].Arrive;
- 
+
         // --- 1. Dibujamos los marcadores en el mapa (igual que antes) ---
         marcadoresActuales.forEach((marcador) => mapa.removeLayer(marcador));
         marcadoresActuales = [];
- 
+
         autobuses.forEach((bus) => {
           const [lon, lat] = bus.geometry.coordinates;
           if (lon === 0 && lat === 0) {
             return;
           }
- 
+
           const iconoLinea = L.divIcon({
             className: "icono-bus",
             html: `<div class="circulo-bus">${bus.line}</div>`,
             iconSize: [30, 30],
           });
- 
+
           const marcador = L.marker([lat, lon], { icon: iconoLinea }).addTo(mapa);
           marcador.bindPopup(
             `Línea ${bus.line} → ${bus.destination}<br>Llega en ${bus.estimateArrive} segundos`
           );
- 
+
           marcadoresActuales.push(marcador);
         });
- 
+
         // --- 2. Agrupamos los buses por línea+destino para el panel ---
         // Clave: "27|Plaza de Castilla". Así, ida y vuelta de una misma
         // línea no se mezclan en la misma tarjeta.
@@ -418,36 +471,36 @@
           }
           grupos[clave].tiempos.push(bus.estimateArrive);
         });
- 
+
         // Convertimos el objeto "grupos" en un array para poder ordenarlo
         const tarjetas = Object.values(grupos);
- 
+
         // Dentro de cada tarjeta, el tiempo más próximo va primero
         tarjetas.forEach((tarjeta) => tarjeta.tiempos.sort((a, b) => a - b));
- 
+
         // Las tarjetas se ordenan por su tiempo más próximo (tiempos[0])
         tarjetas.sort((a, b) => a.tiempos[0] - b.tiempos[0]);
- 
+
         // --- 3. Pintamos las tarjetas en el panel izquierdo ---
         listaLlegadas.innerHTML = "";
- 
+
         if (tarjetas.length === 0) {
           listaLlegadas.innerHTML =
             '<div id="mensaje-vacio">No hay autobuses en camino ahora mismo.</div>';
           return;
         }
- 
+
         tarjetas.forEach((tarjeta) => {
           const item = document.createElement("li");
           item.className = "tarjeta-bus";
- 
+
           // Tiempos secundarios (todos menos el primero), unidos por coma.
           // Ej: si tiempos = [120, 540], queda "9 min" como secundario.
           const tiemposSecundarios = tarjeta.tiempos
             .slice(1)
             .map((s) => formatearMinutos(s))
             .join(", ");
- 
+
           item.innerHTML = `
             <div class="tarjeta-linea">${tarjeta.line}</div>
             <div class="tarjeta-info">
@@ -465,16 +518,16 @@
               }</span>
             </div>
           `;
- 
+
           listaLlegadas.appendChild(item);
         });
       } catch (error) {
         console.error("Error al actualizar los autobuses:", error);
       }
     }
- 
+
     setInterval(actualizarAutobuses, 10000);
   </script>
- 
+
 </body>
 </html>
