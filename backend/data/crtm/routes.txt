@@ -1,0 +1,355 @@
+route_id,agency_id,route_short_name,route_long_name,route_desc,route_type,route_url,route_color,route_text_color
+8__421___,CRTM,421,MADRID (Legazpi)-PINTO,,3,https://www.crtm.es/8__421___.aspx,8EBF42,FFFFFF
+8__422___,CRTM,422,MADRID (Legazpi)-VALDEMORO,,3,https://www.crtm.es/8__422___.aspx,8EBF42,FFFFFF
+8__423___,CRTM,423,MADRID (Estación Sur)-ARANJUEZ,,3,https://www.crtm.es/8__423___.aspx,8EBF42,FFFFFF
+8__424___,CRTM,424,MADRID (Legazpi)-VALDEMORO (El Restón),,3,https://www.crtm.es/8__424___.aspx,8EBF42,FFFFFF
+8__425___,CRTM,425,VALDEMORO (Hospital)-CIEMPOZUELOS,,3,https://www.crtm.es/8__425___.aspx,8EBF42,FFFFFF
+8__426___,CRTM,426,MADRID (Legazpi)-CIEMPOZUELOS,,3,https://www.crtm.es/8__426___.aspx,8EBF42,FFFFFF
+8__427___,CRTM,427,MADRID (Villaverde Bajo-Cruce)-ÁREA EMPRESARIAL ANDALUCIA-PINTO,,3,https://www.crtm.es/8__427___.aspx,8EBF42,FFFFFF
+8__428___,CRTM,428,GETAFE-VALDEMORO,,3,https://www.crtm.es/8__428___.aspx,8EBF42,FFFFFF
+8__429___,CRTM,429,MADRID (Legazpi)-ARANJUEZ (PAU de la Montaña),,3,https://www.crtm.es/8__429___.aspx,8EBF42,FFFFFF
+8__430___,CRTM,430,ARANJUEZ-VILLAREJO DE SALVANES,,3,https://www.crtm.es/8__430___.aspx,8EBF42,FFFFFF
+8_N_401___,CRTM,N401,MADRID (Atocha)-PINTO-VALDEMORO,,3,https://www.crtm.es/8_N_401___.aspx,8EBF42,FFFFFF
+8_N_402___,CRTM,N402,MADRID (Atocha)-CIEMPOZUELOS-ARANJUEZ,,3,https://www.crtm.es/8_N_402___.aspx,8EBF42,FFFFFF
+8__260___,CRTM,260,ALCALÁ DE HENARES-AMBITE-ORUSCO,,3,https://www.crtm.es/8__260___.aspx,8EBF42,FFFFFF
+8__261___,CRTM,261,MADRID (Av. de América) - NUEVO BAZTÁN-VILLAR DEL OLMO,,3,https://www.crtm.es/8__261___.aspx,8EBF42,FFFFFF
+8__312___,CRTM,312,MADRID (Pavones)-ARGANDA (El Mirador),,3,https://www.crtm.es/8__312___.aspx,8EBF42,FFFFFF
+8__312_A__,CRTM,312A,MADRID (Pavones)-ARGANDA (El Mirador) por La Poveda,,3,https://www.crtm.es/8__312_A__.aspx,8EBF42,FFFFFF
+8__313___,CRTM,313,MADRID (Pavones)-VALDILECHA,,3,https://www.crtm.es/8__313___.aspx,8EBF42,FFFFFF
+8__320___,CRTM,320,ARGANDA DEL REY-ALCALÁ DE HENARES,,3,https://www.crtm.es/8__320___.aspx,8EBF42,FFFFFF
+8__321___,CRTM,321,ARGANDA (Hospital)-VILLAR DEL OLMO,,3,https://www.crtm.es/8__321___.aspx,8EBF42,FFFFFF
+8__322___,CRTM,322,ARGANDA DEL REY (Hospital)-AMBITE,,3,https://www.crtm.es/8__322___.aspx,8EBF42,FFFFFF
+8__326___,CRTM,326,MADRID (Pavones)-MONDEJAR-DRIEBES,,3,https://www.crtm.es/8__326___.aspx,8EBF42,FFFFFF
+8_N_303___,CRTM,N303,MADRID (Atocha)-ARGANDA DEL REY,,3,https://www.crtm.es/8_N_303___.aspx,8EBF42,FFFFFF
+8__171___,CRTM,171,MADRID (Plaza de Castilla)-URB. SANTO DOMINGO,,3,https://www.crtm.es/8__171___.aspx,8EBF42,FFFFFF
+8__640___,CRTM,640,SAN LORENZO DE EL ESCORIAL-ROBLEDO CHAVELA-VALDEMAQUEDA,,3,https://www.crtm.es/8__640___.aspx,8EBF42,FFFFFF
+8__640_A__,CRTM,640A,ROBLEDO DE CHAVELA FFCC-ROBLEDO DE CHAVELA,,3,https://www.crtm.es/8__640_A__.aspx,8EBF42,FFFFFF
+8__645___,CRTM,645,MADRID (Moncloa)-ROBLEDO DE CHAVELA-CEBREROS,,3,https://www.crtm.es/8__645___.aspx,8EBF42,FFFFFF
+8__660___,CRTM,660,SAN LORENZO DE EL ESCORIAL-GUADARRAMA-VILLALBA,,3,https://www.crtm.es/8__660___.aspx,8EBF42,FFFFFF
+8__661___,CRTM,661,MADRID (Moncloa)-SAN LORENZO DE EL ESCORIAL (Por Galapagar),,3,https://www.crtm.es/8__661___.aspx,8EBF42,FFFFFF
+8__661_A__,CRTM,661A,MADRID (Moncloa)-LAS ZORRERAS (Por Galapagar),,3,https://www.crtm.es/8__661_A__.aspx,8EBF42,FFFFFF
+8__662___,CRTM,662,MADRID (Moncloa)-URB. MOLINO DE LA HOZ,,3,https://www.crtm.es/8__662___.aspx,8EBF42,FFFFFF
+8__664___,CRTM,664,MADRID (Moncloa)-SAN LORENZO DE EL ESCORIAL (Guadarrama),,3,https://www.crtm.es/8__664___.aspx,8EBF42,FFFFFF
+8__665___,CRTM,665,SAN LORENZO DE EL ESCORIAL-PEGUERINOS,,3,https://www.crtm.es/8__665___.aspx,8EBF42,FFFFFF
+8__666___,CRTM,666,SAN LORENZO DE EL ESCORIAL-ZARZALEJO-LAS NAVAS DEL MARQUÉS,,3,https://www.crtm.es/8__666___.aspx,8EBF42,FFFFFF
+8__667___,CRTM,667,MAJADAHONDA (Hospital)-SAN LORENZO DE EL ESCORIAL (Por Galapagar),,3,https://www.crtm.es/8__667___.aspx,8EBF42,FFFFFF
+8__669___,CRTM,669,SAN LORENZO DE EL ESCORIAL-VILLANUEVA DE LA CAÑADA,,3,https://www.crtm.es/8__669___.aspx,8EBF42,FFFFFF
+8__669_A__,CRTM,669A,S. L. DE EL ESCORIAL - FRESNEDILLAS - NAVALAGAMELLA,,3,https://www.crtm.es/8__669_A__.aspx,8EBF42,FFFFFF
+8_N_604___,CRTM,N604,MADRID (Moncloa)-EL ESCORIAL-SAN LORENZO DE EL ESCORIAL,,3,https://www.crtm.es/8_N_604___.aspx,8EBF42,FFFFFF
+8__191___,CRTM,191,MADRID (Plaza de Castilla)-BUITRAGO,,3,https://www.crtm.es/8__191___.aspx,8EBF42,FFFFFF
+8__191_A__,CRTM,191A,BUITRAGO-BRAOJOS,,3,https://www.crtm.es/8__191_A__.aspx,8EBF42,FFFFFF
+8__191_B__,CRTM,191B,BUITRAGO-SOMOSIERRA,,3,https://www.crtm.es/8__191_B__.aspx,8EBF42,FFFFFF
+8__191_C__,CRTM,191C,BUITRAGO-MONTEJO DE LA SIERRA,,3,https://www.crtm.es/8__191_C__.aspx,8EBF42,FFFFFF
+8__191_D__,CRTM,191D,BUITRAGO-ROBLEDILLO DE LA JARA,,3,https://www.crtm.es/8__191_D__.aspx,8EBF42,FFFFFF
+8__191_E__,CRTM,191E,BUITRAGO-CERVERA DE BUITRAGO,,3,https://www.crtm.es/8__191_E__.aspx,8EBF42,FFFFFF
+8__193___,CRTM,193,MADRID (Plaza de Castilla)-PEDREZUELA-EL VELLÓN,,3,https://www.crtm.es/8__193___.aspx,8EBF42,FFFFFF
+8__193_A__,CRTM,193A,EL MOLAR-COTOS DE MONTERREY-VENTURADA,,3,https://www.crtm.es/8__193_A__.aspx,8EBF42,FFFFFF
+8__194___,CRTM,194,MADRID (Plaza de Castilla)-RASCAFRÍA,,3,https://www.crtm.es/8__194___.aspx,8EBF42,FFFFFF
+8__194_A__,CRTM,194A,BUITRAGO-LOZOYUELA-RASCAFRÍA,,3,https://www.crtm.es/8__194_A__.aspx,8EBF42,FFFFFF
+8__195___,CRTM,195,MADRID (Plaza de Castilla)-BRAOJOS,,3,https://www.crtm.es/8__195___.aspx,8EBF42,FFFFFF
+8__195_A__,CRTM,195A,CIRCULAR BUITRAGO-GARGANTILLA (Por Lozoyuela),,3,https://www.crtm.es/8__195_A__.aspx,8EBF42,FFFFFF
+8__195_B__,CRTM,195B,CIRCULAR BUITRAGO-GARGANTILLA,,3,https://www.crtm.es/8__195_B__.aspx,8EBF42,FFFFFF
+8__196___,CRTM,196,MADRID (Plaza de Castilla)-LA ACEBEDA,,3,https://www.crtm.es/8__196___.aspx,8EBF42,FFFFFF
+8__197___,CRTM,197,MADRID (Plaza de Castilla)-TORRELAGUNA/UCEDA,,3,https://www.crtm.es/8__197___.aspx,8EBF42,FFFFFF
+8__197_A__,CRTM,197A,TORRELAGUNA-PATONES-UCEDA,,3,https://www.crtm.es/8__197_A__.aspx,8EBF42,FFFFFF
+8__197_B__,CRTM,197B,TORRELAGUNA-EL BERRUECO-LA CABRERA-VALDEMANCO,,3,https://www.crtm.es/8__197_B__.aspx,8EBF42,FFFFFF
+8__197_C__,CRTM,197C,TORRELAGUNA-VENTURADA/CABANILLAS,,3,https://www.crtm.es/8__197_C__.aspx,8EBF42,FFFFFF
+8__197_D__,CRTM,197D,TORRELAGUNA-EL VELLÓN-EL MOLAR,,3,https://www.crtm.es/8__197_D__.aspx,8EBF42,FFFFFF
+8__197_E__,CRTM,197E,TORRELAGUNA-VALDEPIÉLAGOS-TALAMANCA,,3,https://www.crtm.es/8__197_E__.aspx,8EBF42,FFFFFF
+8__199_A__,CRTM,199A,BUITRAGO - MONTEJO - MANJIRÓN - BUITRAGO,,3,https://www.crtm.es/8__199_A__.aspx,8EBF42,FFFFFF
+8__210___,CRTM,210,S. S. DE LOS REYES (Hospital)-PARACUELLOS DE JARAMA,,3,https://www.crtm.es/8__210___.aspx,8EBF42,FFFFFF
+8__211___,CRTM,211,MADRID (Canillejas) - PARACUELLOS,,3,https://www.crtm.es/8__211___.aspx,8EBF42,FFFFFF
+8__212___,CRTM,212,MADRID (Canillejas) - PARACUELLOS (Miramadrid),,3,https://www.crtm.es/8__212___.aspx,8EBF42,FFFFFF
+8__213___,CRTM,213,MADRID (Canillejas) - BELVIS,,3,https://www.crtm.es/8__213___.aspx,8EBF42,FFFFFF
+8__215___,CRTM,215,TORREJÓN DE ARDOZ - PARACUELLOS DE JARAMA,,3,https://www.crtm.es/8__215___.aspx,8EBF42,FFFFFF
+8__220___,CRTM,220,TORREJÓN DE ARDOZ-SAN FERNANDO DE HENARES,,3,https://www.crtm.es/8__220___.aspx,8EBF42,FFFFFF
+8__222___,CRTM,222,MADRID (Avda. América)-MECO,,3,https://www.crtm.es/8__222___.aspx,8EBF42,FFFFFF
+8__223___,CRTM,223,MADRID (Avda. América)-ALCALÁ DE HENARES,,3,https://www.crtm.es/8__223___.aspx,8EBF42,FFFFFF
+8__224___,CRTM,224,MADRID (Avda. América)-TORREJÓN DE ARDOZ,,3,https://www.crtm.es/8__224___.aspx,8EBF42,FFFFFF
+8__224_A__,CRTM,224A,MADRID (Avda. América)-TORREJÓN DE ARDOZ (La Mancha Amarilla),,3,https://www.crtm.es/8__224_A__.aspx,8EBF42,FFFFFF
+8__226___,CRTM,226,MADRID (Avda. América)-TORREJÓN DE ARDOZ (El Soto),,3,https://www.crtm.es/8__226___.aspx,8EBF42,FFFFFF
+8__227___,CRTM,227,MADRID (Avda. América)-ALCALÁ (Espartales-Universidad),,3,https://www.crtm.es/8__227___.aspx,8EBF42,FFFFFF
+8__229___,CRTM,229,MADRID (Avda. América)-ALCALÁ (Virgen del Val),,3,https://www.crtm.es/8__229___.aspx,8EBF42,FFFFFF
+8__231___,CRTM,231,ALCALÁ DE HENARES-URB. ZULEMA-EL VISO,,3,https://www.crtm.es/8__231___.aspx,8EBF42,FFFFFF
+8__232___,CRTM,232,ALCALÁ DE HENARES-TORRES DE LA ALAMEDA,,3,https://www.crtm.es/8__232___.aspx,8EBF42,FFFFFF
+8__250___,CRTM,250,ALCALÁ DE HENARES-MECO,,3,https://www.crtm.es/8__250___.aspx,8EBF42,FFFFFF
+8__251___,CRTM,251,TORREJÓN-VALDEAVERO-ALCALÁ,,3,https://www.crtm.es/8__251___.aspx,8EBF42,FFFFFF
+8__252___,CRTM,252,TORREJÓN-DAGANZO-ALCALÁ,,3,https://www.crtm.es/8__252___.aspx,8EBF42,FFFFFF
+8__254___,CRTM,254,VALDEOLMOS/FUENTE EL SAZ-ALCALÁ DE HENARES,,3,https://www.crtm.es/8__254___.aspx,8EBF42,FFFFFF
+8__255___,CRTM,255,VALDEAVERO-CAMARMA DE ESTERUELAS-ALCALÁ DE HENARES,,3,https://www.crtm.es/8__255___.aspx,8EBF42,FFFFFF
+8__256___,CRTM,256,MADRID (Canillejas)-DAGANZO-VALDEAVERO,,3,https://www.crtm.es/8__256___.aspx,8EBF42,FFFFFF
+8__819___,CRTM,819,RASCAFRÍA - COTOS,,3,https://www.crtm.es/8__819___.aspx,8EBF42,FFFFFF
+8__824___,CRTM,824,MADRID (Aeropuerto) - TORREJÓN DE ARDOZ - ALCALÁ DE HENARES,,3,https://www.crtm.es/8__824___.aspx,8EBF42,FFFFFF
+8__911___,CRTM,911,BUITRAGO-MONTEJO-LA HIRUELA,,3,https://www.crtm.es/8__911___.aspx,8EBF42,FFFFFF
+8__912___,CRTM,912,BUITRAGO-MONTEJO-PUEBLA DE LA SIERRA,,3,https://www.crtm.es/8__912___.aspx,8EBF42,FFFFFF
+8__913___,CRTM,913,TORRELAGUNA-EL ATAZAR,,3,https://www.crtm.es/8__913___.aspx,8EBF42,FFFFFF
+8__FS2___,CRTM,FS2,TORRELAGUNA - ALCALÁ DE HENARES,,3,https://www.crtm.es/8__FS2___.aspx,8EBF42,FFFFFF
+8_N_104___,CRTM,N104,MADRID (Plaza de Castilla)- EL MOLAR,,3,https://www.crtm.es/8_N_104___.aspx,8EBF42,FFFFFF
+8_N_202___,CRTM,N202,MADRID (Av. de América) - TORREJÓN - ALCALÁ - MECO,,3,https://www.crtm.es/8_N_202___.aspx,8EBF42,FFFFFF
+8_N_204___,CRTM,N204,MADRID (Canillejas) - PARACUELLOS - DAGANZO,,3,https://www.crtm.es/8_N_204___.aspx,8EBF42,FFFFFF
+8__712___,CRTM,712,MADRID (Plaza de Castilla) - TRES CANTOS (Por Avda. de Encuartes),,3,https://www.crtm.es/8__712___.aspx,8EBF42,FFFFFF
+8__713___,CRTM,713,MADRID (Plaza de Castilla)-TRES CANTOS (Por Avda. del Parque),,3,https://www.crtm.es/8__713___.aspx,8EBF42,FFFFFF
+8__714___,CRTM,714,MADRID (Plaza de Castilla)-UNIV.AUTÓNOMA-UNIV.COMILLAS,,3,https://www.crtm.es/8__714___.aspx,8EBF42,FFFFFF
+8__716___,CRTM,716,MADRID (Plaza de Castilla)-TRES CANTOS (Soto de Viñuelas),,3,https://www.crtm.es/8__716___.aspx,8EBF42,FFFFFF
+8__717___,CRTM,717,MADRID (Plaza de Castilla)-TRES CANTOS NORTE,,3,https://www.crtm.es/8__717___.aspx,8EBF42,FFFFFF
+8_N_701___,CRTM,N701,MADRID (Plaza de Castilla)-TRES CANTOS,,3,https://www.crtm.es/8_N_701___.aspx,8EBF42,FFFFFF
+8__280___,CRTM,280,COSLADA (FFCC)-HOSPITAL-LOECHES,,3,https://www.crtm.es/8__280___.aspx,8EBF42,FFFFFF
+8__281___,CRTM,281,MADRID (Av. de América)-SAN FERNANDO DE HENARES,,3,https://www.crtm.es/8__281___.aspx,8EBF42,FFFFFF
+8__282___,CRTM,282,MADRID (Avda. América)-SAN FERNANDO-MEJORADA,,3,https://www.crtm.es/8__282___.aspx,8EBF42,FFFFFF
+8__283___,CRTM,283,MADRID (Avda. América)-COSLADA-SAN FERNANDO,,3,https://www.crtm.es/8__283___.aspx,8EBF42,FFFFFF
+8__284___,CRTM,284,MADRID (Av. de América)-VELILLA-LOECHES,,3,https://www.crtm.es/8__284___.aspx,8EBF42,FFFFFF
+8__285___,CRTM,285,COSLADA (San Fernando FFCC)-VELILLA-ARGANDA DEL REY,,3,https://www.crtm.es/8__285___.aspx,8EBF42,FFFFFF
+8__286___,CRTM,286,MADRID (Ciudad Lineal)-COSLADA (Ciudad 70),,3,https://www.crtm.es/8__286___.aspx,8EBF42,FFFFFF
+8__287___,CRTM,287,MADRID (Alsacia)-COSLADA (Barrio Estación),,3,https://www.crtm.es/8__287___.aspx,8EBF42,FFFFFF
+8__288___,CRTM,288,MADRID (Ciudad Lineal)-COSLADA-SAN FERNANDO,,3,https://www.crtm.es/8__288___.aspx,8EBF42,FFFFFF
+8__289___,CRTM,289,MADRID (Ciudad Lineal)-COSLADA (Hospital),,3,https://www.crtm.es/8__289___.aspx,8EBF42,FFFFFF
+8__290___,CRTM,290,MADRID (El Cañaveral) - COSLADA - PLENILUNIO,,3,https://www.crtm.es/8__290___.aspx,8EBF42,FFFFFF
+8__340___,CRTM,340,TORREJÓN DE ARDOZ-MEJORADA DEL CAMPO,,3,https://www.crtm.es/8__340___.aspx,8EBF42,FFFFFF
+8__341___,CRTM,341,MADRID (Pavones)-MEJORADA-VELILLA,,3,https://www.crtm.es/8__341___.aspx,8EBF42,FFFFFF
+8__432___,CRTM,432,MADRID (Villaverde Bajo-Cruce)-LEGANÉS,,3,https://www.crtm.es/8__432___.aspx,8EBF42,FFFFFF
+8__441___,CRTM,441,MADRID (Plaza Elíptica)-GETAFE (Sector III-Paseo Juan José Rosón),,3,https://www.crtm.es/8__441___.aspx,8EBF42,FFFFFF
+8__442___,CRTM,442,MADRID (Plaza Elíptica)-GETAFE (Juan de la Cierva),,3,https://www.crtm.es/8__442___.aspx,8EBF42,FFFFFF
+8__443___,CRTM,443,MADRID (Plaza Elíptica)-GETAFE (Barrio Las Margaritas),,3,https://www.crtm.es/8__443___.aspx,8EBF42,FFFFFF
+8__444___,CRTM,444,MADRID (Plaza Elíptica)-GETAFE (Sector III-Islas Canarias),,3,https://www.crtm.es/8__444___.aspx,8EBF42,FFFFFF
+8__446___,CRTM,446,MADRID (Plaza Elíptica)-GETAFE (El Bercial),,3,https://www.crtm.es/8__446___.aspx,8EBF42,FFFFFF
+8__447___,CRTM,447,MADRID (Legazpi)-GETAFE (Hospital),,3,https://www.crtm.es/8__447___.aspx,8EBF42,FFFFFF
+8__448___,CRTM,448,MADRID (Legazpi)-GETAFE (Por Villaverde),,3,https://www.crtm.es/8__448___.aspx,8EBF42,FFFFFF
+8__450___,CRTM,450,GETAFE-LEGANÉS-ALCORCÓN,,3,https://www.crtm.es/8__450___.aspx,8EBF42,FFFFFF
+8__455___,CRTM,455,PINTO - GETAFE,,3,https://www.crtm.es/8__455___.aspx,8EBF42,FFFFFF
+8__460___,CRTM,460,MADRID (Plaza Elíptica)-PARLA-BATRES,,3,https://www.crtm.es/8__460___.aspx,8EBF42,FFFFFF
+8__461___,CRTM,461,MADRID (Plaza Elíptica)-PARLA,,3,https://www.crtm.es/8__461___.aspx,8EBF42,FFFFFF
+8__462___,CRTM,462,PARLA-GETAFE,,3,https://www.crtm.es/8__462___.aspx,8EBF42,FFFFFF
+8__463___,CRTM,463,MADRID (Plaza Elíptica)-PARLA-TORREJÓN DE VELASCO,,3,https://www.crtm.es/8__463___.aspx,8EBF42,FFFFFF
+8__464___,CRTM,464,MADRID (Plaza Elíptica)-PARLA-YUNCLILLOS,,3,https://www.crtm.es/8__464___.aspx,8EBF42,FFFFFF
+8__466___,CRTM,466,PARLA-VALDEMORO,,3,https://www.crtm.es/8__466___.aspx,8EBF42,FFFFFF
+8__468___,CRTM,468,GETAFE-GRIÑÓN/CASARRUBUELOS/SERRANILLOS,,3,https://www.crtm.es/8__468___.aspx,8EBF42,FFFFFF
+8__469___,CRTM,469,MADRID (Plaza Elíptica)-PARLA (Parla Este),,3,https://www.crtm.es/8__469___.aspx,8EBF42,FFFFFF
+8__470___,CRTM,470,MADRID (Plaza Elíptica) - HUMANES - GRIÑÓN-SERRANILLOS,,3,https://www.crtm.es/8__470___.aspx,8EBF42,FFFFFF
+8__471___,CRTM,471,HUMANES-FUENLABRADA-PARLA-PINTO,,3,https://www.crtm.es/8__471___.aspx,8EBF42,FFFFFF
+8__560___,CRTM,560,POZUELO DE ALARCÓN-ALCORCÓN,,3,https://www.crtm.es/8__560___.aspx,8EBF42,FFFFFF
+8__561___,CRTM,561,MADRID (Aluche)-POZUELO-MAJADAHONDA-LAS ROZAS,,3,https://www.crtm.es/8__561___.aspx,8EBF42,FFFFFF
+8__561_A__,CRTM,561A,MADRID (Aluche)-POZUELO-MAJADAHONDA-LAS ROZAS (por Universidad),,3,https://www.crtm.es/8__561_A__.aspx,8EBF42,FFFFFF
+8__561_B__,CRTM,561B,MADRID (Aluche)-POZUELO-MAJADAHONDA-LAS ROZAS (por Av. Guadarrama),,3,https://www.crtm.es/8__561_B__.aspx,8EBF42,FFFFFF
+8__562___,CRTM,562,MADRID (Aluche)-POZUELO DE ALARCÓN,,3,https://www.crtm.es/8__562___.aspx,8EBF42,FFFFFF
+8__563___,CRTM,563,MADRID (Aluche)-POZUELO (Por Urb. Las Minas),,3,https://www.crtm.es/8__563___.aspx,8EBF42,FFFFFF
+8__564___,CRTM,564,MADRID (Aluche)-POZUELO (Por Somosaguas Sur),,3,https://www.crtm.es/8__564___.aspx,8EBF42,FFFFFF
+8__565___,CRTM,565,POZUELO (Est. El Barrial) - BOADILLA (Est. Puerta de Boadilla),,3,https://www.crtm.es/8__565___.aspx,8EBF42,FFFFFF
+8__566___,CRTM,566,BOADILLA DEL MONTE-POZUELO DE ALARCÓN,,3,https://www.crtm.es/8__566___.aspx,8EBF42,FFFFFF
+8__567___,CRTM,567,VILLAVICIOSA DE ODÓN-MAJADAHONDA,,3,https://www.crtm.es/8__567___.aspx,8EBF42,FFFFFF
+8__610___,CRTM,610,TORRELODONES-HOYO DE MANZANARES-COLMENAR VIEJO,,3,https://www.crtm.es/8__610___.aspx,8EBF42,FFFFFF
+8__611___,CRTM,611,MADRID (Moncloa)-HOYO DE MANZANARES,,3,https://www.crtm.es/8__611___.aspx,8EBF42,FFFFFF
+8__611_A__,CRTM,611A,MADRID (Moncloa)-HOYO DE MANZANARES (Por Urb. Las Colinas),,3,https://www.crtm.es/8__611_A__.aspx,8EBF42,FFFFFF
+8__612___,CRTM,612,MADRID (Moncloa)-TORRELODONES,,3,https://www.crtm.es/8__612___.aspx,8EBF42,FFFFFF
+8__613___,CRTM,613,MADRID (Moncloa)-TORRELODONES (Por Centro Comercial),,3,https://www.crtm.es/8__613___.aspx,8EBF42,FFFFFF
+8__650_A__,CRTM,650A,CIRCULAR POZUELO- MAJADAHONDA - POZUELO,,3,https://www.crtm.es/8__650_A__.aspx,8EBF42,FFFFFF
+8__650_B__,CRTM,650B,CIRCULAR POZUELO- MAJADAHONDA - POZUELO,,3,https://www.crtm.es/8__650_B__.aspx,8EBF42,FFFFFF
+8__651___,CRTM,651,MADRID (Moncloa)-MAJADAHONDA (Avda. de España),,3,https://www.crtm.es/8__651___.aspx,8EBF42,FFFFFF
+8__652___,CRTM,652,MADRID (Moncloa)-MAJADAHONDA (Carril del Tejar),,3,https://www.crtm.es/8__652___.aspx,8EBF42,FFFFFF
+8__653___,CRTM,653,MADRID (Moncloa)-MAJADAHONDA (Hospital) (Por FFCC),,3,https://www.crtm.es/8__653___.aspx,8EBF42,FFFFFF
+8__654___,CRTM,654,MADRID (Moncloa) - MAJADAHONDA (Urb. Los Satélites),,3,https://www.crtm.es/8__654___.aspx,8EBF42,FFFFFF
+8__655___,CRTM,655,MADRID (Moncloa)-MAJADAHONDA (Hospital),,3,https://www.crtm.es/8__655___.aspx,8EBF42,FFFFFF
+8__656___,CRTM,656,MADRID (Moncloa)-POZUELO DE ALARCÓN,,3,https://www.crtm.es/8__656___.aspx,8EBF42,FFFFFF
+8__656_A__,CRTM,656A,MADRID (Moncloa)-POZUELO-URB.LA CABAÑA,,3,https://www.crtm.es/8__656_A__.aspx,8EBF42,FFFFFF
+8__657___,CRTM,657,MADRID (Moncloa)-POZUELO (Monteclaro),,3,https://www.crtm.es/8__657___.aspx,8EBF42,FFFFFF
+8__657_A__,CRTM,657A,MADRID (Moncloa) - POZUELO (San Juan de la Cruz),,3,https://www.crtm.es/8__657_A__.aspx,8EBF42,FFFFFF
+8__658___,CRTM,658,MADRID (Moncloa)-POZUELO (Prado Somosaguas-Ciudad de la Imagen),,3,https://www.crtm.es/8__658___.aspx,8EBF42,FFFFFF
+8__658_A__,CRTM,658A,MADRID (Moncloa) - POZUELO (C.C. LaFinca),,3,https://www.crtm.es/8__658_A__.aspx,8EBF42,FFFFFF
+8__659___,CRTM,659,MADRID (Moncloa) - Univ. Fco. de Vitoria - El Pinar del Plantío,,3,https://www.crtm.es/8__659___.aspx,8EBF42,FFFFFF
+8__680___,CRTM,680,COLLADO VILLALBA (Hospital)-CERCEDILLA,,3,https://www.crtm.es/8__680___.aspx,8EBF42,FFFFFF
+8__681___,CRTM,681,MADRID (Moncloa)-ALPEDRETE,,3,https://www.crtm.es/8__681___.aspx,8EBF42,FFFFFF
+8__682___,CRTM,682,MADRID (Moncloa)-VILLALBA-GUADARRAMA,,3,https://www.crtm.es/8__682___.aspx,8EBF42,FFFFFF
+8__683___,CRTM,683,MADRID (Moncloa)-COLLADO MEDIANO,,3,https://www.crtm.es/8__683___.aspx,8EBF42,FFFFFF
+8__684___,CRTM,684,MADRID (Moncloa)-CERCEDILLA (por Guadarrama),,3,https://www.crtm.es/8__684___.aspx,8EBF42,FFFFFF
+8__685___,CRTM,685,MAJADAHONDA (Hospital) - LAS ROZAS - GUADARRAMA,,3,https://www.crtm.es/8__685___.aspx,8EBF42,FFFFFF
+8__686___,CRTM,686,MADRID (Moncloa)-TORRELODONES (Por Los Peñascales),,3,https://www.crtm.es/8__686___.aspx,8EBF42,FFFFFF
+8__686_A__,CRTM,686A,MADRID (Moncloa)-TORRELODONES (Por Montealegre),,3,https://www.crtm.es/8__686_A__.aspx,8EBF42,FFFFFF
+8__687___,CRTM,687,MADRID (Moncloa)-COLLADO VILLALBA,,3,https://www.crtm.es/8__687___.aspx,8EBF42,FFFFFF
+8__688___,CRTM,688,MADRID (Moncloa)-LOS MOLINOS,,3,https://www.crtm.es/8__688___.aspx,8EBF42,FFFFFF
+8__690___,CRTM,690,GUADARRAMA-COLLADO MEDIANO-NAVACERRADA,,3,https://www.crtm.es/8__690___.aspx,8EBF42,FFFFFF
+8__691___,CRTM,691,MADRID (Moncloa)-BECERRIL-NAVACERRADA-VALDESQUI,,3,https://www.crtm.es/8__691___.aspx,8EBF42,FFFFFF
+8__692___,CRTM,692,LOS MOLINOS - CERCEDILLA - VALDESQUÍ,,3,https://www.crtm.es/8__692___.aspx,8EBF42,FFFFFF
+8__696___,CRTM,696,COLLADO VILLALBA (Hospital)-NAVACERRADA,,3,https://www.crtm.es/8__696___.aspx,8EBF42,FFFFFF
+8__815___,CRTM,815,MADRID (Estación Chamartín)-POZUELO DE ALARCÓN,,3,https://www.crtm.es/8__815___.aspx,8EBF42,FFFFFF
+8__822___,CRTM,822,MADRID (Aeropuerto)-COSLADA-SAN FERNANDO DE HENARES,,3,https://www.crtm.es/8__822___.aspx,8EBF42,FFFFFF
+8_N_203___,CRTM,N203,MADRID (Ciudad Lineal)-COSLADA-S.FERNANDO-VELILLA/LOECHES,,3,https://www.crtm.es/8_N_203___.aspx,8EBF42,FFFFFF
+8_N_602___,CRTM,N602,MADRID (Moncloa)-COLLADO VILLALBA-GUADARRAMA,,3,https://www.crtm.es/8_N_602___.aspx,8EBF42,FFFFFF
+8_N_801___,CRTM,N801,MADRID (Atocha)-GETAFE (Buenavista - Sector III),,3,https://www.crtm.es/8_N_801___.aspx,8EBF42,FFFFFF
+8_N_805___,CRTM,N805,MADRID (Atocha) - GETAFE (Los Molinos),,3,https://www.crtm.es/8_N_805___.aspx,8EBF42,FFFFFF
+8_N_806___,CRTM,N806,MADRID (Atocha)-PARLA,,3,https://www.crtm.es/8_N_806___.aspx,8EBF42,FFFFFF
+8_N_807___,CRTM,N807,MADRID (Atocha) - GETAFE - HUMANES - GRIÑÓN,,3,https://www.crtm.es/8_N_807___.aspx,8EBF42,FFFFFF
+8_N_901___,CRTM,N901,MADRID (Moncloa)-POZUELO-MAJADAHONDA-MADRID,,3,https://www.crtm.es/8_N_901___.aspx,8EBF42,FFFFFF
+8_N_902___,CRTM,N902,MADRID (Moncloa)-POZUELO (Prado Somosaguas-Ciudad de la Imagen),,3,https://www.crtm.es/8_N_902___.aspx,8EBF42,FFFFFF
+8_N_906___,CRTM,N906,MADRID (Moncloa)-MAJADAHONDA-POZUELO-MADRID,,3,https://www.crtm.es/8_N_906___.aspx,8EBF42,FFFFFF
+8__551___,CRTM,551,MADRID (Cuatro Vientos)-SAN MARTÍN DE VALDEIGLESIAS-EL TIEMBLO/CEBREROS,,3,https://www.crtm.es/8__551___.aspx,8EBF42,FFFFFF
+8__510___,CRTM,510,ALCORCÓN-VILLAVICIOSA-EL BOSQUE,,3,https://www.crtm.es/8__510___.aspx,8EBF42,FFFFFF
+8__510_A__,CRTM,510A,MADRID (Colonia Jardín) - VILLAVICIOSA DE ODÓN,,3,https://www.crtm.es/8__510_A__.aspx,8EBF42,FFFFFF
+8__510_B__,CRTM,510B,ALCORCÓN (Alcorcón Central) - VILLAVICIOSA DE ODÓN (Universidad Europea),,3,https://www.crtm.es/8__510_B__.aspx,8EBF42,FFFFFF
+8__511___,CRTM,511,MADRID (Cuatro Vientos)-ALCORCÓN (Por Parque Lisboa),,3,https://www.crtm.es/8__511___.aspx,8EBF42,FFFFFF
+8__512___,CRTM,512,MADRID (Cuatro Vientos)-ALCORCÓN (Por C. de los Cantos),,3,https://www.crtm.es/8__512___.aspx,8EBF42,FFFFFF
+8__513___,CRTM,513,MADRID (Cuatro Vientos)-ALCORCÓN (P.I. Urtinsa),,3,https://www.crtm.es/8__513___.aspx,8EBF42,FFFFFF
+8__514___,CRTM,514,MADRID (Cuatro Vientos) - ALCORCÓN (por Los Castillos),,3,https://www.crtm.es/8__514___.aspx,8EBF42,FFFFFF
+8__516___,CRTM,516,MADRID (Cuatro Vientos)-ALCORCÓN (Por Universidad Rey Juan Carlos),,3,https://www.crtm.es/8__516___.aspx,8EBF42,FFFFFF
+8__517___,CRTM,517,MADRID (Cuatro Vientos) - ALCORCÓN (Fuente Cisneros),,3,https://www.crtm.es/8__517___.aspx,8EBF42,FFFFFF
+8__518___,CRTM,518,MADRID (Cuatro Vientos) - VILLAVICIOSA DE ODÓN,,3,https://www.crtm.es/8__518___.aspx,8EBF42,FFFFFF
+8__519___,CRTM,519,MÓSTOLES-VILLAVICIOSA DE ODÓN,,3,https://www.crtm.es/8__519___.aspx,8EBF42,FFFFFF
+8__519_A__,CRTM,519A,MÓSTOLES (Hospital Rey Juan Carlos) por El Soto-VILLAVICIOSA DE ODÓN (El Bosque),,3,https://www.crtm.es/8__519_A__.aspx,8EBF42,FFFFFF
+8__520___,CRTM,520,ALCORCÓN-MÓSTOLES,,3,https://www.crtm.es/8__520___.aspx,8EBF42,FFFFFF
+8__521___,CRTM,521,MADRID (Cuatro Vientos)-MÓSTOLES,,3,https://www.crtm.es/8__521___.aspx,8EBF42,FFFFFF
+8__522___,CRTM,522,MADRID (Cuatro Vientos)-MÓSTOLES (Por Pistas DGT),,3,https://www.crtm.es/8__522___.aspx,8EBF42,FFFFFF
+8__523___,CRTM,523,MADRID (Cuatro Vientos)-MÓSTOLES (Villafontana),,3,https://www.crtm.es/8__523___.aspx,8EBF42,FFFFFF
+8__524___,CRTM,524,MADRID (Cuatro Vientos) - MÓSTOLES SUR,,3,https://www.crtm.es/8__524___.aspx,8EBF42,FFFFFF
+8__525___,CRTM,525,MADRID (Cuatro Vientos)-MÓSTOLES SUR (Por Av.Onu),,3,https://www.crtm.es/8__525___.aspx,8EBF42,FFFFFF
+8__526___,CRTM,526,FUENLABRADA - MÓSTOLES (Por FF.CC),,3,https://www.crtm.es/8__526___.aspx,8EBF42,FFFFFF
+8__527___,CRTM,527,MÓSTOLES (Estación FFCC)-FUENLABRADA (Urb. Loranca),,3,https://www.crtm.es/8__527___.aspx,8EBF42,FFFFFF
+8__528___,CRTM,528,MADRID (Cuatro Vientos)-NAVALCARNERO,,3,https://www.crtm.es/8__528___.aspx,8EBF42,FFFFFF
+8__529___,CRTM,529,MÓSTOLES (Hospital Rey Juan Carlos)-NAVALCARNERO-EL ÁLAMO,,3,https://www.crtm.es/8__529___.aspx,8EBF42,FFFFFF
+8__529_A__,CRTM,529A,MÓSTOLES (Hospital Rey Juan Carlos)-NAVALCARNERO-BATRES,,3,https://www.crtm.es/8__529_A__.aspx,8EBF42,FFFFFF
+8__529_H__,CRTM,529H,MÓSTOLES (Hospital Rey Juan Carlos) - NAVALCARNERO,,3,https://www.crtm.es/8__529_H__.aspx,8EBF42,FFFFFF
+8__530___,CRTM,530,NAVALCARNERO-VILLANUEVA DE LA CAÑADA,,3,https://www.crtm.es/8__530___.aspx,8EBF42,FFFFFF
+8__531___,CRTM,531,MÓSTOLES (Hospital Rey Juan Carlos)-NAVALCARNERO-SEVILLA LA NUEVA,,3,https://www.crtm.es/8__531___.aspx,8EBF42,FFFFFF
+8__531_A__,CRTM,531A,MÓSTOLES (Hospital Rey Juan Carlos)-NAVALCARNERO-VILLAMANTILLA,,3,https://www.crtm.es/8__531_A__.aspx,8EBF42,FFFFFF
+8__532___,CRTM,532,MADRID (Colonia Jardín)-SEVILLA LA NUEVA,,3,https://www.crtm.es/8__532___.aspx,8EBF42,FFFFFF
+8__534___,CRTM,534,MADRID (Cuatro Vientos)-URB. PARQUE COIMBRA-XANADÚ,,3,https://www.crtm.es/8__534___.aspx,8EBF42,FFFFFF
+8__538___,CRTM,538,MADRID (Cuatro Vientos) - NAVALCARNERO (La Dehesa),,3,https://www.crtm.es/8__538___.aspx,8EBF42,FFFFFF
+8__539___,CRTM,539,MADRID (Cuatro Vientos)-EL ÁLAMO,,3,https://www.crtm.es/8__539___.aspx,8EBF42,FFFFFF
+8_N_501___,CRTM,N501,MADRID (Príncipe Pío)-ALCORCÓN-MÓSTOLES,,3,https://www.crtm.es/8_N_501___.aspx,8EBF42,FFFFFF
+8_N_502___,CRTM,N502,MADRID (Príncipe Pío)-ALCORCÓN,,3,https://www.crtm.es/8_N_502___.aspx,8EBF42,FFFFFF
+8_N_503___,CRTM,N503,MADRID (Príncipe Pío)-MÓSTOLES (Villafontana),,3,https://www.crtm.es/8_N_503___.aspx,8EBF42,FFFFFF
+8_N_504___,CRTM,N504,MADRID (Príncipe Pío)-VILLAVICIOSA DE ODÓN,,3,https://www.crtm.es/8_N_504___.aspx,8EBF42,FFFFFF
+8_N_505___,CRTM,N505,MADRID (Príncipe Pío) - NAVALCARNERO - EL ÁLAMO,,3,https://www.crtm.es/8_N_505___.aspx,8EBF42,FFFFFF
+8__670___,CRTM,670,COLLADO VILLALBA (Hospital)-MORALZARZAL,,3,https://www.crtm.es/8__670___.aspx,8EBF42,FFFFFF
+8__671___,CRTM,671,MADRID (Moncloa)-MORALZARZAL,,3,https://www.crtm.es/8__671___.aspx,8EBF42,FFFFFF
+8__672___,CRTM,672,MADRID (Moncloa)-CERCEDA (Por Mataelpino),,3,https://www.crtm.es/8__672___.aspx,8EBF42,FFFFFF
+8__672_A__,CRTM,672A,MADRID (Moncloa)-CERCEDA (Directo),,3,https://www.crtm.es/8__672_A__.aspx,8EBF42,FFFFFF
+8__673___,CRTM,673,MADRID (Moncloa)-COLLADO VILLALBA (Hospital),,3,https://www.crtm.es/8__673___.aspx,8EBF42,FFFFFF
+8__876___,CRTM,876,MADRID (Plaza de Castilla)-MORALZARZAL-COLLADO VILLALBA,,3,https://www.crtm.es/8__876___.aspx,8EBF42,FFFFFF
+8_N_603___,CRTM,N603,MADRID (Moncloa)-MORALZARZAL,,3,https://www.crtm.es/8_N_603___.aspx,8EBF42,FFFFFF
+8__151___,CRTM,151,MADRID (Plaza de Castilla) - ALCOBENDAS,,3,https://www.crtm.es/8__151___.aspx,8EBF42,FFFFFF
+8__152_C__,CRTM,152C,MADRID (Plaza de Castilla)-S.S. DE LOS REYES (Dehesa Vieja),,3,https://www.crtm.es/8__152_C__.aspx,8EBF42,FFFFFF
+8__153___,CRTM,153,MADRID (Plaza de Castilla)-ALCOBENDAS-ROSA LUXEMBURGO,,3,https://www.crtm.es/8__153___.aspx,8EBF42,FFFFFF
+8__154___,CRTM,154,MADRID (Chamartín)-S.S. REYES CIRCULAR (Por Fuencarral),,3,https://www.crtm.es/8__154___.aspx,8EBF42,FFFFFF
+8__154_C__,CRTM,154C,MADRID (Plaza de Castilla)-S.S. DE LOS REYES (Avda. de los Quiñones),,3,https://www.crtm.es/8__154_C__.aspx,8EBF42,FFFFFF
+8__155___,CRTM,155,MADRID (Plaza de Castilla)-EL SOTO DE LA MORALEJA,,3,https://www.crtm.es/8__155___.aspx,8EBF42,FFFFFF
+8__155_B__,CRTM,155B,MADRID (Plaza de Castilla)-EL ENCINAR DE LOS REYES,,3,https://www.crtm.es/8__155_B__.aspx,8EBF42,FFFFFF
+8__156___,CRTM,156,MADRID (Plaza de Castilla)-S.S. DE LOS REYES (P.I. Moscatelares),,3,https://www.crtm.es/8__156___.aspx,8EBF42,FFFFFF
+8__157___,CRTM,157,MADRID (Plaza de Castilla)-ALCOBENDAS (P.Chopera),,3,https://www.crtm.es/8__157___.aspx,8EBF42,FFFFFF
+8__157_C__,CRTM,157C,MADRID (Plaza de Castilla)-ALCOBENDAS (Valdelasfuentes),,3,https://www.crtm.es/8__157_C__.aspx,8EBF42,FFFFFF
+8__158___,CRTM,158,MADRID (Pinar de Chamartín) - SAN SEBASTIÁN DE LOS REYES (Tempranales),,3,https://www.crtm.es/8__158___.aspx,8EBF42,FFFFFF
+8__159___,CRTM,159,Madrid (Plaza Castilla)-ALCOBENDAS (El Juncal),,3,https://www.crtm.es/8__159___.aspx,8EBF42,FFFFFF
+8__161___,CRTM,161,MADRID (Plaza de Castilla)-URB. FUENTE DEL FRESNO,,3,https://www.crtm.es/8__161___.aspx,8EBF42,FFFFFF
+8__166___,CRTM,166,SAN SEBASTIAN DE LOS REYES - URBANIZACION VALDELAGUA,,3,https://www.crtm.es/8__166___.aspx,8EBF42,FFFFFF
+8__180___,CRTM,180,ALCOBENDAS-ALGETE,,3,https://www.crtm.es/8__180___.aspx,8EBF42,FFFFFF
+8__181___,CRTM,181,MADRID (Plaza de Castilla)-ALGETE,,3,https://www.crtm.es/8__181___.aspx,8EBF42,FFFFFF
+8__182___,CRTM,182,MADRID (Plaza de Castilla)-ALGETE-VALDEOLMOS,,3,https://www.crtm.es/8__182___.aspx,8EBF42,FFFFFF
+8__183___,CRTM,183,MADRID (Plaza de Castilla)-COBEÑA-ALGETE,,3,https://www.crtm.es/8__183___.aspx,8EBF42,FFFFFF
+8__184___,CRTM,184,MADRID (Plaza de Castilla)-EL CASAR,,3,https://www.crtm.es/8__184___.aspx,8EBF42,FFFFFF
+8__185___,CRTM,185,MADRID (Plaza de Castilla)-NUEVO ALGETE,,3,https://www.crtm.es/8__185___.aspx,8EBF42,FFFFFF
+8__263___,CRTM,263,MADRID (Barajas)-COBEÑA-ALGETE,,3,https://www.crtm.es/8__263___.aspx,8EBF42,FFFFFF
+8__720___,CRTM,720,COLMENAR VIEJO (Estación FF.CC.) - COLLADO VILLALBA,,3,https://www.crtm.es/8__720___.aspx,8EBF42,FFFFFF
+8__721___,CRTM,721,MADRID (Plaza de Castilla)-COLMENAR VIEJO,,3,https://www.crtm.es/8__721___.aspx,8EBF42,FFFFFF
+8__722___,CRTM,722,MADRID (Plaza de Castilla) - COLMENAR VIEJO (Navallar),,3,https://www.crtm.es/8__722___.aspx,8EBF42,FFFFFF
+8__723___,CRTM,723,COLMENAR VIEJO-TRES CANTOS,,3,https://www.crtm.es/8__723___.aspx,8EBF42,FFFFFF
+8__724___,CRTM,724,MADRID (Plaza de Castilla)-MANZANARES-EL BOALO,,3,https://www.crtm.es/8__724___.aspx,8EBF42,FFFFFF
+8__725___,CRTM,725,MADRID (Plaza de Castilla)-MIRAFLORES-BUSTARVIEJO-VALDEMANCO,,3,https://www.crtm.es/8__725___.aspx,8EBF42,FFFFFF
+8__726___,CRTM,726,MADRID (Plaza de Castilla)-GUADALIX-NAVALAFUENTE,,3,https://www.crtm.es/8__726___.aspx,8EBF42,FFFFFF
+8__727___,CRTM,727,COLMENAR VIEJO-SAN AGUSTÍN DEL GUADALIX,,3,https://www.crtm.es/8__727___.aspx,8EBF42,FFFFFF
+8__728___,CRTM,728,EST. COLMENAR - SOTO DEL REAL - MANZANARES EL REAL,,3,https://www.crtm.es/8__728___.aspx,8EBF42,FFFFFF
+8_N_101___,CRTM,N101,MADRID (Plaza de Castilla)-ALCOBENDAS,,3,https://www.crtm.es/8_N_101___.aspx,8EBF42,FFFFFF
+8_N_102___,CRTM,N102,MADRID (Plaza de Castilla)-S.S. DE LOS REYES,,3,https://www.crtm.es/8_N_102___.aspx,8EBF42,FFFFFF
+8_N_103___,CRTM,N103,MADRID (Plaza de Castilla)-ALGETE,,3,https://www.crtm.es/8_N_103___.aspx,8EBF42,FFFFFF
+8_N_702___,CRTM,N702,MADRID (Plaza de Castilla)-COLMENAR VIEJO,,3,https://www.crtm.es/8_N_702___.aspx,8EBF42,FFFFFF
+8__541___,CRTM,541,MADRID (Plaza Elíptica)-VILLAMANTA-LA TORRE DE E. HAMBRAN,,3,https://www.crtm.es/8__541___.aspx,8EBF42,FFFFFF
+8__545___,CRTM,545,MADRID (Plaza Elíptica)-CENICIENTOS-SOTILLO DE LA ADRADA,,3,https://www.crtm.es/8__545___.aspx,8EBF42,FFFFFF
+8__546___,CRTM,546,MADRID (Plaza Elíptica)-ROZAS DE PUERTO REAL-CASILLAS,,3,https://www.crtm.es/8__546___.aspx,8EBF42,FFFFFF
+8__547___,CRTM,547,MADRID (Plaza Elíptica)-V.DEL PRADO-ALMOROX-ALDEA EN CABO,,3,https://www.crtm.es/8__547___.aspx,8EBF42,FFFFFF
+8__548___,CRTM,548,MADRID (Plaza Elíptica)-ALDEA DEL FRESNO-CALALBERCHE,,3,https://www.crtm.es/8__548___.aspx,8EBF42,FFFFFF
+8__641___,CRTM,641,MADRID (Moncloa)-VALDEMORILLO,,3,https://www.crtm.es/8__641___.aspx,8EBF42,FFFFFF
+8__642___,CRTM,642,MADRID (Moncloa)-COLMENAR DEL ARROYO,,3,https://www.crtm.es/8__642___.aspx,8EBF42,FFFFFF
+8__643___,CRTM,643,MADRID (Moncloa)-VILLANUEVA DEL PARDILLO,,3,https://www.crtm.es/8__643___.aspx,8EBF42,FFFFFF
+8__FS1___,CRTM,FS1,LAS ROZAS (Centros Comerciales) - VALDEMORILLO,,3,https://www.crtm.es/8__FS1___.aspx,8EBF42,FFFFFF
+8_N_908___,CRTM,N908,MADRID (Moncloa)-VILLANUEVA DEL PARDILLO-VALDEMORILLO,,3,https://www.crtm.es/8_N_908___.aspx,8EBF42,FFFFFF
+8__630___,CRTM,630,VILLALBA (Estación)-GALAPAGAR-COLMENAREJO-VALDEMORILLO,,3,https://www.crtm.es/8__630___.aspx,8EBF42,FFFFFF
+8__631___,CRTM,631,MADRID (Moncloa)-TORRELODONES (Colonia)-GALAPAGAR-COLMENAREJO,,3,https://www.crtm.es/8__631___.aspx,8EBF42,FFFFFF
+8__632___,CRTM,632,MADRID (Moncloa)-LA NAVATA-GALAPAGAR-EL GUIJO,,3,https://www.crtm.es/8__632___.aspx,8EBF42,FFFFFF
+8__633___,CRTM,633,MAJADAHONDA (Hospital)-TORRELODONES (Colonia)-GALAPAGAR-COLMENAREJO,,3,https://www.crtm.es/8__633___.aspx,8EBF42,FFFFFF
+8__634___,CRTM,634,COLMENAREJO - GALAPAGAR - EST. LA NAVATA,,3,https://www.crtm.es/8__634___.aspx,8EBF42,FFFFFF
+8__635___,CRTM,635,MADRID (Moncloa)-TORRELODONES (Colonia)-LA NAVATA-GALAPAGAR,,3,https://www.crtm.es/8__635___.aspx,8EBF42,FFFFFF
+8_N_904___,CRTM,N904,MADRID (Moncloa)-TORRELODONES (Colonia)-GALAPAGAR-COLMENAREJO,,3,https://www.crtm.es/8_N_904___.aspx,8EBF42,FFFFFF
+8__271___,CRTM,271,ALCALÁ DE HENARES-PEZUELA-PIOZ,,3,https://www.crtm.es/8__271___.aspx,8EBF42,FFFFFF
+8__272___,CRTM,272,ALCALÁ DE HENARES-VILLALBILLA,,3,https://www.crtm.es/8__272___.aspx,8EBF42,FFFFFF
+8__275___,CRTM,275,ALCALÁ-LOS SANTOS DE LA HUMOSA-ALCALÁ,,3,https://www.crtm.es/8__275___.aspx,8EBF42,FFFFFF
+8_N_200___,CRTM,N200,ALCALÁ DE HENARES - VILLALBILLA - ALCALÁ DE HENARES,,3,https://www.crtm.es/8_N_200___.aspx,8EBF42,FFFFFF
+8__827___,CRTM,827,MADRID (Canillejas)-ALCOBENDAS-UNIVERSIDAD AUTÓNOMA-TRES CANTOS,,3,https://www.crtm.es/8__827___.aspx,8EBF42,FFFFFF
+8__827_A__,CRTM,827A,ALCOBENDAS-S. S. DE LOS REYES-UNIV. AUTÓNOMA,,3,https://www.crtm.es/8__827_A__.aspx,8EBF42,FFFFFF
+8__828___,CRTM,828,MADRID (Canillejas)-ALCOBENDAS-UNIVERSIDAD AUTÓNOMA,,3,https://www.crtm.es/8__828___.aspx,8EBF42,FFFFFF
+8__480___,CRTM,480,MADRID (Plaza Elíptica)-LEGANÉS (Estación FFCC),,3,https://www.crtm.es/8__480___.aspx,8EBF42,FFFFFF
+8__481___,CRTM,481,MADRID (Oporto)-LEGANÉS (Parquesur-Hospital),,3,https://www.crtm.es/8__481___.aspx,8EBF42,FFFFFF
+8__482___,CRTM,482,MADRID (Aluche) - LEGANÉS (Arroyo Culebro),,3,https://www.crtm.es/8__482___.aspx,8EBF42,FFFFFF
+8__483___,CRTM,483,MADRID (Aluche)-LEGANÉS (Vereda de los Estudiantes),,3,https://www.crtm.es/8__483___.aspx,8EBF42,FFFFFF
+8__484___,CRTM,484,MADRID (Oporto)-LEGANÉS (Estación FFCC),,3,https://www.crtm.es/8__484___.aspx,8EBF42,FFFFFF
+8__485___,CRTM,485,MADRID (Aluche)-LEGANÉS (Norte-Montepinos),,3,https://www.crtm.es/8__485___.aspx,8EBF42,FFFFFF
+8__486___,CRTM,486,MADRID (Oporto)-LEGANÉS (Valdepelayo),,3,https://www.crtm.es/8__486___.aspx,8EBF42,FFFFFF
+8__487___,CRTM,487,MADRID (Aluche)-LEGANÉS (San Nicasio),,3,https://www.crtm.es/8__487___.aspx,8EBF42,FFFFFF
+8__488___,CRTM,488,LEGANÉS (San Nicasio)-GETAFE (Getafe Norte),,3,https://www.crtm.es/8__488___.aspx,8EBF42,FFFFFF
+8__491___,CRTM,491,MADRID (Aluche)-FUENLABRADA (Bº Naranjo),,3,https://www.crtm.es/8__491___.aspx,8EBF42,FFFFFF
+8__492___,CRTM,492,MADRID (Aluche)-FUENLABRADA (P. Granada),,3,https://www.crtm.es/8__492___.aspx,8EBF42,FFFFFF
+8__493___,CRTM,493,MADRID (Aluche)-FUENLABRADA (Urb. Loranca),,3,https://www.crtm.es/8__493___.aspx,8EBF42,FFFFFF
+8__495___,CRTM,495,MADRID (Cuatro Vientos)-ARROYOMOLINOS-MORALEJA DE ENMEDIO,,3,https://www.crtm.es/8__495___.aspx,8EBF42,FFFFFF
+8__496___,CRTM,496,FUENLABRADA-MORALEJA DE ENMEDIO-ARROYOMOLINOS (Xanadú),,3,https://www.crtm.es/8__496___.aspx,8EBF42,FFFFFF
+8__497___,CRTM,497,LEGANÉS (Parque Sur)-MORALEJA DE ENMEDIO (Las Colinas),,3,https://www.crtm.es/8__497___.aspx,8EBF42,FFFFFF
+8__498___,CRTM,498,MÓSTOLES - ARROYOMOLINOS - MORALEJA DE ENMEDIO,,3,https://www.crtm.es/8__498___.aspx,8EBF42,FFFFFF
+8__498_A__,CRTM,498A,MÓSTOLES (Móstoles - Central) - ARROYOMOLINOS (Parque de Nieve),,3,https://www.crtm.es/8__498_A__.aspx,8EBF42,FFFFFF
+8__499___,CRTM,499,MÓSTOLES-ARROYOMOLINOS,,3,https://www.crtm.es/8__499___.aspx,8EBF42,FFFFFF
+8_N_802___,CRTM,N802,MADRID (Atocha) - LEGANÉS (Vereda de los Estudiantes),,3,https://www.crtm.es/8_N_802___.aspx,8EBF42,FFFFFF
+8_N_803___,CRTM,N803,MADRID (Atocha) - FUENLABRADA (Bº Naranjo),,3,https://www.crtm.es/8_N_803___.aspx,8EBF42,FFFFFF
+8_N_804___,CRTM,N804,MADRID (Atocha) - FUENLABRADA,,3,https://www.crtm.es/8_N_804___.aspx,8EBF42,FFFFFF
+8_N_808___,CRTM,N808,MADRID (Príncipe Pío)-ARROYOMOLINOS,,3,https://www.crtm.es/8_N_808___.aspx,8EBF42,FFFFFF
+8__580___,CRTM,580,MAJADAHONDA(Hospital)-BRUNETE,,3,https://www.crtm.es/8__580___.aspx,8EBF42,FFFFFF
+8__581___,CRTM,581,MADRID (Cuatro Vientos)-BRUNETE-QUIJORNA,,3,https://www.crtm.es/8__581___.aspx,8EBF42,FFFFFF
+8__620___,CRTM,620,LAS MATAS-HOSPITAL PUERTA DE HIERRO,,3,https://www.crtm.es/8__620___.aspx,8EBF42,FFFFFF
+8__621___,CRTM,621,MADRID (Moncloa)-LAS ROZAS,,3,https://www.crtm.es/8__621___.aspx,8EBF42,FFFFFF
+8__622___,CRTM,622,MADRID (Moncloa)-LAS ROZAS-LAS MATAS,,3,https://www.crtm.es/8__622___.aspx,8EBF42,FFFFFF
+8__623___,CRTM,623,MADRID (Moncloa)-LAS ROZAS-URB.VILLAFRANCA DEL CASTILLO,,3,https://www.crtm.es/8__623___.aspx,8EBF42,FFFFFF
+8__624___,CRTM,624,MADRID (Moncloa)-COL.VERACRUZ-LAS ROZAS,,3,https://www.crtm.es/8__624___.aspx,8EBF42,FFFFFF
+8__624_A__,CRTM,624A,MADRID (Moncloa) - LAS ROZAS (La Marazuela),,3,https://www.crtm.es/8__624_A__.aspx,8EBF42,FFFFFF
+8__625___,CRTM,625,MADRID (Moncloa)-MONTE ROZAS,,3,https://www.crtm.es/8__625___.aspx,8EBF42,FFFFFF
+8__626___,CRTM,626,LAS ROZAS-MAJADAHONDA-VILLANUEVA DE LA CAÑADA,,3,https://www.crtm.es/8__626___.aspx,8EBF42,FFFFFF
+8__626_A__,CRTM,626A,MAJADAHONDA (Estación FFCC)-VILLANUEVA DEL PARDILLO,,3,https://www.crtm.es/8__626_A__.aspx,8EBF42,FFFFFF
+8__627___,CRTM,627,MADRID (Moncloa)-VILLANUEVA DE LA CAÑADA-BRUNETE,,3,https://www.crtm.es/8__627___.aspx,8EBF42,FFFFFF
+8__628___,CRTM,628,MADRID (Moncloa)-P.EMPRESARIAL-EL CANTIZAL,,3,https://www.crtm.es/8__628___.aspx,8EBF42,FFFFFF
+8__629___,CRTM,629,MADRID (Moncloa)-LAS ROZAS (Parque Empresarial),,3,https://www.crtm.es/8__629___.aspx,8EBF42,FFFFFF
+8_N_903___,CRTM,N903,MADRID (Moncloa)-LAS ROZAS-MONTE ROZAS,,3,https://www.crtm.es/8_N_903___.aspx,8EBF42,FFFFFF
+8_N_907___,CRTM,N907,MADRID (Moncloa)-VILLANUEVA DE LA CAÑADA-BRUNETE,,3,https://www.crtm.es/8_N_907___.aspx,8EBF42,FFFFFF
+8__350_A__,CRTM,350A,ARGANDA (Hospital)-ESTREMERA,,3,https://www.crtm.es/8__350_A__.aspx,8EBF42,FFFFFF
+8__350_B__,CRTM,350B,ARGANDA (Hospital) - VILLAREJO - VILLAMANRIQUE DE TAJO,,3,https://www.crtm.es/8__350_B__.aspx,8EBF42,FFFFFF
+8__350_C__,CRTM,350C,ARGANDA (Hospital) - BELMONTE,,3,https://www.crtm.es/8__350_C__.aspx,8EBF42,FFFFFF
+8__351___,CRTM,351,MADRID (Estación Sur)-ESTREMERA-BARAJAS DE MELO,,3,https://www.crtm.es/8__351___.aspx,8EBF42,FFFFFF
+8__352___,CRTM,352,MADRID (Estación Sur)-FUENTIDUEÑA-TARANCÓN,,3,https://www.crtm.es/8__352___.aspx,8EBF42,FFFFFF
+8__353___,CRTM,353,MADRID (Estación Sur)-VILLAMANRIQUE-STA.CRUZ,,3,https://www.crtm.es/8__353___.aspx,8EBF42,FFFFFF
+8__355___,CRTM,355,FUENTIDUEÑA DE TAJO-CENTRO PENITENCIARIO-ESTREMERA,,3,https://www.crtm.es/8__355___.aspx,8EBF42,FFFFFF
+8__330___,CRTM,330,RIVAS-ARGANDA (Hospital)-MORATA,,3,https://www.crtm.es/8__330___.aspx,8EBF42,FFFFFF
+8__331___,CRTM,331,MADRID (Méndez Álvaro)-RIVAS (Sta. Mónica)-RIVAS FUTURA,,3,https://www.crtm.es/8__331___.aspx,8EBF42,FFFFFF
+8__332___,CRTM,332,MADRID (Méndez Álvaro)-RIVAS PUEBLO,,3,https://www.crtm.es/8__332___.aspx,8EBF42,FFFFFF
+8__333___,CRTM,333,Madrid (Méndez Álvaro) - Rivas (Bellavista),,3,https://www.crtm.es/8__333___.aspx,8EBF42,FFFFFF
+8__334___,CRTM,334,MADRID (Méndez Álvaro)- RIVAS FUTURA,,3,https://www.crtm.es/8__334___.aspx,8EBF42,FFFFFF
+8__336___,CRTM,336,MADRID (Pavones)-MORATA DE TAJUÑA,,3,https://www.crtm.es/8__336___.aspx,8EBF42,FFFFFF
+8__337___,CRTM,337,MADRID (Pavones)-CHINCHÓN-VALDELAGUNA,,3,https://www.crtm.es/8__337___.aspx,8EBF42,FFFFFF
+8__339___,CRTM,339,MADRID (Sierra de Guadalupe)-VALDEMINGÓMEZ,,3,https://www.crtm.es/8__339___.aspx,8EBF42,FFFFFF
+8__410___,CRTM,410,ARANJUEZ-CIEMPOZUELOS-SAN MARTÍN DE LA VEGA,,3,https://www.crtm.es/8__410___.aspx,8EBF42,FFFFFF
+8__411___,CRTM,411,MADRID (Legazpi) - PERALES DEL RÍO,,3,https://www.crtm.es/8__411___.aspx,8EBF42,FFFFFF
+8__412___,CRTM,412,MADRID (Villaverde Bajo-Cruce)-SAN MARTÍN DE LA VEGA,,3,https://www.crtm.es/8__412___.aspx,8EBF42,FFFFFF
+8__413___,CRTM,413,PINTO (FFCC)-SAN MARTÍN DE LA VEGA,,3,https://www.crtm.es/8__413___.aspx,8EBF42,FFFFFF
+8__414___,CRTM,414,MADRID (Villaverde Bajo-Cruce)-C.P. MADRID III,,3,https://www.crtm.es/8__414___.aspx,8EBF42,FFFFFF
+8__415___,CRTM,415,MADRID (Villaverde Bajo-Cruce)-VILLACONEJOS,,3,https://www.crtm.es/8__415___.aspx,8EBF42,FFFFFF
+8__416___,CRTM,416,VALDEMORO (Hosp.)-S. M. DE LA VEGA-TITULCIA-COLMENAR DE OREJA,,3,https://www.crtm.es/8__416___.aspx,8EBF42,FFFFFF
+8_N_301___,CRTM,N301,MADRID (Atocha) - RIVAS (Covibar) - RIVAS FUTURA,,3,https://www.crtm.es/8_N_301___.aspx,8EBF42,FFFFFF
+8_N_302___,CRTM,N302,MADRID (Atocha) - RIVAS PUEBLO,,3,https://www.crtm.es/8_N_302___.aspx,8EBF42,FFFFFF
+8_N_403___,CRTM,N403,MADRID (Atocha)-SAN MARTÍN DE LA VEGA,,3,https://www.crtm.es/8_N_403___.aspx,8EBF42,FFFFFF
+8__571___,CRTM,571,MADRID (Aluche)-BOADILLA (Por Urb. Montepríncipe),,3,https://www.crtm.es/8__571___.aspx,8EBF42,FFFFFF
+8__572___,CRTM,572,MADRID (Aluche)-CIUDAD DE LA IMAGEN,,3,https://www.crtm.es/8__572___.aspx,8EBF42,FFFFFF
+8__573___,CRTM,573,MADRID (Moncloa)-BOADILLA (por Urb. Montepríncipe),,3,https://www.crtm.es/8__573___.aspx,8EBF42,FFFFFF
+8__574___,CRTM,574,MADRID (Aluche)-BOADILLA DEL MONTE (Por Ciudad Financiera),,3,https://www.crtm.es/8__574___.aspx,8EBF42,FFFFFF
+8__575___,CRTM,575,BOADILLA DEL MONTE-BRUNETE,,3,https://www.crtm.es/8__575___.aspx,8EBF42,FFFFFF
+8__591___,CRTM,591,MADRID (Aluche) - ETSI  Informáticos,,3,https://www.crtm.es/8__591___.aspx,8EBF42,FFFFFF
+8__865___,CRTM,865,MADRID (Moncloa) - CAMPUS UPM MONTEGANCEDO,,3,https://www.crtm.es/8__865___.aspx,8EBF42,FFFFFF
+8_N_905___,CRTM,N905,MADRID (Moncloa)-BOADILLA DEL MONTE,,3,https://www.crtm.es/8_N_905___.aspx,8EBF42,FFFFFF

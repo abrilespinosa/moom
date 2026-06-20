@@ -14,7 +14,7 @@ Luego puedes visitar en el navegador, por ejemplo:
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.emt_client import obtener_llegadas_parada
-from backend.gtfs_loader import cargar_paradas
+from backend.gtfs_loader import cargar_todas_las_paradas
 
 # Esta variable "app" es el corazón de FastAPI: representa nuestro servidor.
 # Uvicorn (el programa que lo ejecuta) busca específicamente una variable
@@ -30,7 +30,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-PARADAS = cargar_paradas()
+PARADAS = cargar_todas_las_paradas()
 
 @app.get("/paradas")
 def listar_paradas():
