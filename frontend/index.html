@@ -291,6 +291,15 @@
     // para poder añadirlo o quitarlo del mapa según el zoom actual.
     let marcadoresParadas = [];
 
+    // Estilo normal (gris, pequeño) vs. estilo resaltado (rojo, más grande)
+    // para distinguir visualmente la parada que el usuario ha seleccionado.
+    const ESTILO_PARADA_NORMAL = { radius: 6, color: "gray", fillColor: "gray", fillOpacity: 0.8 };
+    const ESTILO_PARADA_SELECCIONADA = { radius: 9, color: "#cc0000", fillColor: "#cc0000", fillOpacity: 0.9 };
+
+    // Guardamos qué parada está resaltada ahora, para poder devolverla
+    // a su estilo normal cuando el usuario seleccione otra distinta.
+    let paradaSeleccionada = null;
+
     async function dibujarParadas() {
       const respuesta = await fetch(`${URL_BACKEND}/paradas`);
       const paradas = await respuesta.json();
@@ -300,16 +309,19 @@
       paradas.forEach((parada) => {
         // OJO: ya no usamos ".addTo(mapa)" aquí. Creamos el círculo pero
         // no lo añadimos todavía — eso lo decide actualizarVisibilidadParadas().
-        const circulo = L.circleMarker([parada.lat, parada.lon], {
-          radius: 6,
-          color: "gray",
-          fillColor: "gray",
-          fillOpacity: 0.8,
-        });
+        const circulo = L.circleMarker(
+          [parada.lat, parada.lon],
+          ESTILO_PARADA_NORMAL
+        );
 
         circulo.on("click", () => {
           seleccionarParada(parada);
         });
+
+        // Guardamos el círculo dentro de la propia parada. Así, cuando
+        // seleccionarParada() se llama desde el buscador (que solo tiene
+        // los datos, no el círculo), igualmente podemos encontrarlo.
+        parada.circuloEnMapa = circulo;
 
         marcadoresParadas.push(circulo);
       });
@@ -380,6 +392,19 @@
     function seleccionarParada(parada) {
       STOP_ID = parada.id;
 
+      // Si había una parada resaltada de antes, la devolvemos a su
+      // estilo normal antes de resaltar la nueva.
+      if (paradaSeleccionada && paradaSeleccionada.circuloEnMapa) {
+        paradaSeleccionada.circuloEnMapa.setStyle(ESTILO_PARADA_NORMAL);
+      }
+
+      // Resaltamos la parada recién elegida, si su círculo está dibujado
+      // en el mapa (puede no estarlo si el zoom actual es muy bajo).
+      if (parada.circuloEnMapa) {
+        parada.circuloEnMapa.setStyle(ESTILO_PARADA_SELECCIONADA);
+      }
+      paradaSeleccionada = parada;
+
       // Centramos el mapa en la parada elegida, con buen zoom
       mapa.setView([parada.lat, parada.lon], 17);
 
@@ -402,6 +427,12 @@
       vistaLlegadas.style.display = "none";
       vistaBusqueda.style.display = "block";
       subtituloHeader.textContent = "Busca una parada para ver sus llegadas";
+
+      // Quitamos el resaltado rojo, ya no hay una parada "activa"
+      if (paradaSeleccionada && paradaSeleccionada.circuloEnMapa) {
+        paradaSeleccionada.circuloEnMapa.setStyle(ESTILO_PARADA_NORMAL);
+      }
+      paradaSeleccionada = null;
 
       // Limpiamos las tarjetas de la parada anterior...
       listaLlegadas.innerHTML = "";
