@@ -10,235 +10,52 @@
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
   />
 
-  <style>
-    /* El mapa necesita una altura explícita, si no, queda invisible */
-    #mapa {
-      height: 100vh;
-      width: 100%;
-    }
-    body {
-      margin: 0;
-    }
-
-        /* El panel flota sobre el mapa, en la esquina superior izquierda */
-    #panel-busqueda {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      z-index: 1000; /* por encima de Leaflet, si no quedaría tapado */
-      width: 280px;
-    }
- 
-    #input-buscar {
-      width: 100%;
-      padding: 8px;
-      font-size: 14px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      box-sizing: border-box;
-    }
- 
-    #lista-resultados {
-      list-style: none;
-      margin: 4px 0 0 0;
-      padding: 0;
-      background: white;
-      border-radius: 4px;
-      max-height: 250px;
-      overflow-y: auto;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-    }
- 
-    #lista-resultados li {
-      padding: 8px;
-      cursor: pointer;
-      border-bottom: 1px solid #eee;
-      font-size: 14px;
-    }
- 
-    #lista-resultados li:hover {
-      background: #f0f0f0;
-    }
-
-     /* Quitamos el fondo blanco que Leaflet pone por defecto a los divIcon */
-    .icono-bus {
-      background: transparent;
-      border: none;
-    }
- 
-    /* El círculo azul con el número de línea dentro */
-    .circulo-bus {
-      width: 30px;
-      height: 30px;
-      background-color: #0178BC; /* azul corporativo oficial de EMT */
-      color: white;
-      border-radius: 50%; /* esto convierte el cuadrado en círculo */
-      border: 2px solid white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      font-weight: bold;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
-    }
-  </style>
+  <!-- Nuestros propios estilos, separados en su propio archivo -->
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
- 
-  <!-- Panel de búsqueda de paradas: input + lista de resultados -->
-  <div id="panel-busqueda">
-    <input
-      type="text"
-      id="input-buscar"
-      placeholder="Buscar parada por nombre o número..."
-    />
-    <ul id="lista-resultados"></ul>
+
+  <!-- PANEL IZQUIERDO: contiene dos vistas, solo una visible a la vez -->
+  <div id="panel">
+
+    <div id="panel-header">
+      <h1>🚌 Moom</h1>
+      <p id="subtitulo-header">Busca una parada para ver sus llegadas</p>
+    </div>
+
+    <!-- VISTA 1: buscador -->
+    <div id="vista-busqueda">
+      <div style="padding: 12px 16px 0 16px;">
+        <input
+          type="text"
+          id="input-buscar"
+          placeholder="Buscar parada por nombre o número..."
+        />
+      </div>
+      <ul id="lista-resultados"></ul>
+    </div>
+
+    <!-- VISTA 2: llegadas a la parada seleccionada (oculta al inicio) -->
+    <div id="vista-llegadas">
+      <div style="padding: 12px 16px 0 16px;">
+        <button id="boton-volver">← Volver a buscar</button>
+        <div id="nombre-parada-actual"></div>
+      </div>
+      <ul id="lista-llegadas"></ul>
+    </div>
+
   </div>
- 
+
+  <!-- PANEL DERECHO: el mapa -->
   <div id="mapa"></div>
 
   <!-- Librería de Leaflet -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <script>
-    // URL de tu servidor FastAPI corriendo en local
-    const URL_BACKEND = "http://127.0.0.1:8000";
-
-    // Número de parada que vamos a consultar
-    let STOP_ID = null;
-
-    // Guardamos aquí todas las paradas descargadas, para poder
-    // buscarlas localmente sin volver a llamar al backend.
-    let TODAS_LAS_PARADAS = [];
-
-    // Creamos el mapa centrado en Madrid, con un zoom inicial razonable.
-    const mapa = L.map("mapa").setView([40.4168, -3.7038], 13);
-
-    // Añadimos las "teselas" del mapa base (el fondo visual),
-    // usando OpenStreetMap, que es gratuito y no requiere API key.
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "&copy; OpenStreetMap contributors",
-    }).addTo(mapa);
-
-    async function dibujarParadas() {
-      const respuesta = await fetch(`${URL_BACKEND}/paradas`);
-      const paradas = await respuesta.json();
-
-      // Guardamos la lista completa para que el buscador pueda usarla.
-      TODAS_LAS_PARADAS = paradas;
-
-      paradas.forEach((parada) => {
-        const circulo = L.circleMarker([parada.lat, parada.lon], {
-          radius: 6,
-          color: "gray",
-          fillColor: "gray",
-          fillOpacity: 0.8,
-        }).addTo(mapa);
-
-        circulo.on("click", () => {
-          STOP_ID = parada.id;
-          actualizarAutobuses();
-        });
-      });
-    }
-
-    dibujarParadas();
-
-      // --- Lógica del panel de búsqueda ---
- 
-    const inputBuscar = document.getElementById("input-buscar");
-    const listaResultados = document.getElementById("lista-resultados");
- 
-    inputBuscar.addEventListener("input", () => {
-      const texto = inputBuscar.value.toLowerCase().trim();
- 
-      // Limpiamos resultados anteriores
-      listaResultados.innerHTML = "";
- 
-      if (texto === "") {
-        return;
-      }
- 
-      // Filtramos por nombre o por id, igual que hace buscar_paradas() en Python
-      const coincidencias = TODAS_LAS_PARADAS.filter(
-        (parada) =>
-          parada.nombre.toLowerCase().includes(texto) ||
-          parada.id.includes(texto)
-      ).slice(0, 15); // máximo 15 resultados, para no saturar la lista
- 
-      coincidencias.forEach((parada) => {
-        const item = document.createElement("li");
-        item.textContent = `${parada.nombre} (parada ${parada.id})`;
- 
-        item.addEventListener("click", () => {
-          STOP_ID = parada.id;
-          actualizarAutobuses();
- 
-          // Centramos el mapa en la parada elegida, con buen zoom
-          mapa.setView([parada.lat, parada.lon], 17);
- 
-          // Limpiamos el buscador tras seleccionar
-          inputBuscar.value = "";
-          listaResultados.innerHTML = "";
-        });
- 
-        listaResultados.appendChild(item);
-      });
-    });
-
-    // Guardamos los marcadores actuales para poder borrarlos y
-    // redibujarlos cada vez que llegan datos nuevos.
-    let marcadoresActuales = [];
-
-    async function actualizarAutobuses() {
-      if (STOP_ID === null) {
-        return; // todavía no se ha seleccionado ninguna parada
-      }
-      
-      try {
-        const respuesta = await fetch(`${URL_BACKEND}/parada/${STOP_ID}`);
-        const datos = await respuesta.json();
-
-        // La estructura real es: datos.data[0].Arrive es la lista de autobuses
-        const autobuses = datos.data[0].Arrive;
-
-        // Quitamos los marcadores anteriores antes de dibujar los nuevos
-        marcadoresActuales.forEach((marcador) => mapa.removeLayer(marcador));
-        marcadoresActuales = [];
-
-        autobuses.forEach((bus) => {
-          const [lon, lat] = bus.geometry.coordinates;
-
-          // Si las coordenadas son [0, 0], el bus no tiene posición válida.
-          // Lo ignoramos para no dibujarlo en mitad del océano Atlántico.
-          if (lon === 0 && lat === 0) {
-            return;
-          }
-
-          // En vez del pin genérico de Leaflet, creamos un círculo con
-          // el número de línea escrito dentro, usando un "divIcon"
-          // (un <div> con HTML/CSS propio en vez de una imagen fija).
-          const iconoLinea = L.divIcon({
-            className: "icono-bus",
-            html: `<div class="circulo-bus">${bus.line}</div>`,
-            iconSize: [30, 30],
-          });
- 
-          const marcador = L.marker([lat, lon], { icon: iconoLinea }).addTo(mapa);
-          marcador.bindPopup(
-            `Línea ${bus.line} → ${bus.destination}<br>Llega en ${bus.estimateArrive} segundos`
-          );
-
-          marcadoresActuales.push(marcador);
-        });
-      } catch (error) {
-        console.error("Error al actualizar los autobuses:", error);
-      }
-    }
-
-    setInterval(actualizarAutobuses, 10000);
-  
-  </script>
+  <!-- Nuestra propia lógica, separada en su propio archivo.
+       Va al final del body para que, cuando se ejecute, los elementos
+       del HTML (input, mapa, etc.) ya existan en la página. -->
+  <script src="app.js"></script>
 
 </body>
 </html>
