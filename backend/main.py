@@ -54,5 +54,17 @@ def llegadas_parada(stop_id: str):
     Devuelve los autobuses que se acercan a la parada indicada.
 
     Ejemplo de uso: GET /parada/72
+
+    Nota CRTM: las paradas interurbanas (id con formato "par_8_XXXXX")
+    no tienen API pública de tiempo real conocida (investigado a fondo,
+    ver notas del proyecto). Para esos IDs devolvemos un mensaje claro
+    en vez de intentar consultar la API de EMT, que no las reconoce y
+    devolvería un error.
     """
+    if stop_id.startswith("par_"):
+        return {
+            "tiempo_real_disponible": False,
+            "mensaje": "Tiempo real no disponible para esta parada (CRTM).",
+        }
+
     return obtener_llegadas_parada(stop_id)
