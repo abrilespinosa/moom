@@ -91,6 +91,50 @@ def obtener_info_estacion(cod_stop):
         raise
 
 
+def obtener_info_linea(cod_line):
+    """
+    Devuelve la información de una línea de Metro: su descripción y, sobre
+    todo, sus dos itinerarios (uno por cada sentido de circulación), cada
+    uno con su "codItinerary" y su "direction" (1 o 2).
+
+    Esta función no usa caché propio: la información de una línea (sus
+    itinerarios) no cambia de un minuto a otro, así que no hace falta
+    refrescarla con la misma frecuencia que los tiempos de espera o la
+    posición de los trenes. Se llama solo cuando se necesita resolver
+    los itinerarios de una línea, normalmente antes de pedir su posición.
+
+    Parámetros:
+        cod_line: código de la línea, por ejemplo "4__2___" (Línea 2)
+
+    Devuelve un diccionario con la estructura:
+        {
+            "codLine": "4__2___",
+            "description": "Las Rosas-Cuatro Caminos",
+            "itinerary": {
+                "Itinerary": [
+                    {"codItinerary": "4__2____1__IT_1", "direction": 1, "name": "LAS ROSAS-CUATRO CAMINOS", ...},
+                    {"codItinerary": "4__2____2__IT_1", "direction": 2, "name": "CUATRO CAMINOS-LAS ROSAS", ...}
+                ]
+            },
+            ...
+        }
+    """
+    url = f"{BASE_URL}/GetLinesInformation.php"
+    parametros = {"activeItinerary": 1, "codLine": cod_line}
+
+    respuesta = requests.get(url, params=parametros)
+    respuesta.raise_for_status()
+
+    datos = respuesta.json()
+
+    try:
+        return datos["lines"]["LineInformation"]
+    except KeyError:
+        print("Respuesta inesperada al pedir info de línea, revisa el JSON:")
+        print(datos)
+        raise
+
+
 def obtener_tiempos_espera(cod_stop, stop_type):
     """
     Consulta los próximos trenes que van a pasar por una estación, en
