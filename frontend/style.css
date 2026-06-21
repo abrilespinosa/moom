@@ -58,6 +58,34 @@ body {
   border-radius: 6px;
 }
 
+/* --- FILTRO DE FUENTE (Todos / Urbano / Interurbano) --- */
+#filtros-fuente {
+  display: flex;
+  gap: 6px;
+  padding: 12px 16px 0 16px;
+}
+
+.filtro-boton {
+  flex: 1;
+  padding: 7px 0;
+  font-size: 12px;
+  border: 1px solid #ccc;
+  border-radius: 16px;
+  background: white;
+  color: #555;
+  cursor: pointer;
+}
+
+.filtro-boton:hover {
+  background: #f0f0f0;
+}
+
+.filtro-boton.activo {
+  background: #0178bc;
+  border-color: #0178bc;
+  color: white;
+}
+
 /* --- VISTA: LISTA DE RESULTADOS DE BÚSQUEDA --- */
 #lista-resultados {
   list-style: none;

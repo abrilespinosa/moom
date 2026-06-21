@@ -8,6 +8,11 @@ let STOP_ID = null;
 // buscarlas localmente sin volver a llamar al backend.
 let TODAS_LAS_PARADAS = [];
 
+// Filtro de fuente activo: "todos", "EMT" (urbano) o "CRTM" (interurbano).
+// Lo consulta actualizarVisibilidadParadas() para decidir qué paradas
+// dibujar, junto con el zoom y el área visible.
+let filtroActivo = "todos";
+
 // Creamos el mapa centrado en Madrid. Zoom 14 muestra ya el detalle
 // de la ciudad (barrios, calles principales) en vez de toda la
 // Comunidad de Madrid, que se veía vacía con el estilo minimalista.
@@ -104,6 +109,11 @@ async function dibujarParadas() {
     // los datos, no el marcador), igualmente podemos encontrarlo.
     parada.circuloEnMapa = marcador;
 
+    // Y guardamos la referencia inversa: el marcador necesita saber
+    // de qué parada es para poder consultar su "fuente" al filtrar,
+    // sin tener que buscar en el array de 13.320 paradas cada vez.
+    marcador.parada = parada;
+
     marcadoresParadas.push(marcador);
   });
 
@@ -129,7 +139,14 @@ function actualizarVisibilidadParadas() {
   marcadoresParadas.forEach((marcador) => {
     const estaEnElMapa = mapa.hasLayer(marcador);
     const dentroDeVista = limitesVisibles.contains(marcador.getLatLng());
-    const debeVerse = zoomSuficiente && dentroDeVista;
+
+    // Cada marcador necesita saber a qué parada pertenece para poder
+    // consultar su "fuente". Lo guardamos en el siguiente paso, al
+    // crear el marcador en dibujarParadas().
+    const pasaElFiltro =
+      filtroActivo === "todos" || marcador.parada.fuente === filtroActivo;
+
+    const debeVerse = zoomSuficiente && dentroDeVista && pasaElFiltro;
 
     if (debeVerse && !estaEnElMapa) {
       marcador.addTo(mapa);
@@ -157,6 +174,21 @@ const nombreParadaActual = document.getElementById("nombre-parada-actual");
 const listaLlegadas = document.getElementById("lista-llegadas");
 const botonVolver = document.getElementById("boton-volver");
 const subtituloHeader = document.getElementById("subtitulo-header");
+const botonesFiltro = document.querySelectorAll(".filtro-boton");
+
+// Un solo listener sirve para los tres botones: leemos data-filtro
+// del botón pulsado en vez de tener una función distinta por botón.
+botonesFiltro.forEach((boton) => {
+  boton.addEventListener("click", () => {
+    filtroActivo = boton.dataset.filtro;
+
+    // Solo un botón puede estar "activo" (resaltado) a la vez.
+    botonesFiltro.forEach((b) => b.classList.remove("activo"));
+    boton.classList.add("activo");
+
+    actualizarVisibilidadParadas();
+  });
+});
 
 // --- Lógica del buscador ---
 inputBuscar.addEventListener("input", () => {
