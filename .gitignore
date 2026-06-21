@@ -18,3 +18,15 @@ __pycache__/
 
 # Logs
 *.log
+
+# Archivos GTFS pesados: solo committeamos stops.txt y routes.txt de cada
+# fuente (EMT, CRTM, Metro). shapes.txt y stop_times.txt pueden pesar varios
+# MB y no los necesitamos en el repo; si vuelves a descargar un GTFS completo
+# (como pasó con el ZIP de Metro), esta regla evita que se cuelen en un commit
+# por accidente con un "git add ." despistado.
+backend/data/**/shapes.txt
+backend/data/**/stop_times.txt
+backend/data/**/trips.txt
+backend/data/**/frequencies.txt
+backend/data/**/calendar.txt
+backend/data/**/calendar_dates.txt
