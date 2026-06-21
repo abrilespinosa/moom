@@ -38,6 +38,11 @@ app.add_middleware(
 
 PARADAS = cargar_todas_las_paradas()
 
+# Diccionario id -> parada, para búsquedas rápidas por id en vez de
+# recorrer las 13.560 paradas cada vez que el endpoint de Metro necesita
+# encontrar el codAnden de una estación.
+PARADAS_POR_ID = {parada["id"]: parada for parada in PARADAS}
+
 @app.get("/paradas")
 def listar_paradas():
     """
@@ -82,18 +87,34 @@ def tiempos_estacion_metro(cod_stop: str):
     Devuelve los próximos trenes en una estación de Metro, agrupados por
     destino (igual que el panel de la app oficial: un bloque por sentido).
 
-    Ejemplo de uso: GET /metro/parada/4_323  (Alsacia, Línea 2)
+    Ejemplo de uso: GET /metro/parada/est_4_323  (Alsacia, Línea 2)
 
-    Para llegar a este resultado hacemos dos llamadas a metro_client:
-    1. obtener_info_estacion -> necesitamos su "stopType" para la siguiente llamada
+    IMPORTANTE: cod_stop aquí es el id de la ESTACIÓN (ej. "est_4_323"),
+    el mismo que usamos para pintar el punto en el mapa. La API del CRTM
+    no reconoce este id directamente (devuelve vacío) — solo reconoce
+    el id de ANDÉN (ej. "4_323"), que guardamos en gtfs_loader.py como
+    el campo "codAnden" de cada estación. Por eso el primer paso aquí es
+    resolver cod_stop -> codAnden antes de llamar a metro_client.
+
+    Después, igual que antes:
+    1. obtener_info_estacion(codAnden) -> necesitamos su "stopType"
     2. obtener_tiempos_espera -> nos da los trenes de AMBOS sentidos mezclados
 
     El agrupado por destino se hace aquí, no en metro_client.py, porque es
     una decisión de "cómo presentamos los datos a nuestro frontend", no de
     "cómo hablamos con la API externa".
     """
-    info_estacion = obtener_info_estacion(cod_stop)
-    trenes = obtener_tiempos_espera(cod_stop, info_estacion["stopType"])
+    estacion = PARADAS_POR_ID.get(cod_stop)
+    if estacion is None or estacion.get("codAnden") is None:
+        return {
+            "tiempo_real_disponible": False,
+            "mensaje": "No se encontró un andén válido para esta estación de Metro.",
+        }
+
+    cod_anden = estacion["codAnden"]
+
+    info_estacion = obtener_info_estacion(cod_anden)
+    trenes = obtener_tiempos_espera(cod_anden, info_estacion["stopType"])
 
     # Agrupamos los trenes en un diccionario cuya clave es el destino
     # (ej. "LAS ROSAS") y cuyo valor es la lista de horas de los trenes

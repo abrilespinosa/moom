@@ -4,6 +4,11 @@ const URL_BACKEND = "http://127.0.0.1:8000";
 // Número de parada que vamos a consultar
 let STOP_ID = null;
 
+// Código de estación de Metro actualmente seleccionada (formato CRTM,
+// ej. "est_90_58"). Separado de STOP_ID porque Metro usa su propio
+// endpoint y su propio intervalo de refresco.
+let STOP_ID_METRO = null;
+
 // Guardamos aquí todas las paradas descargadas, para poder
 // buscarlas localmente sin volver a llamar al backend.
 let TODAS_LAS_PARADAS = [];
@@ -51,6 +56,14 @@ let marcadoresParadas = [];
 const TAMANO_ICONO_NORMAL = [25, 30];
 const TAMANO_ICONO_SELECCIONADO = [39, 39];
 
+// El rombo de Metro tiene una proporción muy distinta a los iconos de
+// bus (es ancho, no vertical): ratio ~1.66:1 en la versión normal y
+// ~1.60:1 en la seleccionada (el contorno blanco no cambia el ratio
+// tanto como pasaba con el borde grueso de los iconos de bus). Por eso
+// necesita su propio tamaño en vez de reutilizar TAMANO_ICONO_NORMAL.
+const TAMANO_ICONO_METRO_NORMAL = [30, 18];
+const TAMANO_ICONO_METRO_SELECCIONADO = [46, 29];
+
 function crearIcono(archivo, tamano) {
   return L.icon({
     iconUrl: `assets/${archivo}`,
@@ -59,8 +72,8 @@ function crearIcono(archivo, tamano) {
   });
 }
 
-// Los 4 iconos posibles se crean UNA sola vez y se reutilizan para
-// las 13.320 paradas. Nunca se crea un icono nuevo por parada.
+// Los iconos se crean UNA sola vez y se reutilizan para todas las
+// paradas/estaciones. Nunca se crea un icono nuevo por parada.
 const ICONOS = {
   EMT: {
     normal: crearIcono("bus-urbano.png", TAMANO_ICONO_NORMAL),
@@ -69,6 +82,10 @@ const ICONOS = {
   CRTM: {
     normal: crearIcono("bus-interurbano.png", TAMANO_ICONO_NORMAL),
     seleccionado: crearIcono("bus-interurbano-selected.png", TAMANO_ICONO_SELECCIONADO),
+  },
+  METRO: {
+    normal: crearIcono("metro.png", TAMANO_ICONO_METRO_NORMAL),
+    seleccionado: crearIcono("metro-selected.png", TAMANO_ICONO_METRO_SELECCIONADO),
   },
 };
 
@@ -216,7 +233,17 @@ inputBuscar.addEventListener("input", () => {
 // Se llama tanto al hacer clic en el mapa como al elegir un resultado
 // de búsqueda. Centraliza el cambio de vista para no repetir código.
 function seleccionarParada(parada) {
-  STOP_ID = parada.id;
+  // Solo una de las dos puede estar "activa" a la vez. Si seleccionas
+  // una estación de Metro, STOP_ID de bus se limpia, y viceversa, para
+  // que los dos intervalos (actualizarAutobuses / actualizarTiemposMetro)
+  // no sigan refrescando datos de una parada que ya no se está viendo.
+  if (parada.fuente === "METRO") {
+    STOP_ID = null;
+    STOP_ID_METRO = parada.id;
+  } else {
+    STOP_ID = parada.id;
+    STOP_ID_METRO = null;
+  }
 
   // Si había una parada resaltada de antes, le devolvemos su icono
   // normal antes de resaltar la nueva.
@@ -244,12 +271,20 @@ function seleccionarParada(parada) {
   inputBuscar.value = "";
   listaResultados.innerHTML = "";
 
-  actualizarAutobuses();
+  // Las estaciones de Metro usan un endpoint y un formato de respuesta
+  // distintos a las paradas de bus (EMT/CRTM), así que necesitamos
+  // distinguirlas aquí y llamar a la función de actualización correcta.
+  if (parada.fuente === "METRO") {
+    actualizarTiemposMetro();
+  } else {
+    actualizarAutobuses();
+  }
 }
 
 // Botón para volver del estado "llegadas" al estado "buscador"
 botonVolver.addEventListener("click", () => {
   STOP_ID = null;
+  STOP_ID_METRO = null;
   vistaLlegadas.style.display = "none";
   vistaBusqueda.style.display = "block";
   subtituloHeader.textContent = "Busca una parada para ver sus llegadas";
@@ -384,6 +419,80 @@ async function actualizarAutobuses() {
 }
 
 setInterval(actualizarAutobuses, 10000);
+
+// Convierte una hora ISO absoluta (ej. "2026-06-21T16:43:51+02:00") en
+// minutos restantes desde ahora. A diferencia de bus (que da segundos
+// restantes directamente), Metro da la hora exacta de llegada, así que
+// calculamos la diferencia contra el reloj del navegador.
+function minutosHastaLlegada(horaISO) {
+  const ahora = new Date();
+  const llegada = new Date(horaISO);
+  const segundosRestantes = (llegada - ahora) / 1000;
+  return Math.max(0, segundosRestantes);
+}
+
+async function actualizarTiemposMetro() {
+  if (STOP_ID_METRO === null) {
+    return; // todavía no se ha seleccionado ninguna estación de Metro
+  }
+
+  try {
+    const respuesta = await fetch(`${URL_BACKEND}/metro/parada/${STOP_ID_METRO}`);
+    const datos = await respuesta.json();
+
+    // datos.destinos = { "LAS ROSAS": ["2026-...", "2026-..."], "CUATRO CAMINOS": [...] }
+    // Cada clave es un destino, igual que las dos tarjetas de tu captura
+    // de la app oficial (un bloque por sentido).
+    const tarjetas = Object.entries(datos.destinos).map(([destino, horas]) => ({
+      destino,
+      tiempos: horas.map(minutosHastaLlegada).sort((a, b) => a - b),
+    }));
+
+    // Ordenamos las tarjetas por su tren más próximo, igual que con bus.
+    tarjetas.sort((a, b) => a.tiempos[0] - b.tiempos[0]);
+
+    listaLlegadas.innerHTML = "";
+
+    if (tarjetas.length === 0) {
+      listaLlegadas.innerHTML =
+        '<div id="mensaje-vacio">No hay trenes en camino ahora mismo.</div>';
+      return;
+    }
+
+    tarjetas.forEach((tarjeta) => {
+      const item = document.createElement("li");
+      item.className = "tarjeta-bus"; // reutilizamos el mismo estilo de tarjeta
+
+      const tiemposSecundarios = tarjeta.tiempos
+        .slice(1)
+        .map((s) => formatearMinutos(s))
+        .join(", ");
+
+      item.innerHTML = `
+        <div class="tarjeta-info">
+          <div class="tarjeta-destino">→ ${tarjeta.destino}</div>
+          ${
+            tiemposSecundarios
+              ? `<div class="tarjeta-tiempos">Siguiente: ${tiemposSecundarios} min</div>`
+              : ""
+          }
+        </div>
+        <div class="tiempo-proximo">
+          ${formatearMinutos(tarjeta.tiempos[0])}
+          <span class="unidad">${
+            Math.floor(tarjeta.tiempos[0] / 60) < 1 ? "" : "min"
+          }</span>
+        </div>
+      `;
+
+      listaLlegadas.appendChild(item);
+    });
+  } catch (error) {
+    console.error("Error al actualizar los tiempos de Metro:", error);
+  }
+}
+
+setInterval(actualizarTiemposMetro, 10000);
 
 // --- BOTÓN "MI UBICACIÓN" ---
 const botonUbicacion = document.getElementById("boton-ubicacion");
