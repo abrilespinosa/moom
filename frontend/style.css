@@ -230,3 +230,132 @@ body {
   font-weight: bold;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
+
+/* --- BOTÓN "MI UBICACIÓN" ---
+   position: fixed lo saca del flujo normal del documento, así que
+   "flota" sobre el mapa en vez de ocupar espacio en el grid de
+   #panel/#mapa. Lo posicionamos relativo a la ventana completa. */
+#boton-ubicacion {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: white;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Leaflet usa z-index internamente para sus propias capas
+     (tiles, controles, paneles de animación durante zoom/paneo).
+     Sin esto, el botón queda tapado en ciertos momentos del zoom. */
+  z-index: 1000;
+}
+
+#boton-ubicacion:hover {
+  background: #f0f0f0;
+}
+
+/* --- MARCADOR DE "MI UBICACIÓN" (punto azul tipo Google Maps) ---
+   Dos capas: un halo translúcido grande (igual que Google Maps marca
+   el margen de error del GPS) y un punto sólido pequeño encima,
+   centrado con position:absolute + transform. */
+.icono-ubicacion {
+  background: transparent;
+  border: none;
+}
+
+.halo-ubicacion {
+  width: 36px;
+  height: 36px;
+  background: rgba(24, 144, 255, 0.25);
+  border-radius: 50%;
+  position: relative;
+}
+
+.punto-ubicacion {
+  width: 14px;
+  height: 14px;
+  background: #1890ff;
+  border: 2px solid white;
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.4);
+}
+/* El círculo azul con el número de línea dentro, sobre el mapa */
+.circulo-bus {
+  width: 30px;
+  height: 30px;
+  background-color: #0178bc;
+  color: white;
+  border-radius: 50%;
+  border: 2px solid white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: bold;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* --- BOTÓN "MI UBICACIÓN" ---
+   position: fixed lo saca del flujo normal del documento, así que
+   "flota" sobre el mapa en vez de ocupar espacio en el grid de
+   #panel/#mapa. Lo posicionamos relativo a la ventana completa. */
+#boton-ubicacion {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: white;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#boton-ubicacion:hover {
+  background: #f0f0f0;
+}
+
+/* --- MARCADOR DE "MI UBICACIÓN" (punto azul tipo Google Maps) ---
+   Dos capas: un halo translúcido grande (igual que Google Maps marca
+   el margen de error del GPS) y un punto sólido pequeño encima,
+   centrado con position:absolute + transform. */
+.icono-ubicacion {
+  background: transparent;
+  border: none;
+}
+
+.halo-ubicacion {
+  width: 36px;
+  height: 36px;
+  background: rgba(24, 144, 255, 0.25);
+  border-radius: 50%;
+  position: relative;
+}
+
+.punto-ubicacion {
+  width: 14px;
+  height: 14px;
+  background: #1890ff;
+  border: 2px solid white;
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.4);
+}

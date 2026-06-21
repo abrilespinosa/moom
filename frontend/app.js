@@ -384,3 +384,50 @@ async function actualizarAutobuses() {
 }
 
 setInterval(actualizarAutobuses, 10000);
+
+// --- BOTÓN "MI UBICACIÓN" ---
+const botonUbicacion = document.getElementById("boton-ubicacion");
+
+// Guardamos el marcador de ubicación para poder moverlo en vez de
+// crear uno nuevo cada vez que el usuario pulse el botón otra vez.
+let marcadorUbicacion = null;
+
+const iconoUbicacion = L.divIcon({
+  className: "icono-ubicacion",
+  html: '<div class="halo-ubicacion"><div class="punto-ubicacion"></div></div>',
+  iconSize: [36, 36],
+  iconAnchor: [18, 18], // centrado, a diferencia de los buses (que anclan por la base)
+});
+
+botonUbicacion.addEventListener("click", () => {
+  // geolocation puede no existir en navegadores muy antiguos o en
+  // contextos no seguros (http:// que no sea localhost).
+  if (!navigator.geolocation) {
+    alert("Tu navegador no admite geolocalización.");
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    // Éxito: el navegador nos da la posición
+    (posicion) => {
+      const lat = posicion.coords.latitude;
+      const lon = posicion.coords.longitude;
+
+      if (marcadorUbicacion) {
+        marcadorUbicacion.setLatLng([lat, lon]);
+      } else {
+        marcadorUbicacion = L.marker([lat, lon], {
+          icon: iconoUbicacion,
+          zIndexOffset: 1000, // por encima de las paradas, para que no quede tapado
+        }).addTo(mapa);
+      }
+
+      mapa.setView([lat, lon], 16);
+    },
+    // Error: permiso denegado, GPS no disponible, timeout, etc.
+    (error) => {
+      console.error("Error de geolocalización:", error);
+      alert("No se pudo obtener tu ubicación. Revisa los permisos del navegador.");
+    }
+  );
+});
