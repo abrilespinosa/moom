@@ -32,10 +32,51 @@ const ZOOM_MINIMO_PARADAS = 15;
 // para poder añadirlo o quitarlo del mapa según el zoom actual.
 let marcadoresParadas = [];
 
-// Estilo normal (gris, pequeño) vs. estilo resaltado (rojo, más grande)
-// para distinguir visualmente la parada que el usuario ha seleccionado.
-const ESTILO_PARADA_NORMAL = { radius: 6, color: "gray", fillColor: "gray", fillOpacity: 0.8 };
-const ESTILO_PARADA_SELECCIONADA = { radius: 9, color: "#cc0000", fillColor: "#cc0000", fillOpacity: 0.9 };
+// Tamaño con el que se renderiza cada icono de parada en el mapa.
+// iconAnchor = [mitad del ancho, alto completo] ancla la imagen por
+// su base (donde están las ruedas del bus dibujado), igual que un
+// pin de Google Maps ancla por su punta inferior.
+// IMPORTANTE: estos tamaños respetan la proporción real de cada PNG
+// (ya recortado a su contenido, sin sobrante transparente). Si el
+// ratio ancho/alto del icono no coincide con [ancho, alto] aquí,
+// Leaflet ESTIRA la imagen para encajarla y el bus se ve deformado.
+// normal: ratio 426/512 (0.832) | seleccionado: ratio 506/512 (0.988)
+// — son distintos entre sí porque el borde blanco ensancha más de
+// lo que alarga, así que cada estado necesita su propio tamaño.
+const TAMANO_ICONO_NORMAL = [25, 30];
+const TAMANO_ICONO_SELECCIONADO = [39, 39];
+
+function crearIcono(archivo, tamano) {
+  return L.icon({
+    iconUrl: `assets/${archivo}`,
+    iconSize: tamano,
+    iconAnchor: [tamano[0] / 2, tamano[1]],
+  });
+}
+
+// Los 4 iconos posibles se crean UNA sola vez y se reutilizan para
+// las 13.320 paradas. Nunca se crea un icono nuevo por parada.
+const ICONOS = {
+  EMT: {
+    normal: crearIcono("bus-urbano.png", TAMANO_ICONO_NORMAL),
+    seleccionado: crearIcono("bus-urbano-selected.png", TAMANO_ICONO_SELECCIONADO),
+  },
+  CRTM: {
+    normal: crearIcono("bus-interurbano.png", TAMANO_ICONO_NORMAL),
+    seleccionado: crearIcono("bus-interurbano-selected.png", TAMANO_ICONO_SELECCIONADO),
+  },
+};
+
+// Dado el campo "fuente" de una parada ("EMT" o "CRTM"), devuelve el
+// icono normal correspondiente. Si algún día llega una fuente nueva
+// que no esperamos, usamos EMT como valor por defecto en vez de romper.
+function iconoNormalPara(parada) {
+  return ICONOS[parada.fuente]?.normal ?? ICONOS.EMT.normal;
+}
+
+function iconoSeleccionadoPara(parada) {
+  return ICONOS[parada.fuente]?.seleccionado ?? ICONOS.EMT.seleccionado;
+}
 
 // Guardamos qué parada está resaltada ahora, para poder devolverla
 // a su estilo normal cuando el usuario seleccione otra distinta.
@@ -48,23 +89,22 @@ async function dibujarParadas() {
   TODAS_LAS_PARADAS = paradas;
 
   paradas.forEach((parada) => {
-    // OJO: ya no usamos ".addTo(mapa)" aquí. Creamos el círculo pero
+    // OJO: ya no usamos ".addTo(mapa)" aquí. Creamos el marcador pero
     // no lo añadimos todavía — eso lo decide actualizarVisibilidadParadas().
-    const circulo = L.circleMarker(
-      [parada.lat, parada.lon],
-      ESTILO_PARADA_NORMAL
-    );
+    const marcador = L.marker([parada.lat, parada.lon], {
+      icon: iconoNormalPara(parada),
+    });
 
-    circulo.on("click", () => {
+    marcador.on("click", () => {
       seleccionarParada(parada);
     });
 
-    // Guardamos el círculo dentro de la propia parada. Así, cuando
+    // Guardamos el marcador dentro de la propia parada. Así, cuando
     // seleccionarParada() se llama desde el buscador (que solo tiene
-    // los datos, no el círculo), igualmente podemos encontrarlo.
-    parada.circuloEnMapa = circulo;
+    // los datos, no el marcador), igualmente podemos encontrarlo.
+    parada.circuloEnMapa = marcador;
 
-    marcadoresParadas.push(circulo);
+    marcadoresParadas.push(marcador);
   });
 
   // Una vez creados todos los círculos, decidimos cuáles mostrar
@@ -72,26 +112,39 @@ async function dibujarParadas() {
   actualizarVisibilidadParadas();
 }
 
-// Añade o quita los círculos de parada del mapa según el zoom actual.
-// Se llama al cargar las paradas y cada vez que el usuario hace zoom.
+// Añade o quita los marcadores de parada del mapa según el zoom Y el
+// área visible actual. Antes solo filtrábamos por zoom: al cruzar
+// ZOOM_MINIMO_PARADAS, las ~13.320 paradas se recorrían igual, pero
+// con circleMarker (forma vectorial barata) no se notaba el coste.
+// Ahora cada parada es una imagen PNG, más cara de crear/posicionar,
+// así que añadir potencialmente miles de golpe causaba el lag al
+// cruzar el zoom. getBounds() nos da el rectángulo visible actual;
+// con eso, solo se añaden las paradas que realmente se ven en pantalla
+// (normalmente decenas, no miles), sin tocar la lógica de zoom.
 function actualizarVisibilidadParadas() {
   const zoomActual = mapa.getZoom();
-  const debenVerse = zoomActual >= ZOOM_MINIMO_PARADAS;
+  const zoomSuficiente = zoomActual >= ZOOM_MINIMO_PARADAS;
+  const limitesVisibles = mapa.getBounds();
 
-  marcadoresParadas.forEach((circulo) => {
-    const estaEnElMapa = mapa.hasLayer(circulo);
+  marcadoresParadas.forEach((marcador) => {
+    const estaEnElMapa = mapa.hasLayer(marcador);
+    const dentroDeVista = limitesVisibles.contains(marcador.getLatLng());
+    const debeVerse = zoomSuficiente && dentroDeVista;
 
-    if (debenVerse && !estaEnElMapa) {
-      circulo.addTo(mapa);
-    } else if (!debenVerse && estaEnElMapa) {
-      mapa.removeLayer(circulo);
+    if (debeVerse && !estaEnElMapa) {
+      marcador.addTo(mapa);
+    } else if (!debeVerse && estaEnElMapa) {
+      mapa.removeLayer(marcador);
     }
   });
 }
 
-// Cada vez que el usuario termina de hacer zoom (rueda del ratón,
-// botones +/-, o doble clic), reevaluamos qué paradas mostrar.
+// Reevaluamos qué paradas mostrar tanto al hacer zoom (zoomend) como
+// al arrastrar el mapa (moveend) — si no escucháramos moveend, al
+// desplazarte sin cambiar de zoom las paradas nuevas que entran en
+// pantalla no aparecerían hasta el siguiente zoom.
 mapa.on("zoomend", actualizarVisibilidadParadas);
+mapa.on("moveend", actualizarVisibilidadParadas);
 
 dibujarParadas();
 
@@ -133,16 +186,16 @@ inputBuscar.addEventListener("input", () => {
 function seleccionarParada(parada) {
   STOP_ID = parada.id;
 
-  // Si había una parada resaltada de antes, la devolvemos a su
-  // estilo normal antes de resaltar la nueva.
+  // Si había una parada resaltada de antes, le devolvemos su icono
+  // normal antes de resaltar la nueva.
   if (paradaSeleccionada && paradaSeleccionada.circuloEnMapa) {
-    paradaSeleccionada.circuloEnMapa.setStyle(ESTILO_PARADA_NORMAL);
+    paradaSeleccionada.circuloEnMapa.setIcon(iconoNormalPara(paradaSeleccionada));
   }
 
-  // Resaltamos la parada recién elegida, si su círculo está dibujado
+  // Resaltamos la parada recién elegida, si su marcador está dibujado
   // en el mapa (puede no estarlo si el zoom actual es muy bajo).
   if (parada.circuloEnMapa) {
-    parada.circuloEnMapa.setStyle(ESTILO_PARADA_SELECCIONADA);
+    parada.circuloEnMapa.setIcon(iconoSeleccionadoPara(parada));
   }
   paradaSeleccionada = parada;
 
@@ -169,9 +222,9 @@ botonVolver.addEventListener("click", () => {
   vistaBusqueda.style.display = "block";
   subtituloHeader.textContent = "Busca una parada para ver sus llegadas";
 
-  // Quitamos el resaltado rojo, ya no hay una parada "activa"
+  // Quitamos el resaltado, ya no hay una parada "activa"
   if (paradaSeleccionada && paradaSeleccionada.circuloEnMapa) {
-    paradaSeleccionada.circuloEnMapa.setStyle(ESTILO_PARADA_NORMAL);
+    paradaSeleccionada.circuloEnMapa.setIcon(iconoNormalPara(paradaSeleccionada));
   }
   paradaSeleccionada = null;
 
