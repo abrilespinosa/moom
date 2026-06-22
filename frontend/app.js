@@ -9,6 +9,8 @@ let STOP_ID = null;
 // endpoint y su propio intervalo de refresco.
 let STOP_ID_METRO = null;
 
+let marcadoresTrenesActuales = [];
+
 // Guardamos aquí todas las paradas descargadas, para poder
 // buscarlas localmente sin volver a llamar al backend.
 let TODAS_LAS_PARADAS = [];
@@ -276,6 +278,7 @@ function seleccionarParada(parada) {
   // distinguirlas aquí y llamar a la función de actualización correcta.
   if (parada.fuente === "METRO") {
     actualizarTiemposMetro();
+    actualizarTrenesMetro();
   } else {
     actualizarAutobuses();
   }
@@ -301,6 +304,9 @@ botonVolver.addEventListener("click", () => {
   // ...y también los marcadores de bus que quedaban en el mapa.
   marcadoresActuales.forEach((marcador) => mapa.removeLayer(marcador));
   marcadoresActuales = [];
+
+  marcadoresTrenesActuales.forEach((marcador) => mapa.removeLayer(marcador));
+  marcadoresTrenesActuales = [];
 });
 
 // Convierte segundos en un texto legible: "En camino" si está muy
@@ -493,6 +499,78 @@ async function actualizarTiemposMetro() {
 }
 
 setInterval(actualizarTiemposMetro, 10000);
+
+// Dado el texto de itinerario que devuelve la API (ej. "2-Las Rosas-
+// Cuatro Caminos"), nos quedamos solo con el último tramo tras el
+// último guión: el destino final hacia el que circula ese tren.
+// No usamos el primer guión porque el número de línea también lleva
+// uno delante; el ÚLTIMO segmento es siempre el destino, incluso si
+// el propio nombre de una estación trajera un guión interno.
+function destinoDesdeDescripcion(descripcion) {
+  const partes = descripcion.split("-");
+  return partes[partes.length - 1].trim();
+}
+
+async function actualizarTrenesMetro() {
+  if (STOP_ID_METRO === null) {
+    return; // todavía no se ha seleccionado ninguna estación de Metro
+  }
+
+  try {
+    // Primero necesitamos saber qué líneas pasan por esta estación.
+    // Ya hacemos esta llamada en actualizarTiemposMetro(), pero la
+    // repetimos aquí: son funciones independientes y cada una debe
+    // poder fallar o recargarse sin depender de que la otra ya corrió.
+    const respuestaEstacion = await fetch(`${URL_BACKEND}/metro/parada/${STOP_ID_METRO}`);
+    const datosEstacion = await respuestaEstacion.json();
+
+    if (!datosEstacion.codLines) {
+      return; // estación sin info de líneas disponible (caso raro)
+    }
+
+    // Pedimos los vehículos de TODAS las líneas de la estación a la
+    // vez (Promise.all), en vez de una por una: si Gran Vía tiene 2
+    // líneas, lanzamos 2 peticiones en paralelo y esperamos a ambas,
+    // en lugar de esperar la primera para empezar la segunda.
+    const respuestas = await Promise.all(
+      datosEstacion.codLines.map((codLinea) =>
+        fetch(`${URL_BACKEND}/metro/linea/${codLinea}/vehiculos`).then((r) => r.json())
+      )
+    );
+
+    // Limpiamos los trenes de la actualización anterior antes de
+    // pintar los nuevos, igual que ya haces con marcadoresActuales
+    // en actualizarAutobuses().
+    marcadoresTrenesActuales.forEach((marcador) => mapa.removeLayer(marcador));
+    marcadoresTrenesActuales = [];
+
+    respuestas.forEach((datosLinea) => {
+      const color = datosLinea.color ?? "0078BC"; // azul de respaldo si faltase
+      const colorTexto = datosLinea.colorTexto ?? "FFFFFF";
+
+      datosLinea.vehiculos.forEach((tren) => {
+        const { latitude, longitude } = tren.coordinates;
+        const numeroLinea = tren.line.shortDescription;
+        const destino = destinoDesdeDescripcion(tren.line.description);
+
+        const iconoTren = L.divIcon({
+          className: "icono-bus", // misma clase "neutralizadora" que ya usas en buses (quita el fondo blanco por defecto de Leaflet)
+          html: `<div class="circulo-tren" style="background-color:#${color}; color:#${colorTexto};">${numeroLinea}</div>`,
+          iconSize: [28, 28],
+        });
+
+        const marcador = L.marker([latitude, longitude], { icon: iconoTren }).addTo(mapa);
+        marcador.bindTooltip(`Sentido ${destino}`);
+
+        marcadoresTrenesActuales.push(marcador);
+      });
+    });
+  } catch (error) {
+    console.error("Error al actualizar los trenes de Metro:", error);
+  }
+}
+
+setInterval(actualizarTrenesMetro, 10000);
 
 // --- BOTÓN "MI UBICACIÓN" ---
 const botonUbicacion = document.getElementById("boton-ubicacion");

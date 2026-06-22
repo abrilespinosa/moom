@@ -128,6 +128,7 @@ def tiempos_estacion_metro(cod_stop: str):
     return {
         "estacion": info_estacion["name"],
         "codStop": cod_stop,
+        "codLines": info_estacion["codLines"]["Line"],
         "destinos": trenes_por_destino,
     }
 
