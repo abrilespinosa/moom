@@ -14,7 +14,7 @@ Luego puedes visitar en el navegador, por ejemplo:
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.emt_client import obtener_llegadas_parada
-from backend.gtfs_loader import cargar_todas_las_paradas
+from backend.gtfs_loader import cargar_todas_las_paradas, cargar_colores_lineas_metro
 from backend.metro_client import (
     obtener_info_estacion,
     obtener_info_linea,
@@ -172,8 +172,13 @@ def vehiculos_linea_metro(cod_line: str):
         )
         vehiculos_totales.extend(vehiculos)
 
+    colores_lineas = cargar_colores_lineas_metro()
+    color_linea = colores_lineas.get(cod_line, {})
+
     return {
         "linea": info_linea["description"],
         "codLine": cod_line,
+        "color": color_linea.get("color"),
+        "colorTexto": color_linea.get("color_texto"),
         "vehiculos": vehiculos_totales,
     }

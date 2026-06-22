@@ -141,6 +141,53 @@ def cargar_paradas_metro():
 def cargar_todas_las_paradas():
     return cargar_paradas_emt() + cargar_paradas_crtm() + cargar_paradas_metro()
 
+
+# Caché en memoria: igual que las paradas, los colores de las líneas no
+# cambian durante la ejecución del servidor, así que los cargamos una
+# sola vez la primera vez que se pidan y reutilizamos el resultado.
+_cache_colores_lineas_metro = None
+
+
+def cargar_colores_lineas_metro():
+    """
+    Carga, desde el GTFS de Metro, el color oficial de cada línea.
+
+    routes.txt trae una fila por línea, con su código (route_id, el mismo
+    formato "4__2___" que usa la API en vivo como codLine), su número
+    visible (route_short_name) y sus colores en hexadecimal SIN el "#"
+    inicial (route_color para el fondo, route_text_color para el texto
+    que va encima, pensado para que se siga leyendo bien sobre ese fondo
+    - por ejemplo la Línea 3 es amarilla con texto negro, no blanco).
+
+    Devuelve un diccionario indexado por route_id, por ejemplo:
+        {
+            "4__2___": {"numero": "2", "color": "ED1C24", "color_texto": "FFFFFF"},
+            ...
+        }
+    para que el backend pueda hacer una simple consulta por codLine, sin
+    tener que leer el archivo otra vez ni recorrer una lista cada vez.
+    """
+    global _cache_colores_lineas_metro
+
+    if _cache_colores_lineas_metro is not None:
+        return _cache_colores_lineas_metro
+
+    colores = {}
+
+    with open("backend/data/metro/routes.txt", encoding="utf-8-sig") as archivo:
+        lector = csv.DictReader(archivo)
+
+        for fila in lector:
+            colores[fila["route_id"]] = {
+                "numero": fila["route_short_name"],
+                "color": fila["route_color"],
+                "color_texto": fila["route_text_color"],
+            }
+
+    _cache_colores_lineas_metro = colores
+
+    return colores
+
 if __name__ == "__main__":
     paradas_emt = cargar_paradas_emt()
     paradas_crtm = cargar_paradas_crtm()
