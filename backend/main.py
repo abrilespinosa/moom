@@ -14,7 +14,13 @@ Luego puedes visitar en el navegador, por ejemplo:
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.emt_client import obtener_llegadas_parada
-from backend.gtfs_loader import cargar_todas_las_paradas
+from backend.gtfs_loader import cargar_todas_las_paradas, cargar_colores_lineas_metro
+from backend.metro_client import (
+    obtener_info_estacion,
+    obtener_info_linea,
+    obtener_tiempos_espera,
+    obtener_posicion_trenes,
+)
 
 # Esta variable "app" es el corazón de FastAPI: representa nuestro servidor.
 # Uvicorn (el programa que lo ejecuta) busca específicamente una variable
@@ -31,6 +37,11 @@ app.add_middleware(
 )
 
 PARADAS = cargar_todas_las_paradas()
+
+# Diccionario id -> parada, para búsquedas rápidas por id en vez de
+# recorrer las 13.560 paradas cada vez que el endpoint de Metro necesita
+# encontrar el codAnden de una estación.
+PARADAS_POR_ID = {parada["id"]: parada for parada in PARADAS}
 
 @app.get("/paradas")
 def listar_paradas():
@@ -68,3 +79,107 @@ def llegadas_parada(stop_id: str):
         }
 
     return obtener_llegadas_parada(stop_id)
+
+
+@app.get("/metro/parada/{cod_stop}")
+def tiempos_estacion_metro(cod_stop: str):
+    """
+    Devuelve los próximos trenes en una estación de Metro, agrupados por
+    destino (igual que el panel de la app oficial: un bloque por sentido).
+
+    Ejemplo de uso: GET /metro/parada/est_4_323  (Alsacia, Línea 2)
+
+    IMPORTANTE: cod_stop aquí es el id de la ESTACIÓN (ej. "est_4_323"),
+    el mismo que usamos para pintar el punto en el mapa. La API del CRTM
+    no reconoce este id directamente (devuelve vacío) — solo reconoce
+    el id de ANDÉN (ej. "4_323"), que guardamos en gtfs_loader.py como
+    el campo "codAnden" de cada estación. Por eso el primer paso aquí es
+    resolver cod_stop -> codAnden antes de llamar a metro_client.
+
+    Después, igual que antes:
+    1. obtener_info_estacion(codAnden) -> necesitamos su "stopType"
+    2. obtener_tiempos_espera -> nos da los trenes de AMBOS sentidos mezclados
+
+    El agrupado por destino se hace aquí, no en metro_client.py, porque es
+    una decisión de "cómo presentamos los datos a nuestro frontend", no de
+    "cómo hablamos con la API externa".
+    """
+    estacion = PARADAS_POR_ID.get(cod_stop)
+    if estacion is None or estacion.get("codAnden") is None:
+        return {
+            "tiempo_real_disponible": False,
+            "mensaje": "No se encontró un andén válido para esta estación de Metro.",
+        }
+
+    cod_anden = estacion["codAnden"]
+
+    info_estacion = obtener_info_estacion(cod_anden)
+    trenes = obtener_tiempos_espera(cod_anden, info_estacion["stopType"])
+
+    # Agrupamos los trenes en un diccionario cuya clave es el destino
+    # (ej. "LAS ROSAS") y cuyo valor es la lista de horas de los trenes
+    # que van hacia ese destino, ya ordenados (la API los devuelve en
+    # orden porque pedimos orderBy=2).
+    trenes_por_destino = {}
+    for tren in trenes:
+        destino = tren["destination"]
+        trenes_por_destino.setdefault(destino, []).append(tren["time"])
+
+    return {
+        "estacion": info_estacion["name"],
+        "codStop": cod_stop,
+        "codLines": info_estacion["codLines"]["Line"],
+        "destinos": trenes_por_destino,
+    }
+
+
+@app.get("/metro/linea/{cod_line}/vehiculos")
+def vehiculos_linea_metro(cod_line: str):
+    """
+    Devuelve la posición actual de los trenes circulando en una línea,
+    en ambos sentidos.
+
+    Ejemplo de uso: GET /metro/linea/4__2___/vehiculos  (Línea 2)
+
+    Primero pedimos la info de la línea para sacar sus dos itinerarios
+    (uno por sentido), y para cada uno llamamos a obtener_posicion_trenes.
+    Necesitamos una estación cualquiera de cada itinerario para rellenar
+    el parámetro "cod_stop" que la API exige; usamos la primera de la
+    lista que ya viene incluida en la respuesta de info de línea.
+    """
+    info_linea = obtener_info_linea(cod_line)
+    itinerarios = info_linea["itinerary"]["Itinerary"]
+
+    vehiculos_totales = []
+    for itinerario in itinerarios:
+        paradas_itinerario = itinerario["stops"].get("StopInformation", [])
+        if isinstance(paradas_itinerario, dict):
+            paradas_itinerario = [paradas_itinerario]
+
+        if not paradas_itinerario:
+            # Si un itinerario no trae ninguna parada en su respuesta,
+            # no podemos rellenar el parámetro cod_stop que pide la API,
+            # así que saltamos este sentido en vez de fallar todo el endpoint.
+            continue
+
+        primera_parada = paradas_itinerario[0]["codStop"]
+
+        vehiculos = obtener_posicion_trenes(
+            mode_cod=info_linea["codMode"],
+            cod_itinerary=itinerario["codItinerary"],
+            cod_line=cod_line,
+            cod_stop=primera_parada,
+            direction=itinerario["direction"],
+        )
+        vehiculos_totales.extend(vehiculos)
+
+    colores_lineas = cargar_colores_lineas_metro()
+    color_linea = colores_lineas.get(cod_line, {})
+
+    return {
+        "linea": info_linea["description"],
+        "codLine": cod_line,
+        "color": color_linea.get("color"),
+        "colorTexto": color_linea.get("color_texto"),
+        "vehiculos": vehiculos_totales,
+    }

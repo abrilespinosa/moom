@@ -231,6 +231,22 @@ body {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
 
+/* Círculo del tren de Metro: mismo patrón que .circulo-bus, pero sin
+   background-color fijo — ese color lo decide la línea (rojo, amarillo,
+   verde...) y se aplica inline desde JS, porque varía por cada tren. */
+.circulo-tren {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: bold;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
 /* --- BOTÓN "MI UBICACIÓN" ---
    position: fixed lo saca del flujo normal del documento, así que
    "flota" sobre el mapa en vez de ocupar espacio en el grid de
@@ -288,21 +304,6 @@ body {
   left: 50%;
   transform: translate(-50%, -50%);
   box-shadow: 0 0 3px rgba(0, 0, 0, 0.4);
-}
-/* El círculo azul con el número de línea dentro, sobre el mapa */
-.circulo-bus {
-  width: 30px;
-  height: 30px;
-  background-color: #0178bc;
-  color: white;
-  border-radius: 50%;
-  border: 2px solid white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: bold;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
 
 /* --- BOTÓN "MI UBICACIÓN" ---
