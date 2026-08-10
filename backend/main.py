@@ -231,3 +231,29 @@ def vehiculos_linea_metro(cod_line: str, cod_stop: str | None = None):
         "colorTexto": color_linea.get("color_texto"),
         "vehiculos": vehiculos_totales,
     }
+
+
+@app.get("/metro/lineas/colores")
+def colores_lineas_metro():
+    """
+    Devuelve el número y los colores oficiales de todas las líneas de Metro,
+    indexados por su código de línea.
+
+    Ejemplo de uso: GET /metro/lineas/colores
+
+        {
+            "4__1___": {"numero": "1", "color": "2DBEF0", "color_texto": "FFFFFF"},
+            "4__2___": {"numero": "2", "color": "ED1C24", "color_texto": "FFFFFF"},
+            ...
+        }
+
+    Son 13 líneas y sus colores no cambian nunca, así que el frontend pide
+    esto UNA sola vez al arrancar y lo guarda. Así puede pintar el distintivo
+    de cualquier línea (por ejemplo los chips de la cabecera de estación) sin
+    una petición por línea, y sin tener que duplicar la tabla de colores en
+    el código del navegador.
+
+    Los colores vienen en hexadecimal SIN el "#" inicial, tal como los trae
+    routes.txt; quien los use tendrá que añadirlo.
+    """
+    return cargar_colores_lineas_metro()

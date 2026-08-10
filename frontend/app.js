@@ -15,6 +15,11 @@ let marcadoresTrenesActuales = [];
 // buscarlas localmente sin volver a llamar al backend.
 let TODAS_LAS_PARADAS = [];
 
+// Número y colores oficiales de cada línea de Metro, indexados por su
+// código ("4__2___"). Son 13 líneas y no cambian nunca, así que se piden
+// UNA sola vez al arrancar en vez de por cada estación que se selecciona.
+let COLORES_LINEAS_METRO = {};
+
 // Filtro de fuente activo: "todos", "EMT" (urbano) o "CRTM" (interurbano).
 // Lo consulta actualizarVisibilidadParadas() para decidir qué paradas
 // dibujar, junto con el zoom y el área visible.
@@ -184,12 +189,28 @@ mapa.on("moveend", actualizarVisibilidadParadas);
 
 dibujarParadas();
 
+// Los colores de línea se cargan una vez al arrancar. Si esta petición
+// fallara, COLORES_LINEAS_METRO se queda vacío y los chips simplemente no
+// se pintan: es información decorativa, no debe impedir que se vean los
+// tiempos de llegada.
+async function cargarColoresLineasMetro() {
+  try {
+    const respuesta = await fetch(`${URL_BACKEND}/metro/lineas/colores`);
+    COLORES_LINEAS_METRO = await respuesta.json();
+  } catch (error) {
+    console.error("No se pudieron cargar los colores de las líneas:", error);
+  }
+}
+
+cargarColoresLineasMetro();
+
 // --- Referencias a los elementos del DOM que vamos a manipular ---
 const inputBuscar = document.getElementById("input-buscar");
 const listaResultados = document.getElementById("lista-resultados");
 const vistaBusqueda = document.getElementById("vista-busqueda");
 const vistaLlegadas = document.getElementById("vista-llegadas");
 const nombreParadaActual = document.getElementById("nombre-parada-actual");
+const chipsLineas = document.getElementById("chips-lineas");
 const listaLlegadas = document.getElementById("lista-llegadas");
 const botonVolver = document.getElementById("boton-volver");
 const subtituloHeader = document.getElementById("subtitulo-header");
@@ -262,6 +283,7 @@ function seleccionarParada(parada) {
   // llama al poller del modo elegido, que vuelve a dibujar los suyos.
   limpiarMarcadoresAutobuses();
   limpiarMarcadoresTrenes();
+  limpiarChipsLineas();
 
   // Si había una parada resaltada de antes, le devolvemos su icono
   // normal antes de resaltar la nueva.
@@ -320,6 +342,7 @@ botonVolver.addEventListener("click", () => {
   // ...y también los marcadores de bus que quedaban en el mapa.
   limpiarMarcadoresAutobuses();
   limpiarMarcadoresTrenes();
+  limpiarChipsLineas();
 });
 
 // Convierte segundos en un texto legible: "En camino" si está muy
@@ -368,6 +391,43 @@ function limpiarMarcadoresTrenes() {
 // de "mensaje-vacio" que ya existía para el caso de "no hay autobuses".
 function mostrarMensajeEnPanel(texto) {
   listaLlegadas.innerHTML = `<div id="mensaje-vacio">${texto}</div>`;
+}
+
+// Pinta un distintivo redondo por cada línea que pasa por la estación,
+// con su número y sus colores oficiales.
+//
+// Se le pasa la lista de códigos de línea tal como la devuelve el backend
+// en /metro/parada. Las líneas que no estén en COLORES_LINEAS_METRO se
+// omiten en vez de pintarse en gris: si el diccionario no cargó, es mejor
+// no enseñar nada que enseñar chips sin sentido.
+function pintarChipsLineas(codLines) {
+  chipsLineas.innerHTML = "";
+
+  codLines.forEach((codLinea) => {
+    const linea = COLORES_LINEAS_METRO[codLinea];
+    if (!linea) {
+      return;
+    }
+
+    const chip = document.createElement("span");
+    chip.className = "chip-linea";
+    chip.textContent = linea.numero;
+    chip.title = `Línea ${linea.numero}`;
+    // Inline y no por clase CSS: los colores salen del GTFS, así que no
+    // queremos una regla de estilo por cada línea.
+    chip.style.backgroundColor = `#${linea.color}`;
+    chip.style.color = `#${linea.color_texto}`;
+
+    chipsLineas.appendChild(chip);
+  });
+}
+
+// Los chips pertenecen a la estación seleccionada, así que hay que
+// vaciarlos al cambiar de parada. Si no, los de la estación anterior se
+// quedarían bajo el nombre de una parada de autobús — el mismo problema
+// que tenían los marcadores de vehículo al cambiar de modo.
+function limpiarChipsLineas() {
+  chipsLineas.innerHTML = "";
 }
 
 async function actualizarAutobuses() {
@@ -523,6 +583,11 @@ async function actualizarTiemposMetro() {
       );
       return;
     }
+
+    // Los chips salen de esta misma respuesta, que ya trae codLines
+    // filtrado a líneas de Metro. Repintarlos en cada refresco es
+    // inofensivo y evita tener que sincronizarlos por otro camino.
+    pintarChipsLineas(datos.codLines ?? []);
 
     // datos.destinos = { "LAS ROSAS": ["2026-...", "2026-..."], "CUATRO CAMINOS": [...] }
     // Cada clave es un destino, igual que las dos tarjetas de tu captura

@@ -132,6 +132,39 @@ body {
   color: #1a1a1a;
 }
 
+/* Distintivos de línea de la cabecera de estación. El contenedor se
+   oculta cuando está vacío (paradas de bus, o antes de que lleguen los
+   datos) para no dejar un hueco en blanco bajo el nombre. */
+#chips-lineas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 6px;
+}
+
+#chips-lineas:empty {
+  display: none;
+}
+
+/* El color de fondo y el del texto se aplican inline desde app.js, porque
+   salen del GTFS y no queremos una clase CSS por línea.
+   El borde sí va aquí y es imprescindible: la Línea R (Ramal) tiene fondo
+   blanco oficial, así que sin él su chip sería invisible sobre el panel.
+   Neutro y translúcido para que apenas se note en las demás. */
+.chip-linea {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  box-sizing: border-box;
+  font-size: 11px;
+  font-weight: bold;
+  line-height: 1;
+}
+
 #lista-llegadas {
   list-style: none;
   margin: 0;
