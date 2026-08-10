@@ -573,9 +573,16 @@ async function actualizarTrenesMetro() {
     // vez (Promise.all), en vez de una por una: si Gran Vía tiene 2
     // líneas, lanzamos 2 peticiones en paralelo y esperamos a ambas,
     // en lugar de esperar la primera para empezar la segunda.
+    // Pasamos la estación que se está mirando (cod_stop). La API del CRTM
+    // no devuelve todos los trenes de la línea, sino los más cercanos a la
+    // estación por la que preguntas: sin este parámetro el backend usaba la
+    // cabecera del itinerario y salían siempre los mismos trenes parados en
+    // los extremos de la línea, en vez de los que se acercan a ti.
     const respuestas = await Promise.all(
       datosEstacion.codLines.map((codLinea) =>
-        fetch(`${URL_BACKEND}/metro/linea/${codLinea}/vehiculos`).then((r) => r.json())
+        fetch(
+          `${URL_BACKEND}/metro/linea/${codLinea}/vehiculos?cod_stop=${STOP_ID_METRO}`
+        ).then((r) => r.json())
       )
     );
 

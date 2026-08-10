@@ -155,19 +155,39 @@ def tiempos_estacion_metro(cod_stop: str):
 
 
 @app.get("/metro/linea/{cod_line}/vehiculos")
-def vehiculos_linea_metro(cod_line: str):
+def vehiculos_linea_metro(cod_line: str, cod_stop: str | None = None):
     """
     Devuelve la posición actual de los trenes circulando en una línea,
     en ambos sentidos.
 
-    Ejemplo de uso: GET /metro/linea/4__2___/vehiculos  (Línea 2)
+    Ejemplo de uso: GET /metro/linea/4__2___/vehiculos?cod_stop=est_4_323
 
-    Primero pedimos la info de la línea para sacar sus dos itinerarios
-    (uno por sentido), y para cada uno llamamos a obtener_posicion_trenes.
-    Necesitamos una estación cualquiera de cada itinerario para rellenar
-    el parámetro "cod_stop" que la API exige; usamos la primera de la
-    lista que ya viene incluida en la respuesta de info de línea.
+    IMPORTANTE (verificado contra la API real): GetLineLocation.php NO
+    devuelve todos los trenes de la línea. Devuelve los ~2 trenes más
+    cercanos a la estación que se le pasa en "codStop". Antes aquí se
+    usaba siempre paradas_itinerario[0], la PRIMERA parada del itinerario,
+    es decir la cabecera de la línea — por eso el mapa mostraba siempre
+    los mismos 4 trenes clavados en los dos extremos, sin moverse nunca.
+
+    Por eso aceptamos "cod_stop": la estación que el usuario está mirando
+    ahora mismo. Así los trenes que se pintan en el mapa son los que de
+    verdad se acercan a esa estación, y coinciden con los tiempos que se
+    ven en el panel de llegadas.
+
+    El parámetro es opcional: si no llega, se mantiene el comportamiento
+    anterior (primera parada del itinerario), para que la ruta siga
+    funcionando si se llama a mano desde el navegador o con curl.
     """
+    # El frontend maneja ids de ESTACIÓN ("est_4_323"), pero la API del
+    # CRTM solo entiende ids de ANDÉN ("4_323"). Hacemos aquí la misma
+    # traducción que en /metro/parada/{cod_stop}, en vez de obligar al
+    # frontend a conocer los codAnden.
+    cod_anden_pedido = None
+    if cod_stop is not None:
+        estacion = PARADAS_POR_ID.get(cod_stop)
+        if estacion is not None:
+            cod_anden_pedido = estacion.get("codAnden")
+
     info_linea = obtener_info_linea(cod_line)
     itinerarios = info_linea["itinerary"]["Itinerary"]
 
@@ -177,19 +197,26 @@ def vehiculos_linea_metro(cod_line: str):
         if isinstance(paradas_itinerario, dict):
             paradas_itinerario = [paradas_itinerario]
 
-        if not paradas_itinerario:
-            # Si un itinerario no trae ninguna parada en su respuesta,
-            # no podemos rellenar el parámetro cod_stop que pide la API,
-            # así que saltamos este sentido en vez de fallar todo el endpoint.
+        if not paradas_itinerario and cod_anden_pedido is None:
+            # Si un itinerario no trae ninguna parada en su respuesta y
+            # tampoco nos han pedido una estación concreta, no podemos
+            # rellenar el parámetro cod_stop que pide la API, así que
+            # saltamos este sentido en vez de fallar todo el endpoint.
             continue
 
-        primera_parada = paradas_itinerario[0]["codStop"]
+        # La estación que mira el usuario manda; la cabecera del itinerario
+        # queda solo como respaldo para cuando no se pasa cod_stop.
+        parada_de_referencia = (
+            cod_anden_pedido
+            if cod_anden_pedido is not None
+            else paradas_itinerario[0]["codStop"]
+        )
 
         vehiculos = obtener_posicion_trenes(
             mode_cod=info_linea["codMode"],
             cod_itinerary=itinerario["codItinerary"],
             cod_line=cod_line,
-            cod_stop=primera_parada,
+            cod_stop=parada_de_referencia,
             direction=itinerario["direction"],
         )
         vehiculos_totales.extend(vehiculos)
