@@ -1,6 +1,8 @@
 # Moom — Seguimiento de transporte público de Madrid en tiempo real
 
-Aplicación personal para visualizar en un mapa, en tiempo real, el transporte público de Madrid: autobuses urbanos de la EMT, autobuses interurbanos del CRTM y Metro de Madrid. Proyecto educativo en desarrollo, inspirado en FlightRadar.
+Aplicación para visualizar en un mapa, en tiempo real, el transporte público de Madrid: autobuses urbanos de la EMT, autobuses interurbanos del CRTM y Metro de Madrid. Proyecto personal en desarrollo, inspirado en FlightRadar.
+
+*Moom* viene de **mo**vilidad + **M**adrid.
 
 ## Estado del proyecto
 
@@ -113,6 +115,14 @@ Abre <http://localhost:5500> en el navegador.
 Este proyecto usa datos de la API de EMT Madrid (Mobility Labs). Según sus condiciones de uso, debe mencionarse a EMT Madrid MobilityLabs como fuente de los datos.
 
 Los datos de Metro e interurbanos proceden del Consorcio Regional de Transportes de Madrid (CRTM).
+
+## Licencia
+
+El **código** de este repositorio se publica bajo licencia [MIT](LICENSE).
+
+Los **datos** no lo están. Los archivos GTFS de `backend/data/` pertenecen a la EMT de Madrid y al CRTM, y se rigen por las condiciones de uso de sus respectivos portales de datos abiertos; aquí se incluyen únicamente para que el proyecto funcione al clonarlo. Lo mismo aplica a los datos que devuelven sus APIs en tiempo real.
+
+Una nota sobre esas APIs: la de EMT es oficial y está documentada. La del CRTM (`crtm.es/widgets/api`) es la que alimenta los widgets de su propia web — es pública y no requiere autenticación, pero no está documentada ni tiene condiciones de uso publicadas. El proyecto la usa con moderación (cachés en memoria e intervalos de sondeo ajustados al ritmo real al que cambian los datos), pero conviene saber que no hay garantía de estabilidad.
 
 ## Roadmap
 
