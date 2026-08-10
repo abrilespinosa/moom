@@ -4,7 +4,7 @@ route_id,agency_id,route_short_name,route_long_name,route_desc,route_type,route_
 003,EMT,3,Puerta de Toledo - Plaza de San Amaro,,3,https://www.emtmadrid.es/EMTBUS/Mi-linea?linea=3,0178BC,FFFFFF
 004,EMT,4,Plaza de Ciudad Lineal - Puerta de Arganda,,3,https://www.emtmadrid.es/EMTBUS/Mi-linea?linea=4,0178BC,FFFFFF
 005,EMT,5,Puerta del Sol/sevilla - Estacion de Chamartin,,3,https://www.emtmadrid.es/EMTBUS/Mi-linea?linea=5,0178BC,FFFFFF
-006,EMT,6,Plaza Tirso de Molina - Orcasitas,,3,https://www.emtmadrid.es/EMTBUS/Mi-linea?linea=6,0178BC,FFFFFF
+006,EMT,6,Plaza de Tirso de Molina - Orcasitas,,3,https://www.emtmadrid.es/EMTBUS/Mi-linea?linea=6,0178BC,FFFFFF
 007,EMT,7,Plaza de Alonso Martinez - Manoteras,,3,https://www.emtmadrid.es/EMTBUS/Mi-linea?linea=7,0178BC,FFFFFF
 008,EMT,8,Plaza de Legazpi - Valdebernardo,,3,https://www.emtmadrid.es/EMTBUS/Mi-linea?linea=8,0178BC,FFFFFF
 009,EMT,9,Puerta del Sol/sevilla - Hortaleza,,3,https://www.emtmadrid.es/EMTBUS/Mi-linea?linea=9,0178BC,FFFFFF
