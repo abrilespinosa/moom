@@ -71,7 +71,7 @@ def obtener_info_estacion(cod_stop):
             "name": "ALSACIA",
             "stopType": 0,
             "coordinates": {"longitude": -3.62351, "latitude": 40.41829},
-            "codLines": {"Line": "4__2___"},
+            "codLines": {"Line": ["4__2___"]},
             ...
         }
     """
@@ -84,11 +84,28 @@ def obtener_info_estacion(cod_stop):
     datos = respuesta.json()
 
     try:
-        return datos["stops"]["Stop"]
+        estacion = datos["stops"]["Stop"]
     except KeyError:
         print("Respuesta inesperada al pedir info de estación, revisa el JSON:")
         print(datos)
         raise
+
+    # Misma rareza que en obtener_tiempos_espera y obtener_posicion_trenes:
+    # cuando solo hay UN elemento, la API lo devuelve suelto en vez de dentro
+    # de una lista de un elemento. Aquí pasa con las líneas que pasan por la
+    # estación: Alsacia (solo Línea 2) devuelve la cadena "4__2___", mientras
+    # que Gran Vía (Líneas 1 y 5) devuelve ["4__1___", "4__5___"].
+    #
+    # Lo normalizamos aquí, en el cliente, para que quien use esta función
+    # pueda recorrer codLines siempre igual sin comprobar el tipo. Si no,
+    # el frontend hace .map() sobre una cadena y revienta en silencio,
+    # dejando sin trenes en el mapa a todas las estaciones de una sola línea
+    # (que son la mayoría de las 240).
+    lineas = estacion["codLines"]["Line"]
+    if not isinstance(lineas, list):
+        estacion["codLines"]["Line"] = [lineas]
+
+    return estacion
 
 
 def obtener_info_linea(cod_line):
