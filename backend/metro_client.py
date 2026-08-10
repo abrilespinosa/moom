@@ -41,9 +41,10 @@ BASE_URL = "https://www.crtm.es/widgets/api"
 # Medido en vivo (lunes 11:40, Línea 2): el propio CRTM refresca las
 # posiciones cada 20-30s aproximadamente, y suele mover un tren cada vez.
 # O sea que el origen ya es lento de por sí: añadirle encima un caché de
-# 20s podía duplicar el retraso. Si algún día se quiere bajar el número de
-# peticiones, el sitio sensato es subir el intervalo del poller del
-# frontend (hoy 10s) hasta acercarlo a esos ~20s, no reintroducir el caché.
+# 20s podía duplicar el retraso. Por eso el poller de Metro del frontend
+# va a 20s (INTERVALO_REFRESCO_METRO en app.js), acompasado con el ritmo
+# real de la fuente: así se evitan peticiones que no traen nada nuevo sin
+# reintroducir un caché que añadiría retraso encima.
 #
 # Los tiempos de espera sí lo conservan: que una hora de llegada se
 # actualice 10 segundos más tarde no se percibe, un tren parado sí.

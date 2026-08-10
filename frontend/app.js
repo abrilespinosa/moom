@@ -315,6 +315,21 @@ function formatearMinutos(segundos) {
   return minutos < 1 ? "En camino" : `${minutos}`;
 }
 
+// Cada fuente se refresca al ritmo al que de verdad cambian sus datos,
+// no al que nos gustaría que cambiaran.
+//
+// EMT (autobuses): 10s. La API devuelve segundos restantes hasta la
+// llegada, que van bajando de forma continua, así que refrescar seguido
+// sí aporta información nueva.
+//
+// CRTM (Metro): 20s. Medido en vivo contra la API, el CRTM solo actualiza
+// las posiciones de los trenes cada 20-30s, y la caché de tiempos de
+// espera del backend es también de 20s. Pedirlo cada 10s significaba que
+// una de cada dos peticiones devolvía exactamente lo mismo que la
+// anterior: el doble de tráfico para cero información nueva.
+const INTERVALO_REFRESCO_EMT = 10000;
+const INTERVALO_REFRESCO_METRO = 20000;
+
 // Guardamos los marcadores actuales del mapa para poder borrarlos y
 // redibujarlos cada vez que llegan datos nuevos.
 let marcadoresActuales = [];
@@ -456,7 +471,7 @@ async function actualizarAutobuses() {
   }
 }
 
-setInterval(actualizarAutobuses, 10000);
+setInterval(actualizarAutobuses, INTERVALO_REFRESCO_EMT);
 
 // Convierte una hora ISO absoluta (ej. "2026-06-21T16:43:51+02:00") en
 // minutos restantes desde ahora. A diferencia de bus (que da segundos
@@ -539,7 +554,7 @@ async function actualizarTiemposMetro() {
   }
 }
 
-setInterval(actualizarTiemposMetro, 10000);
+setInterval(actualizarTiemposMetro, INTERVALO_REFRESCO_METRO);
 
 // Dado el texto de itinerario que devuelve la API (ej. "2-Las Rosas-
 // Cuatro Caminos"), nos quedamos solo con el último tramo tras el
@@ -618,7 +633,7 @@ async function actualizarTrenesMetro() {
   }
 }
 
-setInterval(actualizarTrenesMetro, 10000);
+setInterval(actualizarTrenesMetro, INTERVALO_REFRESCO_METRO);
 
 // --- BOTÓN "MI UBICACIÓN" ---
 const botonUbicacion = document.getElementById("boton-ubicacion");
