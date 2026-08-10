@@ -385,11 +385,57 @@ botonVolver.addEventListener("click", () => {
   limpiarChipsLineas();
 });
 
-// Convierte segundos en un texto legible: "En camino" si está muy
-// cerca, o "X min" en caso contrario.
-function formatearMinutos(segundos) {
+// Hora del reloj en formato 24h ("14:05").
+//
+// Se compone a mano en vez de usar toLocaleTimeString para no depender del
+// idioma del navegador: en una configuración anglosajona saldría "2:05 PM",
+// que no es lo que espera nadie mirando horarios de Madrid.
+function horaDelReloj(fecha) {
+  const horas = String(fecha.getHours()).padStart(2, "0");
+  const minutos = String(fecha.getMinutes()).padStart(2, "0");
+  return `${horas}:${minutos}`;
+}
+
+// Convierte los segundos que faltan en un texto legible, devuelto en dos
+// piezas para que la tarjeta pueda pintar el número grande y la unidad
+// pequeña, como en la app oficial.
+//
+//   menos de 1 min   ->  { valor: "En camino", unidad: ""    }
+//   menos de 1 hora  ->  { valor: "7",         unidad: "min" }
+//   1 hora o más     ->  { valor: "14:05",     unidad: ""    }
+//
+// A partir de la hora se deja de contar hacia atrás y se da la hora de
+// paso. Una cuenta atrás sirve para decidir si te da tiempo a llegar a la
+// parada; a partir de cierta distancia lo que se quiere saber es a qué hora
+// hay que estar allí. En interurbano se publican llegadas con muchísima
+// antelación — se han visto de más de diez horas, que son los primeros
+// autobuses del día siguiente — y ahí "10 h 52 min" no le dice nada a nadie.
+function formatearEspera(segundos) {
   const minutos = Math.floor(segundos / 60);
-  return minutos < 1 ? "En camino" : `${minutos}`;
+
+  if (minutos < 1) {
+    return { valor: "En camino", unidad: "" };
+  }
+
+  if (minutos < 60) {
+    return { valor: `${minutos}`, unidad: "min" };
+  }
+
+  // Reconstruimos la hora de llegada sumando la espera al reloj actual.
+  // Metro e interurbano traen la hora absoluta del backend, pero la de EMT
+  // llega solo como segundos restantes, así que este camino es el único que
+  // vale para las tres fuentes.
+  return {
+    valor: horaDelReloj(new Date(Date.now() + segundos * 1000)),
+    unidad: "",
+  };
+}
+
+// La misma espera pero en una sola cadena, para los tiempos secundarios,
+// que van todos seguidos en texto pequeño y no se separan por tamaño.
+function textoEspera(segundos) {
+  const { valor, unidad } = formatearEspera(segundos);
+  return unidad ? `${valor} ${unidad}` : valor;
 }
 
 // Cada fuente se refresca al ritmo al que de verdad cambian sus datos,
@@ -498,28 +544,27 @@ function crearTarjetaLlegada({
   // Ej: si tiempos = [120, 540], queda "9 min" como secundario.
   const tiemposSecundarios = tiempos
     .slice(1)
-    .map((s) => formatearMinutos(s))
+    .map((s) => textoEspera(s))
     .join(", ");
 
   const estilo = color
     ? ` style="background-color:#${color}; color:#${colorTexto ?? "FFFFFF"}"`
     : "";
 
-  // "En camino" ya se explica solo, así que en ese caso no añadimos "min".
-  const unidad = Math.floor(tiempos[0] / 60) < 1 ? "" : "min";
+  // El número va grande y la unidad pequeña. En "En camino" la unidad sale
+  // vacía, porque el texto ya se explica solo.
+  const { valor, unidad } = formatearEspera(tiempos[0]);
 
   item.innerHTML = `
     <div class="tarjeta-linea"${estilo}>${etiqueta}</div>
     <div class="tarjeta-info">
       <div class="tarjeta-destino">${destino}</div>
-      <div class="tiempo-proximo">${formatearMinutos(
-        tiempos[0]
-      )}<span class="unidad">${unidad}</span>${
+      <div class="tiempo-proximo">${valor}<span class="unidad">${unidad}</span>${
     soloHorario ? '<span class="etiqueta-horario">horario</span>' : ""
   }</div>
       ${
         tiemposSecundarios
-          ? `<div class="tarjeta-tiempos">Siguiente: ${tiemposSecundarios} min</div>`
+          ? `<div class="tarjeta-tiempos">Siguiente: ${tiemposSecundarios}</div>`
           : ""
       }
     </div>
