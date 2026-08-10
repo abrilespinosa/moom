@@ -123,10 +123,33 @@ def tiempos_estacion_metro(cod_stop: str):
         destino = tren["destination"]
         trenes_por_destino.setdefault(destino, []).append(tren["time"])
 
+    # En las grandes estaciones de trasbordo, la API devuelve en codLines
+    # TODAS las líneas que paran ahí, incluidas las que no son de Metro:
+    # Sol, por ejemplo, devuelve además "5__C3___", "5__C4_A__" y
+    # "5__C4_B__", que son líneas de Cercanías (el prefijo "5__" es el modo
+    # ferroviario; Metro es el "4__").
+    #
+    # El frontend usa esta lista para pedir los trenes de cada línea a
+    # /metro/linea/{codLine}/vehiculos, así que sin filtrar acabaría
+    # pidiendo trenes de Cercanías a un endpoint de Metro: hoy devuelven
+    # cero vehículos y solo gastan peticiones, pero si algún día trajeran
+    # alguno se pintaría en el mapa como si fuera un tren de Metro, con el
+    # color azul de respaldo porque no está en routes.txt.
+    #
+    # Usamos el propio routes.txt de Metro como fuente de verdad de "qué
+    # es una línea de Metro", en vez de comprobar el prefijo a mano: así,
+    # además, toda línea que devolvemos tiene color garantizado.
+    lineas_de_metro = cargar_colores_lineas_metro()
+    cod_lines = [
+        linea
+        for linea in info_estacion["codLines"]["Line"]
+        if linea in lineas_de_metro
+    ]
+
     return {
         "estacion": info_estacion["name"],
         "codStop": cod_stop,
-        "codLines": info_estacion["codLines"]["Line"],
+        "codLines": cod_lines,
         "destinos": trenes_por_destino,
     }
 
