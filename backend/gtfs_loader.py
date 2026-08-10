@@ -136,6 +136,39 @@ def cargar_paradas_metro():
         }
         paradas.append(parada)
 
+    # Tercera estrategia: andenes HUÉRFANOS, sin fila de estación.
+    #
+    # Dos andenes del volcado del CRTM no tienen estación asociada por
+    # ninguno de los dos caminos anteriores: Noviciado (par_4_38) y Acacias
+    # (par_4_92). No existe "est_4_38" ni "est_4_92", y tampoco declaran
+    # parent_station. Es un hueco del propio GTFS, no de esta función.
+    #
+    # Sin esto, esas dos estaciones desaparecían del mapa y del recorrido de
+    # sus líneas, pese a ser estaciones normales y corrientes en servicio: se
+    # comprobó contra la API del CRTM que reconoce sus códigos (4_38 y 4_92)
+    # y devuelve llegadas. Así que las reconstruimos a partir de su propio
+    # andén, que ya trae nombre y coordenadas, y les damos el id sintético
+    # que les correspondería. Ambos están libres, no pisan a ninguna otra.
+    for fila in filas:
+        if fila["location_type"] != "0":
+            continue
+
+        anden = fila["stop_id"]
+        candidato = anden.replace("par_", "est_", 1)
+        tiene_estacion = candidato in ids_existentes or fila["parent_station"]
+
+        if not tiene_estacion:
+            paradas.append(
+                {
+                    "id": candidato,
+                    "codAnden": anden.replace("par_", "", 1),
+                    "nombre": fila["stop_name"],
+                    "lat": float(fila["stop_lat"]),
+                    "lon": float(fila["stop_lon"]),
+                    "fuente": "METRO",
+                }
+            )
+
     return paradas
 
 
@@ -296,6 +329,12 @@ def _estacion_de_cada_anden(carpeta, encoding):
             mapa[anden] = candidato
         elif fila["parent_station"]:
             mapa[anden] = fila["parent_station"]
+        else:
+            # Andén huérfano: no hay fila de estación en el GTFS. Apuntamos
+            # al id sintético que cargar_paradas_metro le fabrica a partir
+            # de este mismo andén, para que el recorrido de su línea lo
+            # incluya igual que el mapa.
+            mapa[anden] = candidato
 
     return mapa
 
