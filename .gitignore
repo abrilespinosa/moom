@@ -30,3 +30,11 @@ backend/data/**/trips.txt
 backend/data/**/frequencies.txt
 backend/data/**/calendar.txt
 backend/data/**/calendar_dates.txt
+
+# Notas de contexto para asistentes de IA. Son documentos de trabajo
+# personales, no forman parte del proyecto y nunca deben subirse al repo.
+# Van aquí y no en .git/info/exclude a propósito: exclude es local y no
+# sobrevive a un clon, así que en una máquina nueva un "git add ." los
+# volvería a colar.
+CLAUDE.md
+claude_context.md
