@@ -111,6 +111,18 @@ function iconoSeleccionadoPara(parada) {
 // a su estilo normal cuando el usuario seleccione otra distinta.
 let paradaSeleccionada = null;
 
+// Opacidad de las paradas que NO son la seleccionada, mientras hay alguna
+// seleccionada. Con zoom 17 el mapa se llena de iconos de parada que
+// compiten con los vehículos, que es lo que de verdad se está mirando.
+// Atenuarlas en vez de ocultarlas conserva la referencia de qué hay
+// alrededor, y se deshace solo con volver al buscador.
+const OPACIDAD_PARADA_ATENUADA = 0.35;
+
+// Los vehículos (autobuses y trenes) van por encima de los iconos de
+// parada, para que no queden tapados por ellos. Por debajo del marcador
+// de ubicación, que usa 1000.
+const Z_INDEX_VEHICULOS = 500;
+
 async function dibujarParadas() {
   const respuesta = await fetch(`${URL_BACKEND}/paradas`);
   const paradas = await respuesta.json();
@@ -176,6 +188,16 @@ function actualizarVisibilidadParadas() {
       marcador.addTo(mapa);
     } else if (!debeVerse && estaEnElMapa) {
       mapa.removeLayer(marcador);
+    }
+
+    // La opacidad se decide aquí, y no al seleccionar la parada, porque
+    // los marcadores entran y salen del mapa constantemente al moverlo:
+    // uno que aparece en pantalla estando ya seleccionada otra parada
+    // tiene que nacer atenuado, no a plena opacidad.
+    if (debeVerse) {
+      const esLaSeleccionada = marcador.parada === paradaSeleccionada;
+      const debeAtenuarse = paradaSeleccionada !== null && !esLaSeleccionada;
+      marcador.setOpacity(debeAtenuarse ? OPACIDAD_PARADA_ATENUADA : 1);
     }
   });
 }
@@ -301,6 +323,12 @@ function seleccionarParada(parada) {
   // Centramos el mapa en la parada elegida, con buen zoom
   mapa.setView([parada.lat, parada.lon], 17);
 
+  // Y reevaluamos la opacidad de todas las paradas visibles: acaba de
+  // cambiar cuál es la seleccionada. No basta con el "moveend" que
+  // dispara setView, porque si vuelves a elegir la misma parada el mapa
+  // no se mueve y ese evento no llega.
+  actualizarVisibilidadParadas();
+
   // Cambiamos de vista: ocultamos buscador, mostramos llegadas
   vistaBusqueda.style.display = "none";
   vistaLlegadas.style.display = "flex";
@@ -335,6 +363,9 @@ botonVolver.addEventListener("click", () => {
     paradaSeleccionada.circuloEnMapa.setIcon(iconoNormalPara(paradaSeleccionada));
   }
   paradaSeleccionada = null;
+
+  // Ya no hay parada seleccionada, así que todas vuelven a plena opacidad.
+  actualizarVisibilidadParadas();
 
   // Limpiamos las tarjetas de la parada anterior...
   listaLlegadas.innerHTML = "";
@@ -475,7 +506,10 @@ async function actualizarAutobuses() {
         iconSize: [30, 30],
       });
 
-      const marcador = L.marker([lat, lon], { icon: iconoLinea }).addTo(mapa);
+      const marcador = L.marker([lat, lon], {
+        icon: iconoLinea,
+        zIndexOffset: Z_INDEX_VEHICULOS,
+      }).addTo(mapa);
       marcador.bindPopup(
         `Línea ${bus.line} → ${bus.destination}<br>Llega en ${bus.estimateArrive} segundos`
       );
@@ -707,7 +741,10 @@ async function actualizarTrenesMetro() {
           iconSize: [28, 28],
         });
 
-        const marcador = L.marker([latitude, longitude], { icon: iconoTren }).addTo(mapa);
+        const marcador = L.marker([latitude, longitude], {
+          icon: iconoTren,
+          zIndexOffset: Z_INDEX_VEHICULOS,
+        }).addTo(mapa);
         marcador.bindTooltip(`Sentido ${destino}`);
 
         marcadoresTrenesActuales.push(marcador);
