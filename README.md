@@ -15,7 +15,9 @@ Aplicación personal para visualizar en un mapa, en tiempo real, el transporte p
 
 **Autobuses interurbanos (CRTM)**
 - Paradas cargadas desde el GTFS del CRTM y visibles en el mapa con su propio icono.
-- No hay API pública de tiempo real para interurbanos: al seleccionar una de estas paradas, la app lo indica explícitamente en vez de fallar en silencio.
+- Próximas llegadas por parada, agrupadas por línea y destino, usando la misma API pública del CRTM que Metro.
+- Las llegadas que solo provienen de la tabla de horarios, sin corrección en tiempo real, se marcan como tales para no dar a entender más precisión de la que hay.
+- No se muestran los autobuses en el mapa: la API devuelve posiciones, pero están congeladas y no reflejan el movimiento real.
 
 **Metro de Madrid**
 - Próximos trenes por estación, agrupados por destino (un bloque por sentido).
@@ -54,7 +56,7 @@ frontend/
 | Endpoint | Descripción |
 |---|---|
 | `GET /paradas` | Todas las paradas (EMT + CRTM + Metro) con id, nombre, coordenadas y fuente |
-| `GET /parada/{stop_id}` | Próximas llegadas de autobús a una parada |
+| `GET /parada/{stop_id}` | Próximas llegadas de autobús. Para EMT devuelve el JSON de su API; para ids `par_` (interurbano) devuelve las llegadas agrupadas por línea y destino |
 | `GET /metro/parada/{cod_stop}` | Próximos trenes en una estación, agrupados por destino |
 | `GET /metro/linea/{cod_line}/vehiculos` | Posición de los trenes de una línea. Acepta `?cod_stop=est_XXX` para obtener los cercanos a una estación concreta |
 
@@ -128,9 +130,9 @@ Los datos de Metro e interurbanos proceden del Consorcio Regional de Transportes
 - [ ] Reducir el ruido visual cuando se solapan muchos marcadores
 - [ ] Combinar varias paradas para ver más vehículos simultáneamente
 - [ ] Búsqueda y navegación por línea (requiere los GTFS completos: `trips.txt`, `stop_times.txt`)
+- [x] Tiempo real de autobuses interurbanos
 - [ ] Persistencia en PostgreSQL
 - [ ] Despliegue
-- [ ] Investigar acceso a tiempo real de interurbanos (sin API pública confirmada por ahora)
 
 ## Notas
 
