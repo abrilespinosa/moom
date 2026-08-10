@@ -20,7 +20,7 @@
 
     <div id="panel-header">
       <h1>🚌 Moom</h1>
-      <p id="subtitulo-header">Busca una parada para ver sus llegadas</p>
+      <p id="subtitulo-header">Busca una parada o una línea</p>
     </div>
 
     <!-- VISTA 1: buscador -->
@@ -63,16 +63,37 @@
         <input
           type="text"
           id="input-buscar"
-          placeholder="Buscar parada por nombre o número..."
+          placeholder="Buscar parada o línea..."
         />
       </div>
       <ul id="lista-resultados"></ul>
     </div>
 
-    <!-- VISTA 2: llegadas a la parada seleccionada (oculta al inicio) -->
+    <!-- VISTA 2: recorrido de una línea (oculta al inicio) -->
+    <div id="vista-linea">
+      <div id="cabecera-linea">
+        <button id="boton-volver-linea" class="boton-volver">← Volver a buscar</button>
+
+        <div id="tarjeta-linea">
+          <span id="distintivo-linea" class="tarjeta-linea"></span>
+          <div id="datos-linea">
+            <div id="nombre-linea"></div>
+            <div id="fuente-linea"></div>
+          </div>
+        </div>
+
+        <!-- Un botón por sentido, generado desde app.js -->
+        <div id="sentidos-linea"></div>
+      </div>
+
+      <div id="titulo-recorrido"></div>
+      <ul id="lista-recorrido"></ul>
+    </div>
+
+    <!-- VISTA 3: llegadas a la parada seleccionada (oculta al inicio) -->
     <div id="vista-llegadas">
       <div id="cabecera-llegadas">
-        <button id="boton-volver">← Volver a buscar</button>
+        <button id="boton-volver" class="boton-volver">← Volver</button>
 
         <!-- Tarjeta con la identidad de la parada: icono del modo, nombre,
              código y las líneas que pasan por ella. Todo se rellena desde

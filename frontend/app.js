@@ -15,10 +15,22 @@ let marcadoresTrenesActuales = [];
 // buscarlas localmente sin volver a llamar al backend.
 let TODAS_LAS_PARADAS = [];
 
+// Las mismas paradas indexadas por id. El recorrido de una línea llega
+// como lista de ids, y para seleccionar una hace falta su objeto completo
+// (coordenadas y marcador), así que sin este índice habría que recorrer
+// las 13.542 paradas en cada clic.
+let PARADAS_POR_ID = new Map();
+
 // Número y colores oficiales de cada línea de Metro, indexados por su
 // código ("4__2___"). Son 13 líneas y no cambian nunca, así que se piden
 // UNA sola vez al arrancar en vez de por cada estación que se selecciona.
 let COLORES_LINEAS_METRO = {};
+
+// Todas las líneas de las tres redes, sin su recorrido: número, nombre,
+// fuente y color. Se piden una vez al arrancar para poder filtrarlas
+// mientras se escribe, igual que se hace con las paradas. El recorrido de
+// cada una se pide aparte, solo al elegirla.
+let TODAS_LAS_LINEAS = [];
 
 // Filtro de fuente activo: "todos", "EMT" (urbano) o "CRTM" (interurbano).
 // Lo consulta actualizarVisibilidadParadas() para decidir qué paradas
@@ -128,6 +140,7 @@ async function dibujarParadas() {
   const paradas = await respuesta.json();
 
   TODAS_LAS_PARADAS = paradas;
+  PARADAS_POR_ID = new Map(paradas.map((parada) => [parada.id, parada]));
 
   paradas.forEach((parada) => {
     // OJO: ya no usamos ".addTo(mapa)" aquí. Creamos el marcador pero
@@ -226,6 +239,20 @@ async function cargarColoresLineasMetro() {
 
 cargarColoresLineasMetro();
 
+// Las líneas también se cargan una vez al arrancar. Si la petición falla o
+// el backend no tiene los GTFS pesados, la lista queda vacía y el buscador
+// simplemente no ofrece líneas; buscar paradas sigue funcionando.
+async function cargarLineas() {
+  try {
+    const respuesta = await fetch(`${URL_BACKEND}/lineas`);
+    TODAS_LAS_LINEAS = await respuesta.json();
+  } catch (error) {
+    console.error("No se pudieron cargar las líneas:", error);
+  }
+}
+
+cargarLineas();
+
 // --- Referencias a los elementos del DOM que vamos a manipular ---
 const inputBuscar = document.getElementById("input-buscar");
 const listaResultados = document.getElementById("lista-resultados");
@@ -238,6 +265,14 @@ const chipsLineas = document.getElementById("chips-lineas");
 const tituloSeccion = document.getElementById("titulo-seccion");
 const listaLlegadas = document.getElementById("lista-llegadas");
 const botonVolver = document.getElementById("boton-volver");
+const vistaLinea = document.getElementById("vista-linea");
+const botonVolverLinea = document.getElementById("boton-volver-linea");
+const distintivoLinea = document.getElementById("distintivo-linea");
+const nombreLinea = document.getElementById("nombre-linea");
+const fuenteLinea = document.getElementById("fuente-linea");
+const sentidosLinea = document.getElementById("sentidos-linea");
+const tituloRecorrido = document.getElementById("titulo-recorrido");
+const listaRecorrido = document.getElementById("lista-recorrido");
 const subtituloHeader = document.getElementById("subtitulo-header");
 const botonesFiltro = document.querySelectorAll(".filtro-boton");
 
@@ -252,11 +287,98 @@ botonesFiltro.forEach((boton) => {
     boton.classList.add("activo");
 
     actualizarVisibilidadParadas();
+
+    // Los resultados del buscador también dependen del modo activo, así
+    // que hay que rehacerlos: si estabas viendo líneas de EMT y cambias a
+    // Metro, las de EMT deben desaparecer de la lista.
+    actualizarResultadosBusqueda();
   });
 });
 
 // --- Lógica del buscador ---
-inputBuscar.addEventListener("input", () => {
+//
+// Un único cuadro busca a la vez líneas y paradas, y ambos respetan el
+// filtro de modo activo. Las líneas van primero porque son muchas menos y
+// la búsqueda por número suele ser más precisa: quien escribe "27" casi
+// siempre quiere la línea 27, no las paradas cuyo código lleva un 27.
+
+const MAXIMO_LINEAS = 8;
+const MAXIMO_PARADAS = 12;
+
+function pasaElFiltroDeModo(elemento) {
+  return filtroActivo === "todos" || elemento.fuente === filtroActivo;
+}
+
+function buscarLineas(texto) {
+  const coincidencias = TODAS_LAS_LINEAS.filter(
+    (linea) =>
+      pasaElFiltroDeModo(linea) &&
+      (linea.numero.toLowerCase().startsWith(texto) ||
+        linea.nombre.toLowerCase().includes(texto))
+  );
+
+  // El número exacto primero: buscando "27" interesa más la línea 27 que
+  // la 270, aunque las dos empiecen igual.
+  coincidencias.sort((a, b) => {
+    const exactaA = a.numero.toLowerCase() === texto ? 0 : 1;
+    const exactaB = b.numero.toLowerCase() === texto ? 0 : 1;
+    return exactaA - exactaB || a.numero.localeCompare(b.numero, "es", { numeric: true });
+  });
+
+  return coincidencias.slice(0, MAXIMO_LINEAS);
+}
+
+function buscarParadas(texto) {
+  return TODAS_LAS_PARADAS.filter(
+    (parada) =>
+      pasaElFiltroDeModo(parada) &&
+      (parada.nombre.toLowerCase().includes(texto) || parada.id.includes(texto))
+  ).slice(0, MAXIMO_PARADAS);
+}
+
+function encabezadoDeGrupo(texto) {
+  const item = document.createElement("li");
+  item.className = "grupo-resultados";
+  item.textContent = texto;
+  return item;
+}
+
+// Nombre legible de cada red, para distinguir en los resultados una línea
+// de otra con el mismo número: la 1 existe en EMT y en Metro a la vez.
+const NOMBRE_DE_FUENTE = {
+  EMT: "Bus urbano",
+  CRTM: "Bus interurbano",
+  METRO: "Metro",
+};
+
+function crearResultadoDeLinea(linea) {
+  const item = document.createElement("li");
+  item.className = "resultado-linea";
+
+  const estilo = linea.color
+    ? ` style="background-color:#${linea.color}; color:#${linea.colorTexto ?? "FFFFFF"}"`
+    : "";
+
+  item.innerHTML = `
+    <span class="tarjeta-linea"${estilo}>${linea.numero}</span>
+    <span class="texto">
+      <span class="titulo">${linea.nombre}</span>
+      <span class="subtitulo">${NOMBRE_DE_FUENTE[linea.fuente] ?? linea.fuente}</span>
+    </span>
+  `;
+
+  item.addEventListener("click", () => seleccionarLinea(linea));
+  return item;
+}
+
+function crearResultadoDeParada(parada) {
+  const item = document.createElement("li");
+  item.textContent = `${parada.nombre} (parada ${parada.id})`;
+  item.addEventListener("click", () => seleccionarParada(parada));
+  return item;
+}
+
+function actualizarResultadosBusqueda() {
   const texto = inputBuscar.value.toLowerCase().trim();
   listaResultados.innerHTML = "";
 
@@ -264,23 +386,45 @@ inputBuscar.addEventListener("input", () => {
     return;
   }
 
-  const coincidencias = TODAS_LAS_PARADAS.filter(
-    (parada) =>
-      parada.nombre.toLowerCase().includes(texto) ||
-      parada.id.includes(texto)
-  ).slice(0, 15);
+  const lineas = buscarLineas(texto);
+  const paradas = buscarParadas(texto);
 
-  coincidencias.forEach((parada) => {
-    const item = document.createElement("li");
-    item.textContent = `${parada.nombre} (parada ${parada.id})`;
-    item.addEventListener("click", () => seleccionarParada(parada));
-    listaResultados.appendChild(item);
-  });
-});
+  if (lineas.length === 0 && paradas.length === 0) {
+    listaResultados.appendChild(encabezadoDeGrupo("Sin resultados"));
+    return;
+  }
 
-// Se llama tanto al hacer clic en el mapa como al elegir un resultado
-// de búsqueda. Centraliza el cambio de vista para no repetir código.
-function seleccionarParada(parada) {
+  if (lineas.length > 0) {
+    listaResultados.appendChild(encabezadoDeGrupo("Líneas"));
+    lineas.forEach((l) => listaResultados.appendChild(crearResultadoDeLinea(l)));
+  }
+
+  if (paradas.length > 0) {
+    listaResultados.appendChild(encabezadoDeGrupo("Paradas"));
+    paradas.forEach((p) => listaResultados.appendChild(crearResultadoDeParada(p)));
+  }
+}
+
+inputBuscar.addEventListener("input", actualizarResultadosBusqueda);
+
+// El panel tiene tres pantallas y solo una visible a la vez: el buscador,
+// el recorrido de una línea y las llegadas de una parada.
+function mostrarVista(nombre) {
+  vistaBusqueda.style.display = nombre === "busqueda" ? "block" : "none";
+  vistaLinea.style.display = nombre === "linea" ? "flex" : "none";
+  vistaLlegadas.style.display = nombre === "llegadas" ? "flex" : "none";
+}
+
+// Desde dónde se llegó al panel de llegadas. Sirve para que "Volver"
+// regrese al recorrido de la línea cuando se entró por ahí, en vez de
+// mandar siempre al buscador y obligar a buscar la línea otra vez.
+let vistaDeOrigen = "busqueda";
+
+// Se llama al hacer clic en el mapa, al elegir un resultado de búsqueda y
+// al pulsar una parada del recorrido de una línea. Centraliza el cambio de
+// vista para no repetir código.
+function seleccionarParada(parada, origen = "busqueda") {
+  vistaDeOrigen = origen;
   // Solo una de las dos puede estar "activa" a la vez. Si seleccionas
   // una estación de Metro, STOP_ID de bus se limpia, y viceversa, para
   // que los dos intervalos (actualizarAutobuses / actualizarTiemposMetro)
@@ -332,9 +476,7 @@ function seleccionarParada(parada) {
   // no se mueve y ese evento no llega.
   actualizarVisibilidadParadas();
 
-  // Cambiamos de vista: ocultamos buscador, mostramos llegadas
-  vistaBusqueda.style.display = "none";
-  vistaLlegadas.style.display = "flex";
+  mostrarVista("llegadas");
   subtituloHeader.textContent = "Próximas llegadas";
 
   pintarCabeceraParada(parada);
@@ -359,13 +501,16 @@ function seleccionarParada(parada) {
   }
 }
 
-// Botón para volver del estado "llegadas" al estado "buscador"
+// Botón para salir del panel de llegadas. Vuelve al recorrido de la línea
+// si se entró desde ahí, y al buscador en cualquier otro caso.
 botonVolver.addEventListener("click", () => {
   STOP_ID = null;
   STOP_ID_METRO = null;
-  vistaLlegadas.style.display = "none";
-  vistaBusqueda.style.display = "block";
-  subtituloHeader.textContent = "Busca una parada para ver sus llegadas";
+  mostrarVista(vistaDeOrigen);
+  subtituloHeader.textContent =
+    vistaDeOrigen === "linea"
+      ? "Recorrido de la línea"
+      : "Busca una parada o una línea";
 
   // Quitamos el resaltado, ya no hay una parada "activa"
   if (paradaSeleccionada && paradaSeleccionada.circuloEnMapa) {
@@ -384,6 +529,104 @@ botonVolver.addEventListener("click", () => {
   limpiarMarcadoresTrenes();
   limpiarChipsLineas();
 });
+
+// --- VISTA DE LÍNEA ---
+
+// Línea que se está mirando, con sus sentidos y paradas, tal como la
+// devuelve /linea/{id}.
+let lineaActual = null;
+
+botonVolverLinea.addEventListener("click", () => {
+  lineaActual = null;
+  mostrarVista("busqueda");
+  subtituloHeader.textContent = "Busca una parada o una línea";
+});
+
+// Pinta la lista ordenada de paradas de uno de los sentidos, y marca su
+// botón como activo.
+function pintarSentido(indice) {
+  const sentido = lineaActual.sentidos[indice];
+
+  [...sentidosLinea.children].forEach((boton, i) =>
+    boton.classList.toggle("activo", i === indice)
+  );
+
+  tituloRecorrido.textContent = `${sentido.paradas.length} paradas`;
+  listaRecorrido.innerHTML = "";
+
+  sentido.paradas.forEach((paradaDeLaLinea, posicion) => {
+    const item = document.createElement("li");
+    item.className = "parada-recorrido";
+    item.innerHTML = `
+      <span class="orden">${posicion + 1}</span>
+      <span class="nombre">${paradaDeLaLinea.nombre}</span>
+    `;
+
+    // El recorrido solo trae id y nombre. Para seleccionar la parada hace
+    // falta el objeto completo que ya tenemos cargado, porque lleva las
+    // coordenadas y la referencia a su marcador en el mapa.
+    const parada = PARADAS_POR_ID.get(paradaDeLaLinea.id);
+
+    if (parada) {
+      item.addEventListener("click", () => seleccionarParada(parada, "linea"));
+    } else {
+      // Puede pasar si el volcado de líneas y el de paradas no van a la
+      // par. Se muestra igual para no romper el orden del recorrido, pero
+      // sin poder abrirla.
+      item.style.cursor = "default";
+      item.style.opacity = "0.5";
+      item.title = "Esta parada no está en el mapa";
+    }
+
+    listaRecorrido.appendChild(item);
+  });
+}
+
+async function seleccionarLinea(linea) {
+  try {
+    const respuesta = await fetch(
+      `${URL_BACKEND}/linea/${encodeURIComponent(linea.id)}`
+    );
+    const datos = await respuesta.json();
+
+    if (!datos.encontrada) {
+      console.error("Línea no encontrada:", linea.id);
+      return;
+    }
+
+    lineaActual = datos;
+
+    const estilo = datos.color
+      ? `background-color:#${datos.color}; color:#${datos.colorTexto ?? "FFFFFF"}`
+      : "";
+    distintivoLinea.setAttribute("style", estilo);
+    distintivoLinea.textContent = datos.numero;
+    nombreLinea.textContent = datos.nombre;
+    fuenteLinea.textContent = NOMBRE_DE_FUENTE[datos.fuente] ?? datos.fuente;
+
+    // Un botón por sentido. Casi siempre son dos, pero alguna línea trae
+    // más de un itinerario, así que se generan sobre la marcha.
+    sentidosLinea.innerHTML = "";
+    datos.sentidos.forEach((sentido, i) => {
+      const boton = document.createElement("button");
+      boton.className = "boton-sentido";
+      boton.textContent = sentido.destino || `Sentido ${i + 1}`;
+      boton.title = sentido.destino;
+      boton.addEventListener("click", () => pintarSentido(i));
+      sentidosLinea.appendChild(boton);
+    });
+
+    pintarSentido(0);
+
+    mostrarVista("linea");
+    subtituloHeader.textContent = "Recorrido de la línea";
+
+    inputBuscar.value = "";
+    listaResultados.innerHTML = "";
+  } catch (error) {
+    console.error("Error al cargar el recorrido de la línea:", error);
+  }
+}
 
 // Hora del reloj en formato 24h ("14:05").
 //

@@ -156,6 +156,53 @@ body {
   background: #f0f0f0;
 }
 
+/* El buscador mezcla líneas y paradas, así que cada bloque lleva su
+   encabezado. No es clicable, de ahí que anule el cursor y el hover que
+   heredaría del "li" de arriba. */
+#lista-resultados li.grupo-resultados {
+  padding: 10px 16px 4px 16px;
+  background: #f7f7f8;
+  border-bottom: none;
+  cursor: default;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #8a8a8f;
+}
+
+#lista-resultados li.grupo-resultados:hover {
+  background: #f7f7f8;
+}
+
+/* Resultado de línea: distintivo de color + nombre. */
+#lista-resultados li.resultado-linea {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.resultado-linea .tarjeta-linea {
+  width: 34px;
+  height: 34px;
+  font-size: 12px;
+}
+
+.resultado-linea .texto {
+  min-width: 0;
+}
+
+.resultado-linea .titulo {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resultado-linea .subtitulo {
+  font-size: 12px;
+  color: #888;
+}
+
 /* --- VISTA: LLEGADAS A LA PARADA SELECCIONADA --- */
 #vista-llegadas {
   display: none; /* oculta hasta que se seleccione una parada */
@@ -166,7 +213,7 @@ body {
   padding: 12px 16px 0 16px;
 }
 
-#boton-volver {
+.boton-volver {
   background: none;
   border: none;
   color: #0178bc;
@@ -177,8 +224,123 @@ body {
   text-align: left;
 }
 
-#boton-volver:hover {
+.boton-volver:hover {
   text-decoration: underline;
+}
+
+/* --- VISTA: RECORRIDO DE UNA LÍNEA --- */
+#vista-linea {
+  display: none; /* oculta hasta que se elija una línea */
+  flex-direction: column;
+}
+
+#cabecera-linea {
+  padding: 12px 16px 0 16px;
+}
+
+#tarjeta-linea {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: white;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+#nombre-linea {
+  font-weight: bold;
+  font-size: 14px;
+  color: #1a1a1a;
+  line-height: 1.25;
+}
+
+#fuente-linea {
+  font-size: 12px;
+  color: #888;
+  margin-top: 1px;
+}
+
+/* Un botón por sentido. Son dos casi siempre, así que se reparten el ancho.
+   El destino puede ser largo, de ahí el truncado. */
+#sentidos-linea {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.boton-sentido {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 8px;
+  font-size: 12px;
+  border: 1px solid #ccc;
+  border-radius: 16px;
+  background: white;
+  color: #555;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.boton-sentido:hover {
+  background: #f0f0f0;
+}
+
+.boton-sentido.activo {
+  background: #0178bc;
+  border-color: #0178bc;
+  color: white;
+}
+
+#titulo-recorrido {
+  padding: 16px 16px 0 16px;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #8a8a8f;
+}
+
+#lista-recorrido {
+  list-style: none;
+  margin: 0;
+  padding: 8px 12px 12px 12px;
+}
+
+/* Cada parada del recorrido. El número de orden va en una columna fija
+   para que los nombres queden alineados aunque haya paradas de dos y de
+   tres cifras. */
+.parada-recorrido {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #333;
+}
+
+.parada-recorrido:hover {
+  background: #eceef1;
+}
+
+.parada-recorrido .orden {
+  flex-shrink: 0;
+  width: 22px;
+  text-align: right;
+  color: #9a9aa0;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.parada-recorrido .nombre {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Tarjeta de identidad de la parada: icono del modo a la izquierda,
