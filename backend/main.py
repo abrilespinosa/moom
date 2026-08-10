@@ -27,8 +27,6 @@ from backend.metro_client import (
 # llamada "app" en este archivo.
 app = FastAPI(title="Moom API")
 
-from fastapi.middleware.cors import CORSMiddleware
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # En desarrollo, permitimos cualquier origen
