@@ -14,7 +14,11 @@ Luego puedes visitar en el navegador, por ejemplo:
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.emt_client import obtener_llegadas_parada
-from backend.gtfs_loader import cargar_todas_las_paradas, cargar_colores_lineas_metro
+from backend.gtfs_loader import (
+    cargar_todas_las_paradas,
+    cargar_colores_lineas_metro,
+    cargar_lineas,
+)
 from backend.metro_client import (
     obtener_info_estacion,
     obtener_info_linea,
@@ -41,6 +45,13 @@ PARADAS = cargar_todas_las_paradas()
 # recorrer las 13.560 paradas cada vez que el endpoint de Metro necesita
 # encontrar el codAnden de una estación.
 PARADAS_POR_ID = {parada["id"]: parada for parada in PARADAS}
+
+# Las líneas con su recorrido de paradas, construidas desde el GTFS al
+# arrancar (alrededor de un segundo). Si faltan los archivos pesados que no
+# van al repositorio, la lista queda vacía y la búsqueda por línea se
+# desactiva sola, sin afectar al resto de la aplicación.
+LINEAS = cargar_lineas()
+LINEAS_POR_ID = {linea["id"]: linea for linea in LINEAS}
 
 
 def agrupar_llegadas(llegadas):
@@ -87,6 +98,74 @@ def listar_paradas():
     Devuelve todas las paradas de la red EMT (id, nombre, lat, lon).
     """
     return PARADAS
+
+@app.get("/lineas")
+def listar_lineas():
+    """
+    Devuelve todas las líneas de las tres redes, SIN su recorrido.
+
+    Ejemplo de uso: GET /lineas
+
+    El recorrido se deja fuera a propósito: son casi 30.000 identificadores
+    de parada entre las 582 líneas, y el buscador solo necesita el número,
+    el nombre y el color para filtrar mientras se escribe. Las paradas se
+    piden aparte, ya en /linea/{id}, cuando se elige una concreta.
+
+    El número de línea NO es único entre redes: hay 21 que se repiten, como
+    la 1 y la 2, que existen a la vez en EMT y en Metro. Por eso cada línea
+    lleva su "fuente", y el "id" la incluye como prefijo.
+    """
+    return [
+        {clave: linea[clave] for clave in linea if clave != "sentidos"}
+        for linea in LINEAS
+    ]
+
+
+@app.get("/linea/{cod_linea}")
+def recorrido_linea(cod_linea: str):
+    """
+    Devuelve una línea con sus paradas en orden, un bloque por sentido.
+
+    Ejemplo de uso: GET /linea/EMT-027
+
+    Las paradas salen con id y nombre. El nombre se resuelve aquí, contra
+    las paradas que ya tenemos cargadas, para que el frontend pueda pintar
+    la lista sin cruzar nada por su cuenta; el id le sirve luego para
+    seleccionar esa parada y ver sus llegadas.
+    """
+    linea = LINEAS_POR_ID.get(cod_linea)
+
+    if linea is None:
+        return {
+            "encontrada": False,
+            "mensaje": "No se encontró esa línea.",
+        }
+
+    sentidos = [
+        {
+            "destino": sentido["destino"],
+            "paradas": [
+                {
+                    "id": id_parada,
+                    # Si una parada del recorrido ya no está en stops.txt
+                    # (los volcados de líneas y de paradas no siempre van a
+                    # la par), la listamos igual en vez de romper el orden.
+                    "nombre": PARADAS_POR_ID.get(id_parada, {}).get(
+                        "nombre", "Parada desconocida"
+                    ),
+                }
+                for id_parada in sentido["paradas"]
+            ],
+        }
+        for sentido in linea["sentidos"]
+    ]
+
+    return {
+        "encontrada": True,
+        **{clave: linea[clave] for clave in linea if clave != "sentidos"},
+        "sentidos": sentidos,
+    }
+
 
 @app.get("/")
 def inicio():

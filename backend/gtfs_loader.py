@@ -1,4 +1,5 @@
 import csv
+import os
 
 def cargar_paradas_emt():
     paradas = []
@@ -187,6 +188,227 @@ def cargar_colores_lineas_metro():
     _cache_colores_lineas_metro = colores
 
     return colores
+
+# Las tres fuentes, con la codificación que necesita el GTFS de cada una.
+# Solo el de Metro trae BOM (ver cargar_paradas_metro).
+FUENTES_GTFS = [
+    ("EMT", "backend/data/emt", "utf-8"),
+    ("CRTM", "backend/data/crtm", "utf-8"),
+    ("METRO", "backend/data/metro", "utf-8-sig"),
+]
+
+
+def _recorridos_de_la_fuente(carpeta, encoding):
+    """
+    Devuelve, para una fuente, el recorrido de cada línea y sentido:
+        { route_id: [ {"sentido": "0", "destino": "...", "paradas": [ids...]} ] }
+
+    El GTFS no guarda "las paradas de la línea 27" en ningún sitio. Guarda
+    decenas de miles de VIAJES (cada salida concreta de cada día), y cada
+    viaje tiene su lista de paradas en stop_times.txt. Para dibujar el
+    recorrido nos vale con UN viaje por línea y sentido, así que de los
+    72.511 viajes de la EMT solo nos interesan unos 460.
+
+    Ese filtrado es lo que hace esto viable: stop_times.txt tiene 1,9
+    millones de filas y pesa 80 MB, pero al quedarnos solo con los viajes
+    representativos una única pasada basta y tarda medio segundo.
+    """
+    # Primera pasada: un viaje representativo por (línea, sentido).
+    representantes = {}  # (route_id, direction_id) -> trip_id
+    destinos = {}  # trip_id -> letrero del viaje ("Plaza Castilla")
+
+    with open(f"{carpeta}/trips.txt", encoding=encoding) as archivo:
+        for fila in csv.DictReader(archivo):
+            clave = (fila["route_id"], fila.get("direction_id", "0"))
+            if clave not in representantes:
+                representantes[clave] = fila["trip_id"]
+                destinos[fila["trip_id"]] = fila.get("trip_headsign", "")
+
+    viajes_que_interesan = set(representantes.values())
+
+    # Segunda pasada: recogemos las paradas de esos viajes.
+    #
+    # Usamos csv.reader y no DictReader a propósito: DictReader construye un
+    # diccionario por fila, y con casi dos millones de filas esa diferencia
+    # se nota. Aquí solo necesitamos tres columnas, que localizamos una vez
+    # por su nombre en la cabecera.
+    secuencias = {}  # trip_id -> [(orden, stop_id)]
+
+    with open(f"{carpeta}/stop_times.txt", encoding=encoding) as archivo:
+        lector = csv.reader(archivo)
+        cabecera = next(lector)
+        i_viaje = cabecera.index("trip_id")
+        i_parada = cabecera.index("stop_id")
+        i_orden = cabecera.index("stop_sequence")
+
+        for fila in lector:
+            if fila[i_viaje] in viajes_que_interesan:
+                secuencias.setdefault(fila[i_viaje], []).append(
+                    (int(fila[i_orden]), fila[i_parada])
+                )
+
+    recorridos = {}
+    for (route_id, sentido), viaje in representantes.items():
+        # stop_sequence no tiene por qué venir ordenado en el archivo, así
+        # que ordenamos por él antes de quedarnos con los ids.
+        paradas = [parada for _, parada in sorted(secuencias.get(viaje, []))]
+
+        if paradas:
+            recorridos.setdefault(route_id, []).append(
+                {
+                    "sentido": sentido,
+                    "destino": destinos.get(viaje, ""),
+                    "paradas": paradas,
+                }
+            )
+
+    return recorridos
+
+
+def _estacion_de_cada_anden(carpeta, encoding):
+    """
+    Devuelve { id_de_andén -> id_de_estación } para el GTFS de Metro.
+
+    Hace falta porque los recorridos de Metro vienen en andenes y todo lo
+    demás en la aplicación (el mapa, /paradas, los paneles) trabaja con
+    estaciones. Sin esta traducción, las paradas de una línea de Metro no
+    se podrían casar con ningún punto del mapa.
+
+    Es el camino inverso al de cargar_paradas_metro, y usa las dos mismas
+    estrategias: el prefijo "par_" -> "est_" para la gran mayoría, y el
+    campo parent_station para los grandes intercambiadores, cuya
+    numeración no coincide con la de sus andenes.
+    """
+    with open(f"{carpeta}/stops.txt", encoding=encoding) as archivo:
+        filas = list(csv.DictReader(archivo))
+
+    estaciones = {f["stop_id"] for f in filas if f["location_type"] == "1"}
+    mapa = {}
+
+    for fila in filas:
+        if fila["location_type"] != "0":
+            continue
+
+        anden = fila["stop_id"]
+        candidato = anden.replace("par_", "est_", 1)
+
+        if candidato in estaciones:
+            mapa[anden] = candidato
+        elif fila["parent_station"]:
+            mapa[anden] = fila["parent_station"]
+
+    return mapa
+
+
+def _andenes_a_estaciones(recorridos, mapa):
+    """
+    Reescribe los recorridos de Metro para que hablen de estaciones.
+
+    Además quita repeticiones seguidas: si dos andenes consecutivos de un
+    itinerario pertenecen a la misma estación, en el mapa es un único punto
+    y listarlo dos veces sería confuso.
+
+    Los andenes sin estación se descartan y se avisa por consola. No es un
+    fallo de esta función: el GTFS de Metro publicado por el CRTM (volcado
+    de mayo de 2025) no trae fila de estación para Noviciado ni Acacias,
+    solo su andén. Esas dos estaciones tampoco aparecen en el mapa por el
+    mismo motivo, así que no se pueden listar en el recorrido de su línea.
+    """
+    huerfanos = set()
+
+    for sentidos in recorridos.values():
+        for sentido in sentidos:
+            estaciones = []
+            for anden in sentido["paradas"]:
+                estacion = mapa.get(anden)
+                if estacion is None:
+                    huerfanos.add(anden)
+                    continue
+                # Solo saltamos la repetición si es consecutiva: una línea
+                # circular puede pasar dos veces por la misma estación de
+                # forma legítima, y eso hay que conservarlo.
+                if not estaciones or estaciones[-1] != estacion:
+                    estaciones.append(estacion)
+            sentido["paradas"] = estaciones
+
+    if huerfanos:
+        print(
+            f"[lineas] METRO: {len(huerfanos)} andenes sin estación en el GTFS, "
+            f"se omiten de los recorridos: {', '.join(sorted(huerfanos))}"
+        )
+
+    return recorridos
+
+
+def cargar_lineas():
+    """
+    Carga todas las líneas de las tres redes con su recorrido de paradas.
+
+    Devuelve una lista de diccionarios:
+        {
+            "id": "EMT-027",          # único entre fuentes, sirve de ruta URL
+            "numero": "27",           # el que ve el viajero
+            "nombre": "Plaza Castilla - Embajadores",
+            "fuente": "EMT",
+            "color": "0178BC",
+            "colorTexto": "FFFFFF",
+            "sentidos": [ {"destino": ..., "paradas": [ids...]}, ... ]
+        }
+
+    Las líneas sin ningún viaje en el calendario vigente se descartan: son
+    servicios estacionales o especiales que ahora no circulan, y una línea
+    sin recorrido no se puede mostrar.
+
+    Si faltan los archivos pesados de una fuente (trips.txt y stop_times.txt
+    no están en el repositorio por su tamaño), esa fuente se salta con un
+    aviso en vez de impedir que arranque el servidor: el resto de la
+    aplicación funciona igual sin la búsqueda por línea.
+    """
+    lineas = []
+
+    for fuente, carpeta, encoding in FUENTES_GTFS:
+        faltan = [
+            nombre
+            for nombre in ("trips.txt", "stop_times.txt")
+            if not os.path.exists(f"{carpeta}/{nombre}")
+        ]
+        if faltan:
+            print(
+                f"[lineas] {fuente}: falta {', '.join(faltan)} en {carpeta}. "
+                f"Se omite esta fuente. Descarga el GTFS completo con "
+                f"'python -m scripts.descargar_gtfs' para habilitarla."
+            )
+            continue
+
+        recorridos = _recorridos_de_la_fuente(carpeta, encoding)
+
+        # Los recorridos de Metro vienen en andenes; el resto de la
+        # aplicación trabaja con estaciones.
+        if fuente == "METRO":
+            recorridos = _andenes_a_estaciones(
+                recorridos, _estacion_de_cada_anden(carpeta, encoding)
+            )
+
+        with open(f"{carpeta}/routes.txt", encoding=encoding) as archivo:
+            for fila in csv.DictReader(archivo):
+                sentidos = recorridos.get(fila["route_id"])
+                if not sentidos:
+                    continue
+
+                lineas.append(
+                    {
+                        "id": f"{fuente}-{fila['route_id']}",
+                        "numero": fila["route_short_name"],
+                        "nombre": fila["route_long_name"],
+                        "fuente": fuente,
+                        "color": fila.get("route_color") or None,
+                        "colorTexto": fila.get("route_text_color") or None,
+                        "sentidos": sentidos,
+                    }
+                )
+
+    return lineas
+
 
 if __name__ == "__main__":
     paradas_emt = cargar_paradas_emt()
