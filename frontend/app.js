@@ -247,6 +247,22 @@ function seleccionarParada(parada) {
     STOP_ID_METRO = null;
   }
 
+  // Limpiamos SIEMPRE los vehículos de los dos modos, no solo los del que
+  // acabamos de abandonar.
+  //
+  // Cada poller borra sus propios marcadores antes de redibujarlos, pero
+  // esa limpieza está DESPUÉS de su salida temprana: al pasar de una
+  // parada de bus a una de Metro, STOP_ID se acaba de poner a null, así
+  // que actualizarAutobuses() sale por el "return" del principio y nunca
+  // llega a borrar nada. Los autobuses de la parada anterior se quedaban
+  // en el mapa hasta pulsar "Volver a buscar" (y lo mismo con los trenes
+  // al hacer el cambio contrario).
+  //
+  // Limpiar aquí los dos es seguro: justo al final de esta función se
+  // llama al poller del modo elegido, que vuelve a dibujar los suyos.
+  limpiarMarcadoresAutobuses();
+  limpiarMarcadoresTrenes();
+
   // Si había una parada resaltada de antes, le devolvemos su icono
   // normal antes de resaltar la nueva.
   if (paradaSeleccionada && paradaSeleccionada.circuloEnMapa) {
@@ -303,9 +319,7 @@ botonVolver.addEventListener("click", () => {
 
   // ...y también los marcadores de bus que quedaban en el mapa.
   limpiarMarcadoresAutobuses();
-
-  marcadoresTrenesActuales.forEach((marcador) => mapa.removeLayer(marcador));
-  marcadoresTrenesActuales = [];
+  limpiarMarcadoresTrenes();
 });
 
 // Convierte segundos en un texto legible: "En camino" si está muy
@@ -341,6 +355,13 @@ let marcadoresActuales = [];
 function limpiarMarcadoresAutobuses() {
   marcadoresActuales.forEach((marcador) => mapa.removeLayer(marcador));
   marcadoresActuales = [];
+}
+
+// La equivalente para los trenes de Metro. Mismo motivo, y además hace
+// falta al cambiar de modo: ver la nota en seleccionarParada().
+function limpiarMarcadoresTrenes() {
+  marcadoresTrenesActuales.forEach((marcador) => mapa.removeLayer(marcador));
+  marcadoresTrenesActuales = [];
 }
 
 // Vacía el panel y deja un único mensaje explicativo. Reutiliza el estilo
@@ -604,8 +625,7 @@ async function actualizarTrenesMetro() {
     // Limpiamos los trenes de la actualización anterior antes de
     // pintar los nuevos, igual que ya haces con marcadoresActuales
     // en actualizarAutobuses().
-    marcadoresTrenesActuales.forEach((marcador) => mapa.removeLayer(marcador));
-    marcadoresTrenesActuales = [];
+    limpiarMarcadoresTrenes();
 
     respuestas.forEach((datosLinea) => {
       const color = datosLinea.color ?? "0078BC"; // azul de respaldo si faltase
