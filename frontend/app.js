@@ -302,8 +302,7 @@ botonVolver.addEventListener("click", () => {
   listaLlegadas.innerHTML = "";
 
   // ...y también los marcadores de bus que quedaban en el mapa.
-  marcadoresActuales.forEach((marcador) => mapa.removeLayer(marcador));
-  marcadoresActuales = [];
+  limpiarMarcadoresAutobuses();
 
   marcadoresTrenesActuales.forEach((marcador) => mapa.removeLayer(marcador));
   marcadoresTrenesActuales = [];
@@ -320,6 +319,21 @@ function formatearMinutos(segundos) {
 // redibujarlos cada vez que llegan datos nuevos.
 let marcadoresActuales = [];
 
+// Limpia del mapa los marcadores de autobús de la actualización anterior.
+// Está en su propia función porque hace falta llamarla tanto al redibujar
+// como al mostrar un mensaje (si no, los buses de la parada anterior se
+// quedarían clavados en el mapa mientras el panel dice otra cosa).
+function limpiarMarcadoresAutobuses() {
+  marcadoresActuales.forEach((marcador) => mapa.removeLayer(marcador));
+  marcadoresActuales = [];
+}
+
+// Vacía el panel y deja un único mensaje explicativo. Reutiliza el estilo
+// de "mensaje-vacio" que ya existía para el caso de "no hay autobuses".
+function mostrarMensajeEnPanel(texto) {
+  listaLlegadas.innerHTML = `<div id="mensaje-vacio">${texto}</div>`;
+}
+
 async function actualizarAutobuses() {
   if (STOP_ID === null) {
     return; // todavía no se ha seleccionado ninguna parada
@@ -328,11 +342,30 @@ async function actualizarAutobuses() {
   try {
     const respuesta = await fetch(`${URL_BACKEND}/parada/${STOP_ID}`);
     const datos = await respuesta.json();
-    const autobuses = datos.data[0].Arrive;
+
+    // Las paradas interurbanas (CRTM) no tienen API de tiempo real, y el
+    // backend nos lo dice explícitamente con este campo en vez de devolver
+    // llegadas. Hay que comprobarlo ANTES de tocar datos.data, porque en
+    // ese caso no existe y el error se tragaría el catch de abajo, dejando
+    // el panel vacío y sin explicar por qué.
+    if (datos.tiempo_real_disponible === false) {
+      limpiarMarcadoresAutobuses();
+      mostrarMensajeEnPanel(datos.mensaje);
+      return;
+    }
+
+    // Red de seguridad para respuestas inesperadas de la API de EMT (por
+    // ejemplo si se agota la cuota diaria o la parada no existe): sin esto
+    // volveríamos a caer en el catch sin ningún mensaje para el usuario.
+    const autobuses = datos?.data?.[0]?.Arrive;
+    if (!autobuses) {
+      limpiarMarcadoresAutobuses();
+      mostrarMensajeEnPanel("No se pudieron obtener las llegadas de esta parada.");
+      return;
+    }
 
     // --- 1. Dibujamos los marcadores en el mapa (igual que antes) ---
-    marcadoresActuales.forEach((marcador) => mapa.removeLayer(marcador));
-    marcadoresActuales = [];
+    limpiarMarcadoresAutobuses();
 
     autobuses.forEach((bus) => {
       const [lon, lat] = bus.geometry.coordinates;
@@ -383,8 +416,7 @@ async function actualizarAutobuses() {
     listaLlegadas.innerHTML = "";
 
     if (tarjetas.length === 0) {
-      listaLlegadas.innerHTML =
-        '<div id="mensaje-vacio">No hay autobuses en camino ahora mismo.</div>';
+      mostrarMensajeEnPanel("No hay autobuses en camino ahora mismo.");
       return;
     }
 
@@ -446,6 +478,16 @@ async function actualizarTiemposMetro() {
     const respuesta = await fetch(`${URL_BACKEND}/metro/parada/${STOP_ID_METRO}`);
     const datos = await respuesta.json();
 
+    // Igual que en las paradas de bus: si el backend no pudo resolver el
+    // andén de esta estación, avisamos en vez de reventar al recorrer
+    // datos.destinos, que en ese caso no existe.
+    if (!datos.destinos) {
+      mostrarMensajeEnPanel(
+        datos.mensaje ?? "No se pudieron obtener los tiempos de esta estación."
+      );
+      return;
+    }
+
     // datos.destinos = { "LAS ROSAS": ["2026-...", "2026-..."], "CUATRO CAMINOS": [...] }
     // Cada clave es un destino, igual que las dos tarjetas de tu captura
     // de la app oficial (un bloque por sentido).
@@ -460,8 +502,7 @@ async function actualizarTiemposMetro() {
     listaLlegadas.innerHTML = "";
 
     if (tarjetas.length === 0) {
-      listaLlegadas.innerHTML =
-        '<div id="mensaje-vacio">No hay trenes en camino ahora mismo.</div>';
+      mostrarMensajeEnPanel("No hay trenes en camino ahora mismo.");
       return;
     }
 
