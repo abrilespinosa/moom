@@ -29,14 +29,35 @@ BASE_URL = "https://www.crtm.es/widgets/api"
 
 # --- Caché en memoria ---
 # Mismo patrón que en emt_client.py: variables a nivel de módulo, que viven
-# mientras el servidor esté corriendo. Usamos dos cachés separados porque
-# son dos tipos de dato distintos con su propia clave (cod_stop vs cod_line).
+# mientras el servidor esté corriendo.
+#
+# OJO: la posición de los trenes NO se cachea, a propósito. El frontend
+# refresca cada 10s y este caché duraba 20s, así que una de cada dos
+# peticiones devolvía posiciones repetidas y los trenes se veían dando
+# saltos en vez de avanzar. A diferencia de la API de EMT, la del CRTM no
+# pide autenticación ni tiene cuota conocida, así que no hay nada que
+# proteger: el caché solo estaba empeorando la animación.
+#
+# Medido en vivo (lunes 11:40, Línea 2): el propio CRTM refresca las
+# posiciones cada 20-30s aproximadamente, y suele mover un tren cada vez.
+# O sea que el origen ya es lento de por sí: añadirle encima un caché de
+# 20s podía duplicar el retraso. Si algún día se quiere bajar el número de
+# peticiones, el sitio sensato es subir el intervalo del poller del
+# frontend (hoy 10s) hasta acercarlo a esos ~20s, no reintroducir el caché.
+#
+# Los tiempos de espera sí lo conservan: que una hora de llegada se
+# actualice 10 segundos más tarde no se percibe, un tren parado sí.
 _cache_tiempos_espera = {}
-_cache_posicion_vehiculos = {}
 
-# Duración de la validez del caché, en segundos. Los tiempos de espera y la
-# posición de los trenes cambian rápido, así que usamos una ventana corta,
-# igual que hiciste con las llegadas de bus.
+# La info de una estación (nombre, stopType, líneas que pasan por ella) es
+# un dato ESTÁTICO: no cambia mientras el servidor está encendido. Por eso
+# este caché no tiene caducidad, igual que el de colores de línea en
+# gtfs_loader.py. Sin él, cada ciclo del frontend pedía esta misma
+# información dos veces (una por el panel de tiempos y otra por los trenes
+# del mapa), gastando llamadas al CRTM para recibir siempre lo mismo.
+_cache_info_estacion = {}
+
+# Duración de la validez del caché, en segundos.
 SEGUNDOS_VALIDEZ_CACHE = 20
 
 
@@ -75,6 +96,9 @@ def obtener_info_estacion(cod_stop):
             ...
         }
     """
+    if cod_stop in _cache_info_estacion:
+        return _cache_info_estacion[cod_stop]
+
     url = f"{BASE_URL}/GetStops.php"
     parametros = {"codStop": cod_stop}
 
@@ -104,6 +128,8 @@ def obtener_info_estacion(cod_stop):
     lineas = estacion["codLines"]["Line"]
     if not isinstance(lineas, list):
         estacion["codLines"]["Line"] = [lineas]
+
+    _cache_info_estacion[cod_stop] = estacion
 
     return estacion
 
@@ -223,13 +249,10 @@ def obtener_posicion_trenes(mode_cod, cod_itinerary, cod_line, cod_stop, directi
 
     Devuelve una lista de vehículos, cada uno con su "codVehicle" y sus
     "coordinates" (longitude, latitude).
+
+    Sin caché a propósito: ver la nota en la sección de cachés al principio
+    de este archivo.
     """
-    clave_cache = f"{cod_line}_{direction}"
-
-    if _cache_sigue_siendo_valido(_cache_posicion_vehiculos, clave_cache):
-        datos, _momento_guardado = _cache_posicion_vehiculos[clave_cache]
-        return datos
-
     url = f"{BASE_URL}/GetLineLocation.php"
     parametros = {
         "mode": mode_cod,
@@ -253,8 +276,6 @@ def obtener_posicion_trenes(mode_cod, cod_itinerary, cod_line, cod_stop, directi
 
     if isinstance(vehiculos, dict):
         vehiculos = [vehiculos]
-
-    _cache_posicion_vehiculos[clave_cache] = (vehiculos, time.time())
 
     return vehiculos
 
