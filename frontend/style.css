@@ -65,25 +65,76 @@ body {
   padding: 12px 16px 0 16px;
 }
 
+/* Cada filtro es el icono de su modo con la etiqueta debajo. El icono va
+   dentro de un cuadro fijo con object-fit porque los PNG tienen
+   proporciones muy distintas entre sí (el bus es vertical, el rombo del
+   metro es apaisado) y estirarlos los deformaría. */
 .filtro-boton {
   flex: 1;
-  padding: 7px 0;
-  font-size: 12px;
-  border: 1px solid #ccc;
-  border-radius: 16px;
-  background: white;
-  color: #555;
+  min-width: 0; /* deja que "Interurbano" trunque en vez de ensanchar el botón */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 2px;
+  border: none;
+  background: none;
+  color: #666;
+  font-size: 11px;
   cursor: pointer;
 }
 
-.filtro-boton:hover {
-  background: #f0f0f0;
+.filtro-icono {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px;
+  border-radius: 10px;
+  background: #f0f1f3;
+  box-sizing: border-box;
+  transition: background 0.12s, box-shadow 0.12s;
 }
 
+.filtro-icono img,
+.filtro-icono svg {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.filtro-etiqueta {
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Fondo pastel propio de cada modo, tomado de su color corporativo: azul
+   de la EMT, verde del interurbano, y neutro para Metro, cuyo rombo ya
+   lleva rojo y azul y se ensucia sobre un fondo de color. */
+.filtro-boton[data-filtro="EMT"] .filtro-icono {
+  background: #e7f0f9;
+}
+.filtro-boton[data-filtro="CRTM"] .filtro-icono {
+  background: #eaf4e0;
+}
+
+.filtro-boton:hover .filtro-icono {
+  box-shadow: inset 0 0 0 1px #c9ccd1;
+}
+
+/* Activo: el aro marca cuál está seleccionado sin tapar el icono, que es
+   lo que pasaría rellenando el cuadro de color. */
 .filtro-boton.activo {
-  background: #0178bc;
-  border-color: #0178bc;
-  color: white;
+  color: #0178bc;
+  font-weight: bold;
+}
+
+.filtro-boton.activo .filtro-icono {
+  box-shadow: inset 0 0 0 2px #0178bc;
 }
 
 /* --- VISTA: LISTA DE RESULTADOS DE BÚSQUEDA --- */

@@ -25,11 +25,39 @@
 
     <!-- VISTA 1: buscador -->
     <div id="vista-busqueda">
+      <!-- Filtros por modo. Cada uno lleva el mismo icono con el que se
+           dibuja esa fuente en el mapa, para que la correspondencia entre
+           botón y marcador se vea sin explicarla. -->
       <div id="filtros-fuente">
-        <button class="filtro-boton activo" data-filtro="todos">Todos</button>
-        <button class="filtro-boton" data-filtro="EMT">Urbano</button>
-        <button class="filtro-boton" data-filtro="CRTM">Interurbano</button>
-        <button class="filtro-boton" data-filtro="METRO">Metro</button>
+        <button class="filtro-boton activo" data-filtro="todos" title="Todos los modos">
+          <span class="filtro-icono">
+            <!-- "Todos" no tiene icono propio de transporte, así que usa una
+                 cuadrícula. Va en SVG y no en PNG para que herede el color
+                 del botón cuando está activo. -->
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <rect x="3" y="3" width="8" height="8" rx="2" />
+              <rect x="13" y="3" width="8" height="8" rx="2" />
+              <rect x="3" y="13" width="8" height="8" rx="2" />
+              <rect x="13" y="13" width="8" height="8" rx="2" />
+            </svg>
+          </span>
+          <span class="filtro-etiqueta">Todos</span>
+        </button>
+
+        <button class="filtro-boton" data-filtro="EMT" title="Autobús urbano (EMT)">
+          <span class="filtro-icono"><img src="assets/bus-urbano.png" alt="" /></span>
+          <span class="filtro-etiqueta">Urbano</span>
+        </button>
+
+        <button class="filtro-boton" data-filtro="CRTM" title="Autobús interurbano (CRTM)">
+          <span class="filtro-icono"><img src="assets/bus-interurbano.png" alt="" /></span>
+          <span class="filtro-etiqueta">Interurbano</span>
+        </button>
+
+        <button class="filtro-boton" data-filtro="METRO" title="Metro de Madrid">
+          <span class="filtro-icono"><img src="assets/metro.png" alt="" /></span>
+          <span class="filtro-etiqueta">Metro</span>
+        </button>
       </div>
       <div style="padding: 12px 16px 0 16px;">
         <input
