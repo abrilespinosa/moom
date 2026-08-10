@@ -292,6 +292,24 @@ body {
   margin-left: 2px;
 }
 
+/* Avisa de que esa hora sale de la tabla de horarios y no de un seguimiento
+   en vivo. Solo aparece en interurbano, que es donde conviven ambas cosas:
+   en Metro y EMT todas las llegadas son en tiempo real. Discreta a
+   propósito — informa sin competir con el número. */
+.tiempo-proximo .etiqueta-horario {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 8px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #eceef1;
+  color: #6b7280;
+  font-size: 10px;
+  font-weight: bold;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 /* Los tiempos siguientes, en pequeño y en gris bajo el principal. */
 .tarjeta-tiempos {
   font-size: 12px;

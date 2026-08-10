@@ -20,6 +20,7 @@ from backend.metro_client import (
     obtener_info_linea,
     obtener_tiempos_espera,
     obtener_posicion_trenes,
+    llegada_en_vivo,
 )
 
 # Esta variable "app" es el corazón de FastAPI: representa nuestro servidor.
@@ -40,6 +41,45 @@ PARADAS = cargar_todas_las_paradas()
 # recorrer las 13.560 paradas cada vez que el endpoint de Metro necesita
 # encontrar el codAnden de una estación.
 PARADAS_POR_ID = {parada["id"]: parada for parada in PARADAS}
+
+
+def agrupar_llegadas(llegadas):
+    """
+    Agrupa las llegadas que devuelve la API del CRTM por LÍNEA + destino, que
+    es como las presenta el panel: una tarjeta por línea y sentido.
+
+    Lo usan tanto Metro como el interurbano, porque la API devuelve la misma
+    estructura para los dos modos.
+
+    Agrupar solo por destino no bastaría: en una estación de trasbordo el
+    destino no dice de qué línea es cada vehículo, y esa es justo la
+    información que necesita el distintivo de color de cada tarjeta.
+
+    Cada grupo lleva un "enVivo" que dice si su llegada más próxima (la que
+    se muestra en grande) trae dato en tiempo real, es horario teórico, o no
+    se puede saber. Se toma de la PRIMERA llegada del grupo porque la API ya
+    las devuelve ordenadas por hora (pedimos orderBy=2), así que la primera
+    que llega aquí es la más cercana.
+    """
+    grupos = {}
+
+    for llegada in llegadas:
+        cod_line = llegada["line"]["codLine"]
+        destino = llegada["destination"]
+        clave = (cod_line, destino)
+
+        if clave not in grupos:
+            grupos[clave] = {
+                "codLine": cod_line,
+                "linea": llegada["line"]["shortDescription"],
+                "destino": destino,
+                "tiempos": [],
+                "enVivo": llegada_en_vivo(llegada),
+            }
+
+        grupos[clave]["tiempos"].append(llegada["time"])
+
+    return list(grupos.values())
 
 @app.get("/paradas")
 def listar_paradas():
@@ -62,18 +102,37 @@ def llegadas_parada(stop_id: str):
     """
     Devuelve los autobuses que se acercan a la parada indicada.
 
-    Ejemplo de uso: GET /parada/72
+    Ejemplo de uso: GET /parada/72              (parada urbana de EMT)
+                    GET /parada/par_8_06002     (interurbana del CRTM)
 
-    Nota CRTM: las paradas interurbanas (id con formato "par_8_XXXXX")
-    no tienen API pública de tiempo real conocida (investigado a fondo,
-    ver notas del proyecto). Para esos IDs devolvemos un mensaje claro
-    en vez de intentar consultar la API de EMT, que no las reconoce y
-    devolvería un error.
+    Las dos fuentes se sirven aquí porque para el frontend ambas son "una
+    parada de autobús", pero cada una viene de una API distinta:
+
+    - EMT: su propia API autenticada. Devolvemos su JSON tal cual, con las
+      llegadas colgando de data[0].Arrive.
+    - CRTM (ids "par_8_XXXXX"): la misma API pública que usamos para Metro.
+      Devolvemos las llegadas ya agrupadas en "llegadas", igual que
+      /metro/parada, para que el panel pueda pintarlas con el mismo código.
+
+    Durante mucho tiempo aquí se respondía que el interurbano no tenía
+    tiempo real. Resultó que sí lo tiene: la API del CRTM funciona por modo
+    de transporte y el "8" del id es precisamente el del interurbano, solo
+    que nunca se había probado contra ella. Ver llegada_en_vivo() en
+    metro_client.py para el matiz de qué llegadas son en vivo y cuáles son
+    horario teórico.
     """
     if stop_id.startswith("par_"):
+        # La API del CRTM solo entiende el código sin el prefijo del GTFS:
+        # "par_8_06002" -> "8_06002". Misma traducción que en Metro.
+        cod_parada = stop_id.replace("par_", "", 1)
+
+        info_parada = obtener_info_estacion(cod_parada)
+        llegadas = obtener_tiempos_espera(cod_parada, info_parada["stopType"])
+
         return {
-            "tiempo_real_disponible": False,
-            "mensaje": "Tiempo real no disponible para esta parada (CRTM).",
+            "parada": info_parada["name"],
+            "codStop": stop_id,
+            "llegadas": agrupar_llegadas(llegadas),
         }
 
     return obtener_llegadas_parada(stop_id)
@@ -115,36 +174,15 @@ def tiempos_estacion_metro(cod_stop: str):
     info_estacion = obtener_info_estacion(cod_anden)
     trenes = obtener_tiempos_espera(cod_anden, info_estacion["stopType"])
 
-    # Agrupamos por LÍNEA + destino, no solo por destino, igual que hace el
-    # panel de autobuses. En una estación de trasbordo como Alonso Martínez
-    # (líneas 4, 5 y 10) el destino por sí solo no dice de qué línea es cada
-    # tren, y esa es justo la información que hace falta para pintar su
-    # distintivo de color en el panel.
-    #
-    # La clave es una tupla (codLine, destino); guardamos también el número
-    # visible de la línea ("4", "10", "R") que la propia API nos da en
-    # shortDescription, para no tener que buscarlo luego en routes.txt.
-    #
     # Nota: aquí no hace falta filtrar líneas que no sean de Metro. A
     # diferencia de codLines (que en Sol incluye Cercanías), los trenes que
     # devuelve GetStopsTimes para un andén de Metro son siempre de Metro;
     # comprobado en Sol y en Alonso Martínez.
-    grupos = {}
-    for tren in trenes:
-        cod_line = tren["line"]["codLine"]
-        destino = tren["destination"]
-        clave = (cod_line, destino)
-
-        if clave not in grupos:
-            grupos[clave] = {
-                "codLine": cod_line,
-                "linea": tren["line"]["shortDescription"],
-                "destino": destino,
-                "tiempos": [],
-            }
-
-        # La API los devuelve ya en orden porque pedimos orderBy=2.
-        grupos[clave]["tiempos"].append(tren["time"])
+    #
+    # El "enVivo" de cada grupo saldrá siempre a None en Metro, porque sus
+    # trenes no traen codIssue. No pasa nada: los tiempos de Metro ya son en
+    # tiempo real, así que el panel no tiene nada que advertir.
+    grupos_llegadas = agrupar_llegadas(trenes)
 
     # En las grandes estaciones de trasbordo, la API devuelve en codLines
     # TODAS las líneas que paran ahí, incluidas las que no son de Metro:
@@ -173,7 +211,7 @@ def tiempos_estacion_metro(cod_stop: str):
         "estacion": info_estacion["name"],
         "codStop": cod_stop,
         "codLines": cod_lines,
-        "llegadas": list(grupos.values()),
+        "llegadas": grupos_llegadas,
     }
 
 

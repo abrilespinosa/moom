@@ -1,12 +1,28 @@
 """
 metro_client.py
 
-Cliente para la API pública del CRTM (Consorcio de Transportes de Madrid),
-usada para obtener datos de Metro de Madrid: información de estaciones,
-tiempos de espera en tiempo real, y posición de los trenes en una línea.
+Cliente para la API pública del CRTM (Consorcio de Transportes de Madrid):
+información de estaciones, tiempos de espera en tiempo real, y posición de
+los vehículos de una línea.
 
 A diferencia de la API de EMT, esta API NO requiere autenticación: no hay
 token, ni email/password, ni cabeceras especiales. Es de acceso público.
+
+Aunque el archivo se llama metro_client, la API es del CRTM entero y
+funciona por MODO de transporte, indicado en el prefijo del código de
+parada: "4_" es Metro y "8_" son los autobuses interurbanos. Las mismas
+funciones de aquí sirven para los dos, así que no hay un cliente aparte
+para el interurbano.
+
+Cuidado con una diferencia importante entre modos, medida contra la API:
+
+- Metro: tiempos de espera y posición de los trenes, ambos en vivo.
+- Interurbano: los tiempos SÍ traen corrección en tiempo real (ver
+  llegada_en_vivo más abajo), pero las posiciones de GetLineLocation están
+  congeladas — se comprobó que 19 autobuses de 5 líneas no se movían ni un
+  metro en varios minutos, y que tres de ellos daban coordenadas idénticas
+  hasta el quinto decimal 15 minutos después. Por eso el mapa solo pinta
+  vehículos de Metro.
 
 Endpoints usados (descubiertos leyendo el código fuente de la librería
 citram-python-api y verificados manualmente contra el servidor real):
@@ -22,10 +38,51 @@ citram-python-api y verificados manualmente contra el servidor real):
                                     circulando en una línea/sentido concreto.
 """
 
+import re
 import time
 import requests
 
 BASE_URL = "https://www.crtm.es/widgets/api"
+
+# Dentro de codIssue viene incrustada la hora PROGRAMADA de ese viaje, entre
+# guiones bajos: "8__621____4_13:15:00_1_-__20_8__621___" -> "13:15:00".
+_HORA_EN_CODISSUE = re.compile(r"_(\d{2}:\d{2}:\d{2})_")
+
+
+def llegada_en_vivo(llegada):
+    """
+    Dice si una llegada trae dato en tiempo real o es solo el horario teórico.
+
+    Cómo se distingue (descubierto comparando campos contra la API real):
+    el campo "time" es la hora PREVISTA y "codIssue" lleva incrustada la hora
+    PROGRAMADA del viaje. Si difieren, alguien ha corregido la previsión con
+    información real del autobús; si coinciden al segundo, lo más probable es
+    que solo estemos viendo la tabla de horarios.
+
+    Devuelve:
+        True   -> hay corrección en vivo
+        False  -> la hora prevista coincide con la programada
+        None   -> no se puede saber, porque esta llegada no trae codIssue
+
+    Los trenes de Metro caen siempre en None: su codIssue viene vacío. No es
+    un problema, porque sus tiempos ya son en tiempo real de por sí; el que
+    necesita esta distinción es el interurbano, donde conviven ambas cosas.
+
+    OJO: cuando devuelve False no está garantizado que no haya dato en vivo.
+    Un autobús que pase exactamente a su hora daría prevista == programada y
+    sería indistinguible. Es decir, sirve para avisar de lo que casi seguro
+    es teórico, no para afirmar que algo NO se está siguiendo.
+    """
+    cod_issue = llegada.get("codIssue") or ""
+    encontrada = _HORA_EN_CODISSUE.search(cod_issue)
+
+    if not encontrada:
+        return None
+
+    hora_programada = encontrada.group(1)
+    hora_prevista = llegada["time"][11:19]  # "2026-08-10T13:15:43+02:00" -> "13:15:43"
+
+    return hora_prevista != hora_programada
 
 # --- Caché en memoria ---
 # Mismo patrón que en emt_client.py: variables a nivel de módulo, que viven

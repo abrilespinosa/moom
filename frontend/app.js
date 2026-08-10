@@ -480,7 +480,17 @@ function limpiarChipsLineas() {
 //   color       fondo del distintivo en hexadecimal sin "#", opcional:
 //               si no se pasa, se queda el azul de la EMT que define el CSS
 //   colorTexto  color del número, para que se lea sobre ese fondo
-function crearTarjetaLlegada({ etiqueta, destino, tiempos, color, colorTexto }) {
+//   soloHorario si es cierto, esta hora sale de la tabla de horarios y no
+//               de un seguimiento en vivo: se avisa con una etiqueta para
+//               no dar a entender más precisión de la que hay
+function crearTarjetaLlegada({
+  etiqueta,
+  destino,
+  tiempos,
+  color,
+  colorTexto,
+  soloHorario = false,
+}) {
   const item = document.createElement("li");
   item.className = "tarjeta-bus";
 
@@ -504,7 +514,9 @@ function crearTarjetaLlegada({ etiqueta, destino, tiempos, color, colorTexto }) 
       <div class="tarjeta-destino">${destino}</div>
       <div class="tiempo-proximo">${formatearMinutos(
         tiempos[0]
-      )}<span class="unidad">${unidad}</span></div>
+      )}<span class="unidad">${unidad}</span>${
+    soloHorario ? '<span class="etiqueta-horario">horario</span>' : ""
+  }</div>
       ${
         tiemposSecundarios
           ? `<div class="tarjeta-tiempos">Siguiente: ${tiemposSecundarios} min</div>`
@@ -514,6 +526,53 @@ function crearTarjetaLlegada({ etiqueta, destino, tiempos, color, colorTexto }) 
   `;
 
   return item;
+}
+
+// Verde corporativo de los autobuses interurbanos. Va aquí como constante y
+// no en un diccionario como los de Metro porque las 354 líneas del GTFS del
+// CRTM comparten exactamente este color, igual que las 236 de la EMT
+// comparten su azul (ese vive en el CSS, como valor por defecto).
+const COLOR_LINEA_INTERURBANA = { color: "8EBF42", colorTexto: "FFFFFF" };
+
+// Pinta en el panel una lista de llegadas ya agrupadas por línea + destino,
+// tal como la devuelven /metro/parada y /parada para las interurbanas.
+//
+//   grupos          lo que manda el backend, con horas ISO absolutas
+//   mensajeVacio    qué decir si no viene ninguna
+//   colorPorDefecto colores del distintivo para las líneas que no estén en
+//                   COLORES_LINEAS_METRO (es decir, las interurbanas)
+function pintarLlegadasAgrupadas(grupos, mensajeVacio, colorPorDefecto) {
+  // El backend da la hora absoluta de llegada; aquí la convertimos en
+  // segundos restantes contra el reloj del navegador y ordenamos.
+  const tarjetas = grupos.map((grupo) => ({
+    ...grupo,
+    tiempos: grupo.tiempos.map(minutosHastaLlegada).sort((a, b) => a - b),
+  }));
+
+  tarjetas.sort((a, b) => a.tiempos[0] - b.tiempos[0]);
+
+  listaLlegadas.innerHTML = "";
+
+  if (tarjetas.length === 0) {
+    mostrarMensajeEnPanel(mensajeVacio);
+    return;
+  }
+
+  tarjetas.forEach((tarjeta) => {
+    const linea = COLORES_LINEAS_METRO[tarjeta.codLine];
+
+    listaLlegadas.appendChild(
+      crearTarjetaLlegada({
+        etiqueta: tarjeta.linea,
+        destino: tarjeta.destino,
+        tiempos: tarjeta.tiempos,
+        color: linea?.color ?? colorPorDefecto?.color,
+        colorTexto: linea?.color_texto ?? colorPorDefecto?.colorTexto,
+        // Solo el interurbano distingue: en Metro enVivo llega como null.
+        soloHorario: tarjeta.enVivo === false,
+      })
+    );
+  });
 }
 
 // Icono que representa cada modo en la tarjeta de cabecera. Son los mismos
@@ -547,11 +606,25 @@ async function actualizarAutobuses() {
     const respuesta = await fetch(`${URL_BACKEND}/parada/${STOP_ID}`);
     const datos = await respuesta.json();
 
-    // Las paradas interurbanas (CRTM) no tienen API de tiempo real, y el
-    // backend nos lo dice explícitamente con este campo en vez de devolver
-    // llegadas. Hay que comprobarlo ANTES de tocar datos.data, porque en
-    // ese caso no existe y el error se tragaría el catch de abajo, dejando
-    // el panel vacío y sin explicar por qué.
+    // Las paradas interurbanas (CRTM) vienen ya agrupadas por línea y
+    // destino, con la misma forma que las de Metro. Hay que comprobarlo
+    // ANTES de tocar datos.data, que solo existe en la respuesta de EMT.
+    //
+    // No se pintan vehículos en el mapa para el interurbano: la API sí los
+    // devuelve, pero con posiciones congeladas (ver la nota de cabecera en
+    // metro_client.py), así que dibujarlos sería mentir.
+    if (datos.llegadas) {
+      limpiarMarcadoresAutobuses();
+      pintarLlegadasAgrupadas(
+        datos.llegadas,
+        "No hay autobuses en camino ahora mismo.",
+        COLOR_LINEA_INTERURBANA
+      );
+      return;
+    }
+
+    // Red de seguridad heredada: si algún día el backend vuelve a declarar
+    // una parada sin tiempo real, se muestra su mensaje en vez de fallar.
     if (datos.tiempo_real_disponible === false) {
       limpiarMarcadoresAutobuses();
       mostrarMensajeEnPanel(datos.mensaje);
@@ -680,40 +753,13 @@ async function actualizarTiemposMetro() {
     // inofensivo y evita tener que sincronizarlos por otro camino.
     pintarChipsLineas(datos.codLines ?? []);
 
-    // El backend ya agrupa por línea + destino, así que cada elemento de
-    // datos.llegadas es una tarjeta. Aquí solo convertimos las horas
-    // absolutas en segundos restantes y las ordenamos.
-    const tarjetas = datos.llegadas.map((grupo) => ({
-      ...grupo,
-      tiempos: grupo.tiempos.map(minutosHastaLlegada).sort((a, b) => a - b),
-    }));
-
-    // Ordenamos las tarjetas por su tren más próximo, igual que con bus.
-    tarjetas.sort((a, b) => a.tiempos[0] - b.tiempos[0]);
-
-    listaLlegadas.innerHTML = "";
-
-    if (tarjetas.length === 0) {
-      mostrarMensajeEnPanel("No hay trenes en camino ahora mismo.");
-      return;
-    }
-
-    tarjetas.forEach((tarjeta) => {
-      // Cada línea de Metro sí tiene su color oficial, a diferencia de las
-      // de la EMT. Si el diccionario de colores no llegó a cargarse, la
-      // tarjeta se pinta igual con el azul por defecto.
-      const linea = COLORES_LINEAS_METRO[tarjeta.codLine];
-
-      listaLlegadas.appendChild(
-        crearTarjetaLlegada({
-          etiqueta: tarjeta.linea,
-          destino: tarjeta.destino,
-          tiempos: tarjeta.tiempos,
-          color: linea?.color,
-          colorTexto: linea?.color_texto,
-        })
-      );
-    });
+    // Sin color por defecto: todas las líneas de Metro están en
+    // COLORES_LINEAS_METRO, así que cada tarjeta encuentra el suyo. Si el
+    // diccionario no hubiera cargado, quedaría el azul que pone el CSS.
+    pintarLlegadasAgrupadas(
+      datos.llegadas,
+      "No hay trenes en camino ahora mismo."
+    );
   } catch (error) {
     console.error("Error al actualizar los tiempos de Metro:", error);
   }
