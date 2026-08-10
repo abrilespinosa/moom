@@ -111,6 +111,10 @@ body {
   flex-direction: column;
 }
 
+#cabecera-llegadas {
+  padding: 12px 16px 0 16px;
+}
+
 #boton-volver {
   background: none;
   border: none;
@@ -118,7 +122,7 @@ body {
   font-size: 14px;
   cursor: pointer;
   padding: 0;
-  margin-bottom: 6px;
+  margin-bottom: 10px;
   text-align: left;
 }
 
@@ -126,19 +130,73 @@ body {
   text-decoration: underline;
 }
 
+/* Tarjeta de identidad de la parada: icono del modo a la izquierda,
+   nombre + código + líneas a la derecha. */
+#tarjeta-parada {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: white;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* El icono conserva su proporción real (los PNG de bus y de metro tienen
+   relaciones de aspecto muy distintas), centrado dentro de un cuadro fijo
+   para que el texto de al lado quede siempre alineado sea cual sea el modo. */
+#icono-parada-actual {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  object-fit: contain;
+  background: #f0f1f3;
+  border-radius: 10px;
+  padding: 7px;
+}
+
+#datos-parada {
+  min-width: 0; /* deja que el nombre largo trunque en vez de desbordar */
+}
+
 #nombre-parada-actual {
   font-weight: bold;
   font-size: 15px;
   color: #1a1a1a;
+  line-height: 1.25;
 }
 
-/* Distintivos de línea de la cabecera de estación. El contenedor se
-   oculta cuando está vacío (paradas de bus, o antes de que lleguen los
-   datos) para no dejar un hueco en blanco bajo el nombre. */
+#codigo-parada-actual {
+  font-size: 12px;
+  color: #888;
+  margin-top: 1px;
+}
+
+#codigo-parada-actual:empty {
+  display: none;
+}
+
+/* Título de sección sobre la lista de llegadas ("Tiempos reales"). */
+#titulo-seccion {
+  padding: 16px 16px 0 16px;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #8a8a8f;
+}
+
+#titulo-seccion:empty {
+  display: none;
+}
+
+/* Distintivos de línea de la cabecera. El contenedor se oculta cuando está
+   vacío (paradas de bus, o antes de que lleguen los datos) para no dejar un
+   hueco bajo el nombre. */
 #chips-lineas {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: 4px;
   margin-top: 6px;
 }
 
@@ -146,23 +204,32 @@ body {
   display: none;
 }
 
-/* El color de fondo y el del texto se aplican inline desde app.js, porque
-   salen del GTFS y no queremos una clase CSS por línea.
-   El borde sí va aquí y es imprescindible: la Línea R (Ramal) tiene fondo
-   blanco oficial, así que sin él su chip sería invisible sobre el panel.
-   Neutro y translúcido para que apenas se note en las demás. */
-.chip-linea {
+/* Forma compartida por el distintivo pequeño de la cabecera y el grande de
+   cada tarjeta de llegada: cuadrado de esquinas redondeadas, como en la app
+   oficial. Solo cambian el tamaño y la tipografía, que van en cada clase.
+
+   Los colores se aplican inline desde app.js porque salen del GTFS y no
+   queremos una regla CSS por línea. El borde sí vive aquí y es
+   imprescindible: la Línea R (Ramal) es oficialmente blanca, así que sin él
+   su distintivo sería invisible sobre el fondo blanco de la tarjeta. Neutro
+   y translúcido para que apenas se note en las demás. */
+.chip-linea,
+.tarjeta-linea {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  box-sizing: border-box;
-  font-size: 11px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
   font-weight: bold;
   line-height: 1;
+}
+
+.chip-linea {
+  min-width: 24px;
+  height: 24px;
+  padding: 0 5px;
+  font-size: 12px;
 }
 
 #lista-llegadas {
@@ -174,65 +241,62 @@ body {
   gap: 8px;
 }
 
-/* Cada bus es una "tarjeta": línea coloreada + destino + minutos */
+/* Cada llegada es una tarjeta: distintivo de línea a la izquierda y, a su
+   derecha, el destino con el tiempo debajo en grande. Se usa igual para
+   autobuses y para trenes. */
 .tarjeta-bus {
   display: flex;
-  align-items: center;
+  align-items: flex-start; /* el distintivo se alinea con el destino, no al centro */
   background: white;
-  border-radius: 8px;
-  padding: 10px 12px;
+  border-radius: 10px;
+  padding: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   gap: 12px;
 }
 
+/* La forma la comparte con .chip-linea, arriba. Aquí solo el tamaño y el
+   color por defecto: el azul corporativo de la EMT, que es el que trae su
+   routes.txt para las 236 líneas. Las de Metro lo sobrescriben inline. */
 .tarjeta-linea {
-  width: 38px;
-  height: 38px;
-  flex-shrink: 0; /* no se encoge aunque el destino sea largo */
+  width: 40px;
+  height: 40px;
   background-color: #0178bc;
   color: white;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  font-weight: bold;
+  font-size: 14px;
 }
 
 .tarjeta-info {
-  flex: 1; /* ocupa todo el espacio disponible entre el icono y los minutos */
+  flex: 1;
   min-width: 0; /* permite que el texto largo trunque en vez de desbordar */
 }
 
 .tarjeta-destino {
-  font-size: 13px;
-  color: #333;
+  font-size: 14px;
+  color: #444;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis; /* "Plaza de Castilla..." si no cabe */
 }
 
-.tarjeta-tiempos {
-  font-size: 12px;
-  color: #888;
-  margin-top: 2px;
-}
-
-/* El primer tiempo (el más próximo) se destaca en color y tamaño */
+/* El tiempo más próximo es el dato principal de la tarjeta: va debajo del
+   destino y en grande, como en la app oficial. */
 .tiempo-proximo {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: bold;
-  color: #0178bc;
-  flex-shrink: 0;
-  text-align: right;
-  min-width: 50px;
+  color: #1a1a1a;
+  margin-top: 3px;
 }
 
 .tiempo-proximo .unidad {
-  font-size: 11px;
-  font-weight: normal;
+  font-size: 13px;
+  margin-left: 2px;
+}
+
+/* Los tiempos siguientes, en pequeño y en gris bajo el principal. */
+.tarjeta-tiempos {
+  font-size: 12px;
   color: #888;
-  display: block;
+  margin-top: 3px;
 }
 
 #mensaje-vacio {

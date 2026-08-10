@@ -43,13 +43,23 @@
 
     <!-- VISTA 2: llegadas a la parada seleccionada (oculta al inicio) -->
     <div id="vista-llegadas">
-      <div style="padding: 12px 16px 0 16px;">
+      <div id="cabecera-llegadas">
         <button id="boton-volver">← Volver a buscar</button>
-        <div id="nombre-parada-actual"></div>
-        <!-- Distintivos de las líneas que pasan por la estación. Se rellena
-             desde app.js y se vacía al cambiar de parada. -->
-        <div id="chips-lineas"></div>
+
+        <!-- Tarjeta con la identidad de la parada: icono del modo, nombre,
+             código y las líneas que pasan por ella. Todo se rellena desde
+             app.js y se vacía al cambiar de parada. -->
+        <div id="tarjeta-parada">
+          <img id="icono-parada-actual" alt="" />
+          <div id="datos-parada">
+            <div id="nombre-parada-actual"></div>
+            <div id="codigo-parada-actual"></div>
+            <div id="chips-lineas"></div>
+          </div>
+        </div>
       </div>
+
+      <div id="titulo-seccion"></div>
       <ul id="lista-llegadas"></ul>
     </div>
 

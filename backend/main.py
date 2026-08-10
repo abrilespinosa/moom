@@ -83,7 +83,8 @@ def llegadas_parada(stop_id: str):
 def tiempos_estacion_metro(cod_stop: str):
     """
     Devuelve los próximos trenes en una estación de Metro, agrupados por
-    destino (igual que el panel de la app oficial: un bloque por sentido).
+    línea y destino (igual que el panel de la app oficial: un bloque por
+    línea y sentido, con el distintivo de la línea a la izquierda).
 
     Ejemplo de uso: GET /metro/parada/est_4_323  (Alsacia, Línea 2)
 
@@ -114,14 +115,36 @@ def tiempos_estacion_metro(cod_stop: str):
     info_estacion = obtener_info_estacion(cod_anden)
     trenes = obtener_tiempos_espera(cod_anden, info_estacion["stopType"])
 
-    # Agrupamos los trenes en un diccionario cuya clave es el destino
-    # (ej. "LAS ROSAS") y cuyo valor es la lista de horas de los trenes
-    # que van hacia ese destino, ya ordenados (la API los devuelve en
-    # orden porque pedimos orderBy=2).
-    trenes_por_destino = {}
+    # Agrupamos por LÍNEA + destino, no solo por destino, igual que hace el
+    # panel de autobuses. En una estación de trasbordo como Alonso Martínez
+    # (líneas 4, 5 y 10) el destino por sí solo no dice de qué línea es cada
+    # tren, y esa es justo la información que hace falta para pintar su
+    # distintivo de color en el panel.
+    #
+    # La clave es una tupla (codLine, destino); guardamos también el número
+    # visible de la línea ("4", "10", "R") que la propia API nos da en
+    # shortDescription, para no tener que buscarlo luego en routes.txt.
+    #
+    # Nota: aquí no hace falta filtrar líneas que no sean de Metro. A
+    # diferencia de codLines (que en Sol incluye Cercanías), los trenes que
+    # devuelve GetStopsTimes para un andén de Metro son siempre de Metro;
+    # comprobado en Sol y en Alonso Martínez.
+    grupos = {}
     for tren in trenes:
+        cod_line = tren["line"]["codLine"]
         destino = tren["destination"]
-        trenes_por_destino.setdefault(destino, []).append(tren["time"])
+        clave = (cod_line, destino)
+
+        if clave not in grupos:
+            grupos[clave] = {
+                "codLine": cod_line,
+                "linea": tren["line"]["shortDescription"],
+                "destino": destino,
+                "tiempos": [],
+            }
+
+        # La API los devuelve ya en orden porque pedimos orderBy=2.
+        grupos[clave]["tiempos"].append(tren["time"])
 
     # En las grandes estaciones de trasbordo, la API devuelve en codLines
     # TODAS las líneas que paran ahí, incluidas las que no son de Metro:
@@ -150,7 +173,7 @@ def tiempos_estacion_metro(cod_stop: str):
         "estacion": info_estacion["name"],
         "codStop": cod_stop,
         "codLines": cod_lines,
-        "destinos": trenes_por_destino,
+        "llegadas": list(grupos.values()),
     }
 
 

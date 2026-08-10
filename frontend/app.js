@@ -232,7 +232,10 @@ const listaResultados = document.getElementById("lista-resultados");
 const vistaBusqueda = document.getElementById("vista-busqueda");
 const vistaLlegadas = document.getElementById("vista-llegadas");
 const nombreParadaActual = document.getElementById("nombre-parada-actual");
+const codigoParadaActual = document.getElementById("codigo-parada-actual");
+const iconoParadaActual = document.getElementById("icono-parada-actual");
 const chipsLineas = document.getElementById("chips-lineas");
+const tituloSeccion = document.getElementById("titulo-seccion");
 const listaLlegadas = document.getElementById("lista-llegadas");
 const botonVolver = document.getElementById("boton-volver");
 const subtituloHeader = document.getElementById("subtitulo-header");
@@ -333,7 +336,13 @@ function seleccionarParada(parada) {
   vistaBusqueda.style.display = "none";
   vistaLlegadas.style.display = "flex";
   subtituloHeader.textContent = "Próximas llegadas";
-  nombreParadaActual.textContent = `${parada.nombre} · parada ${parada.id}`;
+
+  pintarCabeceraParada(parada);
+
+  // "Tiempos reales" es el nombre que usa la app oficial para el panel de
+  // Metro; en autobús encaja mejor hablar de llegadas.
+  tituloSeccion.textContent =
+    parada.fuente === "METRO" ? "Tiempos reales" : "Próximas llegadas";
 
   // Limpiamos el buscador para la próxima vez que se use
   inputBuscar.value = "";
@@ -461,6 +470,74 @@ function limpiarChipsLineas() {
   chipsLineas.innerHTML = "";
 }
 
+// Construye una tarjeta de llegada, la misma para autobuses y para trenes:
+// distintivo de línea a la izquierda y, a su derecha, el destino con el
+// tiempo más próximo debajo en grande.
+//
+//   etiqueta    lo que va dentro del distintivo ("27", "10", "R")
+//   destino     hacia dónde va
+//   tiempos     segundos que faltan, YA ordenados de menor a mayor
+//   color       fondo del distintivo en hexadecimal sin "#", opcional:
+//               si no se pasa, se queda el azul de la EMT que define el CSS
+//   colorTexto  color del número, para que se lea sobre ese fondo
+function crearTarjetaLlegada({ etiqueta, destino, tiempos, color, colorTexto }) {
+  const item = document.createElement("li");
+  item.className = "tarjeta-bus";
+
+  // Tiempos secundarios (todos menos el primero), unidos por coma.
+  // Ej: si tiempos = [120, 540], queda "9 min" como secundario.
+  const tiemposSecundarios = tiempos
+    .slice(1)
+    .map((s) => formatearMinutos(s))
+    .join(", ");
+
+  const estilo = color
+    ? ` style="background-color:#${color}; color:#${colorTexto ?? "FFFFFF"}"`
+    : "";
+
+  // "En camino" ya se explica solo, así que en ese caso no añadimos "min".
+  const unidad = Math.floor(tiempos[0] / 60) < 1 ? "" : "min";
+
+  item.innerHTML = `
+    <div class="tarjeta-linea"${estilo}>${etiqueta}</div>
+    <div class="tarjeta-info">
+      <div class="tarjeta-destino">${destino}</div>
+      <div class="tiempo-proximo">${formatearMinutos(
+        tiempos[0]
+      )}<span class="unidad">${unidad}</span></div>
+      ${
+        tiemposSecundarios
+          ? `<div class="tarjeta-tiempos">Siguiente: ${tiemposSecundarios} min</div>`
+          : ""
+      }
+    </div>
+  `;
+
+  return item;
+}
+
+// Icono que representa cada modo en la tarjeta de cabecera. Son los mismos
+// PNG que ya usa el mapa, reaprovechados a mayor tamaño.
+const ICONO_CABECERA_POR_FUENTE = {
+  EMT: "bus-urbano.png",
+  CRTM: "bus-interurbano.png",
+  METRO: "metro.png",
+};
+
+// Rellena la tarjeta de identidad de la parada: icono del modo, nombre y,
+// solo en autobús, el código de parada (el que está escrito en la
+// marquesina y sirve para buscarla). En Metro se omite porque su id
+// interno, del tipo "est_90_58", no le dice nada a nadie.
+function pintarCabeceraParada(parada) {
+  const archivo =
+    ICONO_CABECERA_POR_FUENTE[parada.fuente] ?? ICONO_CABECERA_POR_FUENTE.EMT;
+
+  iconoParadaActual.src = `assets/${archivo}`;
+  nombreParadaActual.textContent = parada.nombre;
+  codigoParadaActual.textContent =
+    parada.fuente === "METRO" ? "" : `Parada ${parada.id}`;
+}
+
 async function actualizarAutobuses() {
   if (STOP_ID === null) {
     return; // todavía no se ha seleccionado ninguna parada
@@ -551,35 +628,15 @@ async function actualizarAutobuses() {
     }
 
     tarjetas.forEach((tarjeta) => {
-      const item = document.createElement("li");
-      item.className = "tarjeta-bus";
-
-      // Tiempos secundarios (todos menos el primero), unidos por coma.
-      // Ej: si tiempos = [120, 540], queda "9 min" como secundario.
-      const tiemposSecundarios = tarjeta.tiempos
-        .slice(1)
-        .map((s) => formatearMinutos(s))
-        .join(", ");
-
-      item.innerHTML = `
-        <div class="tarjeta-linea">${tarjeta.line}</div>
-        <div class="tarjeta-info">
-          <div class="tarjeta-destino">→ ${tarjeta.destination}</div>
-          ${
-            tiemposSecundarios
-              ? `<div class="tarjeta-tiempos">Siguiente: ${tiemposSecundarios} min</div>`
-              : ""
-          }
-        </div>
-        <div class="tiempo-proximo">
-          ${formatearMinutos(tarjeta.tiempos[0])}
-          <span class="unidad">${
-            Math.floor(tarjeta.tiempos[0] / 60) < 1 ? "" : "min"
-          }</span>
-        </div>
-      `;
-
-      listaLlegadas.appendChild(item);
+      // Sin color: las 236 líneas de la EMT comparten el mismo azul, que ya
+      // viene puesto por defecto en .tarjeta-linea.
+      listaLlegadas.appendChild(
+        crearTarjetaLlegada({
+          etiqueta: tarjeta.line,
+          destino: tarjeta.destination,
+          tiempos: tarjeta.tiempos,
+        })
+      );
     });
   } catch (error) {
     console.error("Error al actualizar los autobuses:", error);
@@ -610,8 +667,8 @@ async function actualizarTiemposMetro() {
 
     // Igual que en las paradas de bus: si el backend no pudo resolver el
     // andén de esta estación, avisamos en vez de reventar al recorrer
-    // datos.destinos, que en ese caso no existe.
-    if (!datos.destinos) {
+    // datos.llegadas, que en ese caso no existe.
+    if (!datos.llegadas) {
       mostrarMensajeEnPanel(
         datos.mensaje ?? "No se pudieron obtener los tiempos de esta estación."
       );
@@ -623,12 +680,12 @@ async function actualizarTiemposMetro() {
     // inofensivo y evita tener que sincronizarlos por otro camino.
     pintarChipsLineas(datos.codLines ?? []);
 
-    // datos.destinos = { "LAS ROSAS": ["2026-...", "2026-..."], "CUATRO CAMINOS": [...] }
-    // Cada clave es un destino, igual que las dos tarjetas de tu captura
-    // de la app oficial (un bloque por sentido).
-    const tarjetas = Object.entries(datos.destinos).map(([destino, horas]) => ({
-      destino,
-      tiempos: horas.map(minutosHastaLlegada).sort((a, b) => a - b),
+    // El backend ya agrupa por línea + destino, así que cada elemento de
+    // datos.llegadas es una tarjeta. Aquí solo convertimos las horas
+    // absolutas en segundos restantes y las ordenamos.
+    const tarjetas = datos.llegadas.map((grupo) => ({
+      ...grupo,
+      tiempos: grupo.tiempos.map(minutosHastaLlegada).sort((a, b) => a - b),
     }));
 
     // Ordenamos las tarjetas por su tren más próximo, igual que con bus.
@@ -642,32 +699,20 @@ async function actualizarTiemposMetro() {
     }
 
     tarjetas.forEach((tarjeta) => {
-      const item = document.createElement("li");
-      item.className = "tarjeta-bus"; // reutilizamos el mismo estilo de tarjeta
+      // Cada línea de Metro sí tiene su color oficial, a diferencia de las
+      // de la EMT. Si el diccionario de colores no llegó a cargarse, la
+      // tarjeta se pinta igual con el azul por defecto.
+      const linea = COLORES_LINEAS_METRO[tarjeta.codLine];
 
-      const tiemposSecundarios = tarjeta.tiempos
-        .slice(1)
-        .map((s) => formatearMinutos(s))
-        .join(", ");
-
-      item.innerHTML = `
-        <div class="tarjeta-info">
-          <div class="tarjeta-destino">→ ${tarjeta.destino}</div>
-          ${
-            tiemposSecundarios
-              ? `<div class="tarjeta-tiempos">Siguiente: ${tiemposSecundarios} min</div>`
-              : ""
-          }
-        </div>
-        <div class="tiempo-proximo">
-          ${formatearMinutos(tarjeta.tiempos[0])}
-          <span class="unidad">${
-            Math.floor(tarjeta.tiempos[0] / 60) < 1 ? "" : "min"
-          }</span>
-        </div>
-      `;
-
-      listaLlegadas.appendChild(item);
+      listaLlegadas.appendChild(
+        crearTarjetaLlegada({
+          etiqueta: tarjeta.linea,
+          destino: tarjeta.destino,
+          tiempos: tarjeta.tiempos,
+          color: linea?.color,
+          colorTexto: linea?.color_texto,
+        })
+      );
     });
   } catch (error) {
     console.error("Error al actualizar los tiempos de Metro:", error);
