@@ -825,7 +825,22 @@ async function seleccionarLinea(linea) {
       sentidosLinea.appendChild(boton);
     });
 
-    pintarSentido(0);
+    // 21 líneas reales (la F, la G, la Línea 3 de Metro…) no aparecen en el
+    // trips.txt que publican EMT y CRTM, así que llegan aquí sin recorrido.
+    // Se abren igual, con su nombre y su color, y lo que falta se explica en
+    // vez de dejar una lista vacía sin motivo aparente.
+    if (datos.sentidos.length === 0) {
+      tituloRecorrido.textContent = "Recorrido no disponible";
+      listaRecorrido.innerHTML = `
+        <li class="recorrido-no-disponible">
+          Los datos abiertos de esta línea no incluyen su lista de paradas.
+          Sus paradas sí están en el mapa y sus tiempos de llegada funcionan
+          con normalidad.
+        </li>
+      `;
+    } else {
+      pintarSentido(0);
+    }
 
     mostrarVista("linea");
     subtituloHeader.textContent = "Recorrido de la línea";

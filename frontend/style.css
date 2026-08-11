@@ -682,6 +682,16 @@ body {
   display: none;
 }
 
+/* Explicación que ocupa el lugar del recorrido en las líneas que el GTFS
+   no detalla. Sin viñeta ni cursor de clic: no es una parada más. */
+.recorrido-no-disponible {
+  list-style: none;
+  padding: 14px 16px;
+  color: var(--texto-suave);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 #mensaje-vacio {
   padding: 20px 16px;
   color: var(--texto-suave);
