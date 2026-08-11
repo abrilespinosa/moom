@@ -522,6 +522,18 @@ function crearResultadoDeLinea(linea) {
   return item;
 }
 
+// El código que se enseña de una parada: el que está escrito en la
+// marquesina, no el id interno del GTFS.
+//
+// Las paradas de la EMT ya vienen con su número pelado ("72"), pero las
+// del CRTM llevan el prefijo del volcado ("par_8_09568") y las estaciones
+// de Metro otro parecido ("est_4_323"). Ese prefijo indica el modo de
+// transporte y le sirve al backend para saber a qué API preguntar, pero
+// para quien mira la pantalla es ruido: en la parada pone 09568.
+function codigoDeParada(parada) {
+  return parada.id.replace(/^[a-z]+_\d+_/, "");
+}
+
 function crearResultadoDeParada(parada) {
   const item = document.createElement("li");
 
@@ -529,7 +541,7 @@ function crearResultadoDeParada(parada) {
   // truncar con puntos suspensivos cuando no cabe junto a la estrella.
   const texto = document.createElement("span");
   texto.className = "texto";
-  texto.textContent = `${parada.nombre} (parada ${parada.id})`;
+  texto.textContent = `${parada.nombre} (parada ${codigoDeParada(parada)})`;
   item.appendChild(texto);
   item.appendChild(crearBotonFavorito("paradas", parada.id));
 
@@ -1146,7 +1158,7 @@ function pintarCabeceraParada(parada) {
   iconoParadaActual.src = `assets/${archivo}`;
   nombreParadaActual.textContent = parada.nombre;
   codigoParadaActual.textContent =
-    parada.fuente === "METRO" ? "" : `Parada ${parada.id}`;
+    parada.fuente === "METRO" ? "" : `Parada ${codigoDeParada(parada)}`;
 
   prepararBotonFavorito(botonFavoritoParada, "paradas", parada.id);
 }
