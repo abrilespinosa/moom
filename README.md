@@ -6,7 +6,7 @@ Aplicación para visualizar en un mapa, en tiempo real, el transporte público d
 
 ## Estado del proyecto
 
-🚧 En desarrollo — Backend funcional con datos de EMT, CRTM y Metro, y frontend con mapa interactivo.
+🚧 En desarrollo — Backend funcional con datos de EMT, CRTM y Metro, y frontend con mapa interactivo, buscador de paradas y líneas, y favoritos.
 
 ## Funcionalidades actuales
 
@@ -22,25 +22,36 @@ Aplicación para visualizar en un mapa, en tiempo real, el transporte público d
 - No se muestran los autobuses en el mapa: la API devuelve posiciones, pero están congeladas y no reflejan el movimiento real.
 
 **Metro de Madrid**
-- Próximos trenes por estación, agrupados por destino (un bloque por sentido).
+- Próximos trenes por estación, agrupados por línea y destino (un bloque por línea y sentido).
+- Distintivos con el número y el color oficial de cada línea que pasa por la estación.
 - Posición en el mapa de los trenes que se acercan a la estación seleccionada, con el color oficial de cada línea y un tooltip con el sentido.
-- Las 240 estaciones resuelven internamente su código de andén, que es el único que entiende la API del CRTM.
+- Las 242 estaciones resuelven internamente su código de andén, que es el único que entiende la API del CRTM.
 
-**Mapa**
+**Búsqueda por línea**
+- Un único buscador para paradas y líneas: al escribir un número, las líneas aparecen primero y se prioriza la coincidencia exacta (quien busca "27" quiere la línea 27, no la 270).
+- Al elegir una línea se ve su recorrido completo, con las paradas en orden y separadas por sentido; desde ahí se salta a las llegadas de cualquiera de ellas.
+- Requiere los archivos GTFS pesados (`trips.txt` y `stop_times.txt`), que no están en el repositorio. Si faltan, esta función se desactiva sola y el resto de la aplicación sigue funcionando con normalidad.
+- Hay 21 líneas que los datos abiertos no detallan (la F y la G de la EMT, la Línea 3 de Metro y varias interurbanas). Se pueden buscar y abrir igual, avisando de que su recorrido no está disponible; sus paradas y sus tiempos en vivo funcionan con normalidad.
+
+**Favoritos**
+- Paradas y líneas se pueden marcar como favoritas, y se guardan en el navegador (`localStorage`).
+- Con el buscador vacío, la lista muestra los favoritos, filtrados por el modo de transporte activo igual que una búsqueda.
+
+**Mapa e interfaz**
 - Leaflet con tiles de CartoDB Voyager.
 - Paradas visibles a partir de zoom 15 y solo dentro del área en pantalla, para no dibujar miles de marcadores a la vez.
 - Filtros por fuente: Todos / Urbano / Interurbano / Metro.
-- Búsqueda de paradas por nombre o ID.
 - Botón de geolocalización para centrar el mapa en tu posición.
-- Refresco automático: cada 10 s para EMT y cada 20 s para Metro, acompasado con el ritmo al que cada API actualiza sus datos.
+- Panel lateral redimensionable arrastrando el divisor; el ancho elegido se recuerda entre visitas.
+- Refresco automático: cada 10 s para EMT y cada 20 s para Metro, acompasado con el ritmo al que cada API actualiza sus datos. Si un refresco falla, se avisa en el panel en vez de seguir mostrando los tiempos viejos como si fueran actuales.
 
 ## Estructura del proyecto
 
 ```
 backend/
   emt_client.py        # Autenticación EMT y llegadas en tiempo real
-  metro_client.py      # API pública del CRTM: estaciones, tiempos y posición de trenes
-  gtfs_loader.py       # Carga de paradas y colores de línea desde archivos GTFS
+  metro_client.py      # API pública del CRTM: estaciones, tiempos y posición de vehículos
+  gtfs_loader.py       # Carga de paradas, líneas y colores desde archivos GTFS
   main.py              # Servidor FastAPI y endpoints
   data/
     emt/               # GTFS de EMT (stops.txt, routes.txt)
@@ -49,18 +60,24 @@ backend/
 frontend/
   index.html           # Estructura de la página
   style.css            # Estilos del mapa y los paneles
-  app.js               # Lógica del mapa, búsqueda, llegadas y trenes
-  assets/              # Iconos de parada y estación
+  app.js               # Lógica del mapa, búsqueda, favoritos, llegadas y vehículos
+  assets/              # Logo e iconos de parada y estación
 ```
 
 ## Endpoints
 
 | Endpoint | Descripción |
 |---|---|
-| `GET /paradas` | Todas las paradas (EMT + CRTM + Metro) con id, nombre, coordenadas y fuente |
+| `GET /paradas` | Las 13.542 paradas de las tres redes con id, nombre, coordenadas y fuente |
 | `GET /parada/{stop_id}` | Próximas llegadas de autobús. Para EMT devuelve el JSON de su API; para ids `par_` (interurbano) devuelve las llegadas agrupadas por línea y destino |
-| `GET /metro/parada/{cod_stop}` | Próximos trenes en una estación, agrupados por destino |
+| `GET /lineas` | Las 603 líneas de las tres redes, sin recorrido, para el buscador |
+| `GET /linea/{id}` | Una línea con sus paradas en orden, separadas por sentido (ej. `EMT-027`) |
+| `GET /metro/parada/{cod_stop}` | Próximos trenes en una estación, agrupados por línea y destino |
+| `GET /metro/parada/{cod_stop}/lineas` | Solo las líneas de una estación; la mitad barata del anterior, para el mapa |
 | `GET /metro/linea/{cod_line}/vehiculos` | Posición de los trenes de una línea. Acepta `?cod_stop=est_XXX` para obtener los cercanos a una estación concreta |
+| `GET /metro/lineas/colores` | Colores oficiales de las líneas de Metro; el frontend lo pide una vez al arrancar |
+
+Cuando una API externa no responde, los endpoints que dependen de ella devuelven `503` con un mensaje, en vez de un error genérico.
 
 ## Requisitos
 
@@ -124,26 +141,8 @@ Los **datos** no lo están. Los archivos GTFS de `backend/data/` pertenecen a la
 
 Una nota sobre esas APIs: la de EMT es oficial y está documentada. La del CRTM (`crtm.es/widgets/api`) es la que alimenta los widgets de su propia web — es pública y no requiere autenticación, pero no está documentada ni tiene condiciones de uso publicadas. El proyecto la usa con moderación (cachés en memoria e intervalos de sondeo ajustados al ritmo real al que cambian los datos), pero conviene saber que no hay garantía de estabilidad.
 
-## Roadmap
-
-- [x] Estructura inicial del proyecto
-- [x] Conexión y autenticación con la API de EMT
-- [x] Posición en tiempo real de los autobuses por parada
-- [x] Servidor local que expone los datos como JSON (FastAPI)
-- [x] Mapa interactivo en el navegador (Leaflet)
-- [x] Panel de búsqueda de paradas y llegadas agrupadas por línea/destino
-- [x] Integrar paradas interurbanas de CRTM
-- [x] Diferenciar visualmente paradas EMT, CRTM y Metro en el mapa
-- [x] Integrar Metro: estaciones, panel de llegadas y trenes en el mapa
-- [x] Servir el frontend con un servidor local en vez de abrirlo como archivo
-- [ ] Chips con el color de cada línea en la cabecera de estación
-- [ ] Reducir el ruido visual cuando se solapan muchos marcadores
-- [ ] Combinar varias paradas para ver más vehículos simultáneamente
-- [ ] Búsqueda y navegación por línea (requiere los GTFS completos: `trips.txt`, `stop_times.txt`)
-- [x] Tiempo real de autobuses interurbanos
-- [ ] Persistencia en PostgreSQL
-- [ ] Despliegue
-
 ## Notas
 
-Los archivos GTFS pesados (`shapes.txt`, `stop_times.txt`, `trips.txt`, `calendar*.txt`) están excluidos del repositorio. Solo se versionan `stops.txt` y `routes.txt` de cada fuente. Si alguna funcionalidad futura los necesita, hay que volver a descargarlos de los portales de EMT y CRTM.
+Los archivos GTFS pesados (`shapes.txt`, `stop_times.txt`, `trips.txt`, `calendar*.txt`) están excluidos del repositorio: solo se versionan `stops.txt` y `routes.txt` de cada fuente. `trips.txt` y `stop_times.txt` son los que alimentan la búsqueda por línea, así que en un clon limpio hay que volver a descargarlos de los portales de EMT y CRTM para que esa parte funcione.
+
+Los GTFS publicados por EMT y CRTM no incluyen ningún viaje de 21 de sus líneas (entre ellas la F y la G de la EMT y la Línea 3 de Metro), así que de esas no se puede mostrar el recorrido. Sus paradas y sus tiempos en vivo funcionan con normalidad.

@@ -38,6 +38,12 @@
          (buscador / recorrido / llegadas), no parte del logotipo. -->
     <p id="subtitulo-header">Busca una parada o una línea</p>
 
+    <!-- Aviso de que los datos no se están pudiendo refrescar. Va aquí, por
+         encima de las tres vistas, porque el fallo puede ocurrir en
+         cualquiera de ellas. role="status" hace que un lector de pantalla lo
+         anuncie al aparecer sin robar el foco. -->
+    <div id="aviso-conexion" role="status" hidden></div>
+
     <!-- VISTA 1: buscador -->
     <div id="vista-busqueda">
       <!-- Filtros por modo. Cada uno lleva el mismo icono con el que se

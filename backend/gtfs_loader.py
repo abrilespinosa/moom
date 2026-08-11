@@ -307,10 +307,11 @@ def _estacion_de_cada_anden(carpeta, encoding):
     estaciones. Sin esta traducción, las paradas de una línea de Metro no
     se podrían casar con ningún punto del mapa.
 
-    Es el camino inverso al de cargar_paradas_metro, y usa las dos mismas
-    estrategias: el prefijo "par_" -> "est_" para la gran mayoría, y el
-    campo parent_station para los grandes intercambiadores, cuya
-    numeración no coincide con la de sus andenes.
+    Es el camino inverso al de cargar_paradas_metro, y usa las tres mismas
+    estrategias: el prefijo "par_" -> "est_" para la gran mayoría, el campo
+    parent_station para los grandes intercambiadores (cuya numeración no
+    coincide con la de sus andenes), y el id sintético para los dos andenes
+    huérfanos que no tienen ni lo uno ni lo otro.
     """
     with open(f"{carpeta}/stops.txt", encoding=encoding) as archivo:
         filas = list(csv.DictReader(archivo))
@@ -347,11 +348,15 @@ def _andenes_a_estaciones(recorridos, mapa):
     itinerario pertenecen a la misma estación, en el mapa es un único punto
     y listarlo dos veces sería confuso.
 
-    Los andenes sin estación se descartan y se avisa por consola. No es un
-    fallo de esta función: el GTFS de Metro publicado por el CRTM (volcado
-    de mayo de 2025) no trae fila de estación para Noviciado ni Acacias,
-    solo su andén. Esas dos estaciones tampoco aparecen en el mapa por el
-    mismo motivo, así que no se pueden listar en el recorrido de su línea.
+    Noviciado y Acacias, cuyos andenes no tienen fila de estación en el
+    volcado del CRTM, SÍ salen aquí: el mapa que recibe esta función les
+    asigna el id sintético que cargar_paradas_metro les fabrica, así que
+    aparecen en el recorrido de su línea igual que en el mapa.
+
+    Queda el aviso por consola para los andenes que ni siquiera están en
+    stops.txt (los recorridos salen de stop_times.txt, y los dos volcados no
+    siempre van a la par). Esos sí se descartan, porque no hay de dónde
+    sacar sus coordenadas.
     """
     huerfanos = set()
 
@@ -394,9 +399,23 @@ def cargar_lineas():
             "sentidos": [ {"destino": ..., "paradas": [ids...]}, ... ]
         }
 
-    Las líneas sin ningún viaje en el calendario vigente se descartan: son
-    servicios estacionales o especiales que ahora no circulan, y una línea
-    sin recorrido no se puede mostrar.
+    Las líneas sin ningún viaje en el volcado se incluyen igual, con
+    "sentidos" vacío. Son 21 y antes se descartaban, dando por hecho que
+    eran servicios estacionales o especiales que ahora no circulan.
+
+    Eso explica como mucho una parte: la F, la G y la U de la EMT son las
+    líneas universitarias, y la SE721 es el servicio especial del estadio.
+    Pero también falta la LÍNEA 3 DE METRO y una docena de interurbanas
+    normales de la zona de Colmenar Viejo, que circulan a diario. Y el
+    calendario de este volcado no distingue temporadas: solo tiene tres
+    servicios (laborable, sábado y festivo) del 24-07-2026 al 31-12-2026,
+    o sea que ni siquiera hay un periodo estacional en el que apoyarse.
+    Sea cual sea el motivo, en trips.txt no hay ni una fila suya.
+
+    Descartarlas las hacía desaparecer del buscador, que es peor que
+    enseñarlas sin recorrido: sus paradas sí están en el mapa y sus tiempos
+    en vivo funcionan, así que lo único que falta es la lista ordenada de
+    paradas. Quien las abre ve un aviso en lugar del recorrido.
 
     Si faltan los archivos pesados de una fuente (trips.txt y stop_times.txt
     no están en el repositorio por su tamaño), esa fuente se salta con un
@@ -430,10 +449,6 @@ def cargar_lineas():
 
         with open(f"{carpeta}/routes.txt", encoding=encoding) as archivo:
             for fila in csv.DictReader(archivo):
-                sentidos = recorridos.get(fila["route_id"])
-                if not sentidos:
-                    continue
-
                 lineas.append(
                     {
                         "id": f"{fuente}-{fila['route_id']}",
@@ -442,7 +457,7 @@ def cargar_lineas():
                         "fuente": fuente,
                         "color": fila.get("route_color") or None,
                         "colorTexto": fila.get("route_text_color") or None,
-                        "sentidos": sentidos,
+                        "sentidos": recorridos.get(fila["route_id"], []),
                     }
                 )
 

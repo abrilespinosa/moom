@@ -11,8 +11,12 @@ Luego puedes visitar en el navegador, por ejemplo:
     http://127.0.0.1:8000/parada/72
 """
 
-from fastapi import FastAPI
+from concurrent.futures import ThreadPoolExecutor
+
+import requests
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from backend.emt_client import obtener_llegadas_parada
 from backend.gtfs_loader import (
     cargar_todas_las_paradas,
@@ -42,7 +46,7 @@ app.add_middleware(
 PARADAS = cargar_todas_las_paradas()
 
 # Diccionario id -> parada, para búsquedas rápidas por id en vez de
-# recorrer las 13.560 paradas cada vez que el endpoint de Metro necesita
+# recorrer las 13.542 paradas cada vez que el endpoint de Metro necesita
 # encontrar el codAnden de una estación.
 PARADAS_POR_ID = {parada["id"]: parada for parada in PARADAS}
 
@@ -52,6 +56,69 @@ PARADAS_POR_ID = {parada["id"]: parada for parada in PARADAS}
 # desactiva sola, sin afectar al resto de la aplicación.
 LINEAS = cargar_lineas()
 LINEAS_POR_ID = {linea["id"]: linea for linea in LINEAS}
+
+
+@app.exception_handler(requests.RequestException)
+def fallo_de_api_externa(peticion: Request, excepcion: requests.RequestException):
+    """
+    Convierte cualquier fallo de red contra EMT o el CRTM en un 503 con
+    mensaje, en vez del 500 pelado que salía antes.
+
+    Un único manejador para todos los endpoints porque el fallo es siempre
+    el mismo: ninguna de estas rutas hace nada más que hablar con una API
+    externa. requests.RequestException es la clase madre de todo lo que
+    pueden lanzar los dos clientes — el Timeout que ahora sí puede saltar,
+    la conexión rechazada, y el HTTPError de raise_for_status cuando la API
+    responde con un 4xx o 5xx propio.
+
+    503 y no 500 porque describe lo que de verdad pasa: no está roto
+    nuestro código, está caída (o lenta) una API de la que dependemos.
+    El frontend lo distingue por el código, sin leer el cuerpo.
+
+    Las excepciones que ocurren dentro de en_paralelo() llegan igual aquí:
+    .result() las vuelve a lanzar en el hilo del endpoint.
+    """
+    # flush=True porque cuando la salida no es una terminal (un servidor
+    # desplegado, o uvicorn redirigido a un fichero) Python la almacena en
+    # un búfer: sin esto, el aviso se pierde justo en el caso en el que
+    # hace falta, que es depurar un fallo en producción. Comprobado.
+    print(
+        f"[api externa] {peticion.url.path}: {type(excepcion).__name__}: {excepcion}",
+        flush=True,
+    )
+
+    return JSONResponse(
+        status_code=503,
+        content={
+            "error": "api_externa_no_disponible",
+            "mensaje": (
+                "El servicio de datos en tiempo real no responde ahora mismo. "
+                "Inténtalo de nuevo en unos segundos."
+            ),
+        },
+    )
+
+
+def en_paralelo(*funciones):
+    """
+    Ejecuta varias funciones a la vez y devuelve sus resultados en orden.
+
+    Sirve para las peticiones que necesitan dos datos del CRTM que no
+    dependen entre sí (la información de la estación y sus tiempos de
+    espera). Encadenadas, la espera es la suma de las dos; lanzadas a la
+    vez, la de la más lenta. Con un servidor que tarda entre 0,1s y 4,5s
+    en la misma consulta, esa diferencia se nota en el panel.
+
+    Los endpoints de FastAPI que las llaman son funciones normales (def y
+    no async def), así que ya se ejecutan en un hilo del pool de FastAPI;
+    estos dos hilos de más solo viven lo que dura la petición.
+
+    Si alguna función lanza una excepción, .result() la vuelve a lanzar
+    aquí, igual que si se hubiera llamado directamente.
+    """
+    with ThreadPoolExecutor(max_workers=len(funciones)) as ejecutor:
+        futuros = [ejecutor.submit(funcion) for funcion in funciones]
+        return [futuro.result() for futuro in futuros]
 
 
 def agrupar_llegadas(llegadas):
@@ -205,8 +272,13 @@ def llegadas_parada(stop_id: str):
         # "par_8_06002" -> "8_06002". Misma traducción que en Metro.
         cod_parada = stop_id.replace("par_", "", 1)
 
-        info_parada = obtener_info_estacion(cod_parada)
-        llegadas = obtener_tiempos_espera(cod_parada, info_parada["stopType"])
+        # Las dos llamadas a la vez: los tiempos ya no esperan a que la
+        # información de la parada llegue para saber su stopType, porque
+        # la API ignora ese parámetro (ver TIPO_PARADA_POR_DEFECTO).
+        info_parada, llegadas = en_paralelo(
+            lambda: obtener_info_estacion(cod_parada),
+            lambda: obtener_tiempos_espera(cod_parada),
+        )
 
         return {
             "parada": info_parada["name"],
@@ -215,6 +287,65 @@ def llegadas_parada(stop_id: str):
         }
 
     return obtener_llegadas_parada(stop_id)
+
+
+def lineas_de_metro_de(info_estacion):
+    """
+    Filtra el codLines de una estación dejando solo líneas de Metro.
+
+    En las grandes estaciones de trasbordo, la API devuelve en codLines
+    TODAS las líneas que paran ahí, incluidas las que no son de Metro:
+    Sol, por ejemplo, devuelve además "5__C3___", "5__C4_A__" y
+    "5__C4_B__", que son líneas de Cercanías (el prefijo "5__" es el modo
+    ferroviario; Metro es el "4__").
+
+    El frontend usa esta lista para pedir los trenes de cada línea a
+    /metro/linea/{codLine}/vehiculos, así que sin filtrar acabaría
+    pidiendo trenes de Cercanías a un endpoint de Metro: hoy devuelven
+    cero vehículos y solo gastan peticiones, pero si algún día trajeran
+    alguno se pintaría en el mapa como si fuera un tren de Metro, con el
+    color azul de respaldo porque no está en routes.txt.
+
+    Usamos el propio routes.txt de Metro como fuente de verdad de "qué
+    es una línea de Metro", en vez de comprobar el prefijo a mano: así,
+    además, toda línea que devolvemos tiene color garantizado.
+    """
+    lineas_de_metro = cargar_colores_lineas_metro()
+
+    return [
+        linea
+        for linea in info_estacion["codLines"]["Line"]
+        if linea in lineas_de_metro
+    ]
+
+
+@app.get("/metro/parada/{cod_stop}/lineas")
+def lineas_estacion_metro(cod_stop: str):
+    """
+    Devuelve solo las líneas de Metro que pasan por una estación.
+
+    Ejemplo de uso: GET /metro/parada/est_4_323/lineas
+
+    Es la mitad barata de /metro/parada: una sola llamada al CRTM
+    (GetStops, 0,15s medidos y con caché permanente), sin los tiempos de
+    espera, que son los que tardan entre medio segundo y cinco.
+
+    Existe por el mapa. Para pintar los trenes hay que saber primero qué
+    líneas pasan por la estación, y eso se pedía a /metro/parada, que de
+    paso traía unas llegadas que el mapa no usa y que el panel ya estaba
+    pidiendo por su cuenta. Resultado: los trenes tardaban en aparecer lo
+    que tardase la llamada más lenta del CRTM, sin ninguna necesidad.
+    """
+    estacion = PARADAS_POR_ID.get(cod_stop)
+    if estacion is None or estacion.get("codAnden") is None:
+        return {"codStop": cod_stop, "codLines": []}
+
+    info_estacion = obtener_info_estacion(estacion["codAnden"])
+
+    return {
+        "codStop": cod_stop,
+        "codLines": lineas_de_metro_de(info_estacion),
+    }
 
 
 @app.get("/metro/parada/{cod_stop}")
@@ -250,8 +381,15 @@ def tiempos_estacion_metro(cod_stop: str):
 
     cod_anden = estacion["codAnden"]
 
-    info_estacion = obtener_info_estacion(cod_anden)
-    trenes = obtener_tiempos_espera(cod_anden, info_estacion["stopType"])
+    # Las dos a la vez, no una detrás de otra. Antes había que esperar a
+    # GetStops para conocer el stopType y solo entonces pedir los tiempos;
+    # comprobado contra la API, ese parámetro no cambia la respuesta, así
+    # que la espera del panel pasa de ser la SUMA de las dos llamadas a la
+    # de la más lenta.
+    info_estacion, trenes = en_paralelo(
+        lambda: obtener_info_estacion(cod_anden),
+        lambda: obtener_tiempos_espera(cod_anden),
+    )
 
     # Nota: aquí no hace falta filtrar líneas que no sean de Metro. A
     # diferencia de codLines (que en Sol incluye Cercanías), los trenes que
@@ -263,33 +401,12 @@ def tiempos_estacion_metro(cod_stop: str):
     # tiempo real, así que el panel no tiene nada que advertir.
     grupos_llegadas = agrupar_llegadas(trenes)
 
-    # En las grandes estaciones de trasbordo, la API devuelve en codLines
-    # TODAS las líneas que paran ahí, incluidas las que no son de Metro:
-    # Sol, por ejemplo, devuelve además "5__C3___", "5__C4_A__" y
-    # "5__C4_B__", que son líneas de Cercanías (el prefijo "5__" es el modo
-    # ferroviario; Metro es el "4__").
-    #
-    # El frontend usa esta lista para pedir los trenes de cada línea a
-    # /metro/linea/{codLine}/vehiculos, así que sin filtrar acabaría
-    # pidiendo trenes de Cercanías a un endpoint de Metro: hoy devuelven
-    # cero vehículos y solo gastan peticiones, pero si algún día trajeran
-    # alguno se pintaría en el mapa como si fuera un tren de Metro, con el
-    # color azul de respaldo porque no está en routes.txt.
-    #
-    # Usamos el propio routes.txt de Metro como fuente de verdad de "qué
-    # es una línea de Metro", en vez de comprobar el prefijo a mano: así,
-    # además, toda línea que devolvemos tiene color garantizado.
-    lineas_de_metro = cargar_colores_lineas_metro()
-    cod_lines = [
-        linea
-        for linea in info_estacion["codLines"]["Line"]
-        if linea in lineas_de_metro
-    ]
-
     return {
         "estacion": info_estacion["name"],
         "codStop": cod_stop,
-        "codLines": cod_lines,
+        # El filtrado de líneas que no son de Metro vive en
+        # lineas_de_metro_de(), que comparte con /metro/parada/{id}/lineas.
+        "codLines": lineas_de_metro_de(info_estacion),
         "llegadas": grupos_llegadas,
     }
 

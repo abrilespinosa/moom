@@ -140,8 +140,21 @@ const OPACIDAD_PARADA_ATENUADA = 0.35;
 const Z_INDEX_VEHICULOS = 500;
 
 async function dibujarParadas() {
-  const respuesta = await fetch(`${URL_BACKEND}/paradas`);
-  const paradas = await respuesta.json();
+  let paradas;
+
+  // La única petición sin la que la aplicación no es nada: si falla, el
+  // mapa se queda sin un solo marcador. Antes ni siquiera se capturaba, así
+  // que con el backend apagado quedaba un mapa vacío y perfectamente
+  // silencioso, indistinguible de una zona sin paradas.
+  try {
+    paradas = await pedirJson(`${URL_BACKEND}/paradas`);
+  } catch (error) {
+    console.error("No se pudieron cargar las paradas:", error);
+    mostrarAvisoConexion(
+      "No se ha podido conectar con el servidor, así que el mapa está vacío. Comprueba que el backend está arrancado y recarga la página."
+    );
+    return;
+  }
 
   TODAS_LAS_PARADAS = paradas;
   PARADAS_POR_ID = new Map(paradas.map((parada) => [parada.id, parada]));
@@ -164,7 +177,7 @@ async function dibujarParadas() {
 
     // Y guardamos la referencia inversa: el marcador necesita saber
     // de qué parada es para poder consultar su "fuente" al filtrar,
-    // sin tener que buscar en el array de 13.320 paradas cada vez.
+    // sin tener que buscar en el array de 13.542 paradas cada vez.
     marcador.parada = parada;
 
     marcadoresParadas.push(marcador);
@@ -181,7 +194,7 @@ async function dibujarParadas() {
 
 // Añade o quita los marcadores de parada del mapa según el zoom Y el
 // área visible actual. Antes solo filtrábamos por zoom: al cruzar
-// ZOOM_MINIMO_PARADAS, las ~13.320 paradas se recorrían igual, pero
+// ZOOM_MINIMO_PARADAS, las ~13.542 paradas se recorrían igual, pero
 // con circleMarker (forma vectorial barata) no se notaba el coste.
 // Ahora cada parada es una imagen PNG, más cara de crear/posicionar,
 // así que añadir potencialmente miles de golpe causaba el lag al
@@ -238,8 +251,7 @@ dibujarParadas();
 // tiempos de llegada.
 async function cargarColoresLineasMetro() {
   try {
-    const respuesta = await fetch(`${URL_BACKEND}/metro/lineas/colores`);
-    COLORES_LINEAS_METRO = await respuesta.json();
+    COLORES_LINEAS_METRO = await pedirJson(`${URL_BACKEND}/metro/lineas/colores`);
   } catch (error) {
     console.error("No se pudieron cargar los colores de las líneas:", error);
   }
@@ -252,8 +264,7 @@ cargarColoresLineasMetro();
 // simplemente no ofrece líneas; buscar paradas sigue funcionando.
 async function cargarLineas() {
   try {
-    const respuesta = await fetch(`${URL_BACKEND}/lineas`);
-    TODAS_LAS_LINEAS = await respuesta.json();
+    TODAS_LAS_LINEAS = await pedirJson(`${URL_BACKEND}/lineas`);
     LINEAS_POR_ID = new Map(TODAS_LAS_LINEAS.map((linea) => [linea.id, linea]));
 
     // Las líneas favoritas no se pueden pintar hasta que llega esta lista,
@@ -289,6 +300,7 @@ const sentidosLinea = document.getElementById("sentidos-linea");
 const tituloRecorrido = document.getElementById("titulo-recorrido");
 const listaRecorrido = document.getElementById("lista-recorrido");
 const subtituloHeader = document.getElementById("subtitulo-header");
+const avisoConexion = document.getElementById("aviso-conexion");
 const botonesFiltro = document.querySelectorAll(".filtro-boton");
 
 // Un solo listener sirve para los tres botones: leemos data-filtro
@@ -510,6 +522,18 @@ function crearResultadoDeLinea(linea) {
   return item;
 }
 
+// El código que se enseña de una parada: el que está escrito en la
+// marquesina, no el id interno del GTFS.
+//
+// Las paradas de la EMT ya vienen con su número pelado ("72"), pero las
+// del CRTM llevan el prefijo del volcado ("par_8_09568") y las estaciones
+// de Metro otro parecido ("est_4_323"). Ese prefijo indica el modo de
+// transporte y le sirve al backend para saber a qué API preguntar, pero
+// para quien mira la pantalla es ruido: en la parada pone 09568.
+function codigoDeParada(parada) {
+  return parada.id.replace(/^[a-z]+_\d+_/, "");
+}
+
 function crearResultadoDeParada(parada) {
   const item = document.createElement("li");
 
@@ -517,7 +541,7 @@ function crearResultadoDeParada(parada) {
   // truncar con puntos suspensivos cuando no cabe junto a la estrella.
   const texto = document.createElement("span");
   texto.className = "texto";
-  texto.textContent = `${parada.nombre} (parada ${parada.id})`;
+  texto.textContent = `${parada.nombre} (parada ${codigoDeParada(parada)})`;
   item.appendChild(texto);
   item.appendChild(crearBotonFavorito("paradas", parada.id));
 
@@ -666,6 +690,19 @@ function seleccionarParada(parada, origen = "busqueda") {
   tituloSeccion.textContent =
     parada.fuente === "METRO" ? "Tiempos reales" : "Próximas llegadas";
 
+  // Aviso de que se está pidiendo, antes de lanzar la petición.
+  //
+  // La API del CRTM tarda entre medio segundo y cinco en devolver los
+  // tiempos de espera (medido), y hasta ahora el panel se quedaba vacío
+  // todo ese rato, que es exactamente lo que parece una aplicación rota.
+  // Esto solo se pinta al SELECCIONAR: los refrescos posteriores ya tienen
+  // tarjetas en pantalla y sustituirlas por un mensaje sería un parpadeo.
+  mostrarMensajeEnPanel(
+    parada.fuente === "METRO"
+      ? "Buscando próximos trenes…"
+      : "Buscando próximas llegadas…"
+  );
+
   // Limpiamos el buscador para la próxima vez que se use. Repintar la lista
   // en vez de vaciarla deja los favoritos ya puestos para cuando se vuelva.
   inputBuscar.value = "";
@@ -765,10 +802,9 @@ function pintarSentido(indice) {
 
 async function seleccionarLinea(linea) {
   try {
-    const respuesta = await fetch(
+    const datos = await pedirJson(
       `${URL_BACKEND}/linea/${encodeURIComponent(linea.id)}`
     );
-    const datos = await respuesta.json();
 
     if (!datos.encontrada) {
       console.error("Línea no encontrada:", linea.id);
@@ -801,7 +837,22 @@ async function seleccionarLinea(linea) {
       sentidosLinea.appendChild(boton);
     });
 
-    pintarSentido(0);
+    // 21 líneas reales (la F, la G, la Línea 3 de Metro…) no aparecen en el
+    // trips.txt que publican EMT y CRTM, así que llegan aquí sin recorrido.
+    // Se abren igual, con su nombre y su color, y lo que falta se explica en
+    // vez de dejar una lista vacía sin motivo aparente.
+    if (datos.sentidos.length === 0) {
+      tituloRecorrido.textContent = "Recorrido no disponible";
+      listaRecorrido.innerHTML = `
+        <li class="recorrido-no-disponible">
+          Los datos abiertos de esta línea no incluyen su lista de paradas.
+          Sus paradas sí están en el mapa y sus tiempos de llegada funcionan
+          con normalidad.
+        </li>
+      `;
+    } else {
+      pintarSentido(0);
+    }
 
     mostrarVista("linea");
     subtituloHeader.textContent = "Recorrido de la línea";
@@ -810,6 +861,9 @@ async function seleccionarLinea(linea) {
     actualizarResultadosBusqueda();
   } catch (error) {
     console.error("Error al cargar el recorrido de la línea:", error);
+    // Aquí no hay dato viejo que conservar: se pulsó una línea y no se abrió
+    // nada, así que sin aviso el clic parecería no haber funcionado.
+    mostrarAvisoConexion("No se ha podido cargar el recorrido de esta línea.");
   }
 }
 
@@ -905,6 +959,43 @@ function limpiarMarcadoresTrenes() {
 // de "mensaje-vacio" que ya existía para el caso de "no hay autobuses".
 function mostrarMensajeEnPanel(texto) {
   listaLlegadas.innerHTML = `<div id="mensaje-vacio">${texto}</div>`;
+}
+
+// Los tres pollers y las cargas iniciales fallaban en silencio: su catch
+// solo escribía en la consola, así que ante un backend caído o sin red el
+// panel se quedaba enseñando los últimos tiempos indefinidamente, sin
+// distinguirse de unos datos frescos. Estas dos funciones son el aviso.
+//
+// No borramos lo que ya hay en pantalla: unos tiempos de hace treinta
+// segundos siguen siendo más útiles que un panel vacío, siempre que quede
+// claro que son viejos.
+function mostrarAvisoConexion(texto) {
+  avisoConexion.textContent = texto;
+  avisoConexion.hidden = false;
+}
+
+// Un único aviso compartido por todos los pollers. Cuando falla la red
+// suele fallar todo a la vez, así que la simplificación se sostiene; el
+// caso raro es que actualizarTiemposMetro y actualizarTrenesMetro discrepen
+// en el mismo ciclo, y entonces el aviso parpadea un momento. Preferible a
+// llevar la cuenta de qué poller está fallando.
+function ocultarAvisoConexion() {
+  avisoConexion.hidden = true;
+}
+
+// fetch NO lanza excepción ante un 4xx o 5xx: solo falla si la petición no
+// llega a completarse. Sin esta comprobación, el 503 del backend seguía su
+// camino y reventaba más adelante al leer campos que no existen, o peor,
+// se colaba como una respuesta vacía legítima ("no hay trenes ahora
+// mismo"), que es justo lo contrario de lo que ha pasado.
+async function pedirJson(url) {
+  const respuesta = await fetch(url);
+
+  if (!respuesta.ok) {
+    throw new Error(`${respuesta.status} al pedir ${url}`);
+  }
+
+  return respuesta.json();
 }
 
 // Pinta un distintivo redondo por cada línea que pasa por la estación,
@@ -1067,7 +1158,7 @@ function pintarCabeceraParada(parada) {
   iconoParadaActual.src = `assets/${archivo}`;
   nombreParadaActual.textContent = parada.nombre;
   codigoParadaActual.textContent =
-    parada.fuente === "METRO" ? "" : `Parada ${parada.id}`;
+    parada.fuente === "METRO" ? "" : `Parada ${codigoDeParada(parada)}`;
 
   prepararBotonFavorito(botonFavoritoParada, "paradas", parada.id);
 }
@@ -1078,8 +1169,8 @@ async function actualizarAutobuses() {
   }
 
   try {
-    const respuesta = await fetch(`${URL_BACKEND}/parada/${STOP_ID}`);
-    const datos = await respuesta.json();
+    const datos = await pedirJson(`${URL_BACKEND}/parada/${STOP_ID}`);
+    ocultarAvisoConexion();
 
     // Las paradas interurbanas (CRTM) vienen ya agrupadas por línea y
     // destino, con la misma forma que las de Metro. Hay que comprobarlo
@@ -1188,6 +1279,9 @@ async function actualizarAutobuses() {
     });
   } catch (error) {
     console.error("Error al actualizar los autobuses:", error);
+    mostrarAvisoConexion(
+      "No se han podido actualizar las llegadas. Los tiempos que ves pueden estar desfasados."
+    );
   }
 }
 
@@ -1210,8 +1304,10 @@ async function actualizarTiemposMetro() {
   }
 
   try {
-    const respuesta = await fetch(`${URL_BACKEND}/metro/parada/${STOP_ID_METRO}`);
-    const datos = await respuesta.json();
+    const datos = await pedirJson(
+      `${URL_BACKEND}/metro/parada/${STOP_ID_METRO}`
+    );
+    ocultarAvisoConexion();
 
     // Igual que en las paradas de bus: si el backend no pudo resolver el
     // andén de esta estación, avisamos en vez de reventar al recorrer
@@ -1237,6 +1333,9 @@ async function actualizarTiemposMetro() {
     );
   } catch (error) {
     console.error("Error al actualizar los tiempos de Metro:", error);
+    mostrarAvisoConexion(
+      "No se han podido actualizar los tiempos. Los que ves pueden estar desfasados."
+    );
   }
 }
 
@@ -1259,12 +1358,19 @@ async function actualizarTrenesMetro() {
   }
 
   try {
-    // Primero necesitamos saber qué líneas pasan por esta estación.
-    // Ya hacemos esta llamada en actualizarTiemposMetro(), pero la
-    // repetimos aquí: son funciones independientes y cada una debe
-    // poder fallar o recargarse sin depender de que la otra ya corrió.
-    const respuestaEstacion = await fetch(`${URL_BACKEND}/metro/parada/${STOP_ID_METRO}`);
-    const datosEstacion = await respuestaEstacion.json();
+    // Primero necesitamos saber qué líneas pasan por esta estación. Esta
+    // llamada se mantiene aparte de la del panel a propósito: son funciones
+    // independientes y cada una debe poder fallar o recargarse sin depender
+    // de que la otra ya corrió.
+    //
+    // Pero pide la variante "/lineas", que solo hace la llamada barata al
+    // CRTM. Antes pedía /metro/parada entero y se quedaba esperando a unos
+    // tiempos de espera que aquí no se usan y que el panel ya está pidiendo
+    // en paralelo: los trenes tardaban en salir entre medio segundo y cinco
+    // de más, según lo que tardase el CRTM ese día.
+    const datosEstacion = await pedirJson(
+      `${URL_BACKEND}/metro/parada/${STOP_ID_METRO}/lineas`
+    );
 
     if (!datosEstacion.codLines) {
       return; // estación sin info de líneas disponible (caso raro)
@@ -1281,11 +1387,13 @@ async function actualizarTrenesMetro() {
     // los extremos de la línea, en vez de los que se acercan a ti.
     const respuestas = await Promise.all(
       datosEstacion.codLines.map((codLinea) =>
-        fetch(
+        pedirJson(
           `${URL_BACKEND}/metro/linea/${codLinea}/vehiculos?cod_stop=${STOP_ID_METRO}`
-        ).then((r) => r.json())
+        )
       )
     );
+
+    ocultarAvisoConexion();
 
     // Limpiamos los trenes de la actualización anterior antes de
     // pintar los nuevos, igual que ya haces con marcadoresActuales
@@ -1318,6 +1426,12 @@ async function actualizarTrenesMetro() {
     });
   } catch (error) {
     console.error("Error al actualizar los trenes de Metro:", error);
+    // Los trenes del mapa se quedan donde estaban. Es el mismo criterio que
+    // con los tiempos: una posición de hace un minuto informa más que un
+    // mapa vacío, mientras el aviso deje claro que no está al día.
+    mostrarAvisoConexion(
+      "No se ha podido actualizar la posición de los trenes."
+    );
   }
 }
 

@@ -44,6 +44,36 @@ import requests
 
 BASE_URL = "https://www.crtm.es/widgets/api"
 
+# Una única sesión HTTP para todas las llamadas al CRTM, en vez de
+# requests.get suelto, que abre una conexión TCP+TLS nueva cada vez.
+#
+# Ahorra el saludo TLS, unos 80ms por llamada (medido: time_appconnect
+# 0,084s). Es una mejora modesta y conviene no atribuirle más: en una
+# prueba A/B intercalando ambos métodos contra las mismas estaciones, las
+# medianas salieron 0,46s sin sesión y 0,62s con ella, o sea que el ruido
+# del propio CRTM se come la diferencia. Lo que de verdad manda son los
+# tiempos de respuesta del servidor, que van de 0,1s a 4,5s para la MISMA
+# consulta según el momento.
+#
+# La sesión es de nivel de módulo y la comparten todos los hilos que
+# FastAPI usa para atender peticiones. requests.Session es seguro para
+# eso en la práctica (urllib3 mantiene un pool de conexiones con su propio
+# candado); lo que no admite es compartirse entre procesos.
+_sesion = requests.Session()
+
+# (conectar, leer) en segundos. Sin timeout, requests espera indefinidamente:
+# una conexión que el CRTM deje colgada retiene para siempre un hilo del pool
+# de FastAPI, y con unas pocas la aplicación entera deja de responder aunque
+# el servidor siga vivo. En local no se nota porque el proceso se reinicia
+# constantemente.
+#
+# El límite de lectura es 10s y no menos porque la latencia del CRTM es
+# errática de por sí: de 0,1s a 4,5s para la MISMA consulta, con picos
+# medidos de 6,9s. Cortar antes convertiría en error lo que solo es un
+# servidor lento. El de conexión es corto porque ahí no hay ambigüedad: si
+# no llegamos a saludar, no vamos a llegar.
+TIMEOUT_SEGUNDOS = (5, 10)
+
 # Dentro de codIssue viene incrustada la hora PROGRAMADA de ese viaje, entre
 # guiones bajos: "8__621____4_13:15:00_1_-__20_8__621___" -> "13:15:00".
 _HORA_EN_CODISSUE = re.compile(r"_(\d{2}:\d{2}:\d{2})_")
@@ -115,6 +145,12 @@ _cache_tiempos_espera = {}
 # del mapa), gastando llamadas al CRTM para recibir siempre lo mismo.
 _cache_info_estacion = {}
 
+# Los itinerarios de una línea son igual de estáticos que la información de
+# una estación, así que se guardan igual, sin caducidad. Antes se pedían en
+# CADA petición de posición de trenes: 0,2s de espera por línea y por
+# refresco, cada 20 segundos, para recibir siempre lo mismo.
+_cache_info_linea = {}
+
 # Duración de la validez del caché, en segundos.
 SEGUNDOS_VALIDEZ_CACHE = 20
 
@@ -160,7 +196,7 @@ def obtener_info_estacion(cod_stop):
     url = f"{BASE_URL}/GetStops.php"
     parametros = {"codStop": cod_stop}
 
-    respuesta = requests.get(url, params=parametros)
+    respuesta = _sesion.get(url, params=parametros, timeout=TIMEOUT_SEGUNDOS)
     respuesta.raise_for_status()
 
     datos = respuesta.json()
@@ -198,11 +234,12 @@ def obtener_info_linea(cod_line):
     todo, sus dos itinerarios (uno por cada sentido de circulación), cada
     uno con su "codItinerary" y su "direction" (1 o 2).
 
-    Esta función no usa caché propio: la información de una línea (sus
-    itinerarios) no cambia de un minuto a otro, así que no hace falta
-    refrescarla con la misma frecuencia que los tiempos de espera o la
-    posición de los trenes. Se llama solo cuando se necesita resolver
-    los itinerarios de una línea, normalmente antes de pedir su posición.
+    El resultado se guarda en caché sin caducidad, como el de las
+    estaciones: los itinerarios de una línea no cambian mientras el
+    servidor está encendido. Sin el caché, cada petición de posición de
+    trenes empezaba por esta llamada (0,2s medidos) para recibir siempre
+    exactamente lo mismo — y esa petición se repite por cada línea de la
+    estación cada 20 segundos.
 
     Parámetros:
         cod_line: código de la línea, por ejemplo "4__2___" (Línea 2)
@@ -220,32 +257,51 @@ def obtener_info_linea(cod_line):
             ...
         }
     """
+    if cod_line in _cache_info_linea:
+        return _cache_info_linea[cod_line]
+
     url = f"{BASE_URL}/GetLinesInformation.php"
     parametros = {"activeItinerary": 1, "codLine": cod_line}
 
-    respuesta = requests.get(url, params=parametros)
+    respuesta = _sesion.get(url, params=parametros, timeout=TIMEOUT_SEGUNDOS)
     respuesta.raise_for_status()
 
     datos = respuesta.json()
 
     try:
-        return datos["lines"]["LineInformation"]
+        info = datos["lines"]["LineInformation"]
     except KeyError:
         print("Respuesta inesperada al pedir info de línea, revisa el JSON:")
         print(datos)
         raise
 
+    _cache_info_linea[cod_line] = info
 
-def obtener_tiempos_espera(cod_stop, stop_type):
+    return info
+
+
+# La API exige el parámetro "type", pero NO afecta a la respuesta.
+# Comprobado contra el servidor real en Alsacia, Sol y una parada
+# interurbana: pidiendo type 0, 1, 5 y 9 devuelve exactamente las mismas
+# llegadas (mismo destino y misma hora). Además, el "stopType" real de
+# todas las paradas consultadas es 0.
+#
+# Importa porque antes había que llamar a GetStops PRIMERO solo para
+# averiguar el stopType y poder pedir los tiempos después: dos llamadas
+# en serie, cada una de entre 0,1s y 4,5s. Con un valor fijo, quien las
+# necesite puede lanzarlas a la vez.
+TIPO_PARADA_POR_DEFECTO = 0
+
+
+def obtener_tiempos_espera(cod_stop, stop_type=TIPO_PARADA_POR_DEFECTO):
     """
     Consulta los próximos trenes que van a pasar por una estación, en
     ambos sentidos a la vez.
 
     Parámetros:
         cod_stop: código de la estación, por ejemplo "4_323" (Alsacia)
-        stop_type: el valor "stopType" que devuelve obtener_info_estacion
-                   para esa misma estación. La API lo exige aunque no
-                   sepamos bien qué significa cada valor.
+        stop_type: el "stopType" de esa parada. Se puede omitir: la API lo
+                   exige pero ignora su valor (ver TIPO_PARADA_POR_DEFECTO).
 
     Devuelve la lista cruda de trenes tal como la da la API, cada uno con
     su "destination" (texto del destino, ej. "LAS ROSAS"), "direction"
@@ -269,7 +325,7 @@ def obtener_tiempos_espera(cod_stop, stop_type):
         "stopTimesByIti": cod_stop,
     }
 
-    respuesta = requests.get(url, params=parametros)
+    respuesta = _sesion.get(url, params=parametros, timeout=TIMEOUT_SEGUNDOS)
     respuesta.raise_for_status()
 
     datos = respuesta.json()
@@ -320,7 +376,7 @@ def obtener_posicion_trenes(mode_cod, cod_itinerary, cod_line, cod_stop, directi
         "direction": direction,
     }
 
-    respuesta = requests.get(url, params=parametros)
+    respuesta = _sesion.get(url, params=parametros, timeout=TIMEOUT_SEGUNDOS)
     respuesta.raise_for_status()
 
     datos = respuesta.json()
