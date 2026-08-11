@@ -28,32 +28,78 @@
 }
 
 body {
+  /* Ancho del panel izquierdo. Es una variable y no un valor fijo porque
+     se puede arrastrar el divisor para ensanchar o estrechar el panel; el
+     JS solo cambia esta propiedad y el grid se recoloca solo. */
+  --ancho-panel: 380px;
+
   margin: 0;
   font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  background: var(--fondo);
 
   /* --- LAYOUT PRINCIPAL ---
-     Dos columnas: el panel (380px fijos) y el mapa (el resto del espacio).
-     height: 100vh hace que el grid ocupe toda la altura de la ventana. */
+     Tres columnas: el panel, el divisor que se arrastra y el mapa.
+     height: 100vh hace que el grid ocupe toda la altura de la ventana, y
+     el padding deja ver el fondo alrededor, que es lo que permite que
+     panel y mapa se vean como dos bloques redondeados y separados. */
   display: grid;
-  grid-template-columns: 380px 1fr;
+  grid-template-columns: var(--ancho-panel) 14px 1fr;
   height: 100vh;
+  padding: 10px;
 }
 
 #mapa {
   height: 100%;
   width: 100%;
+  border-radius: 18px;
+  /* Sin esto los tiles cuadrados de Leaflet asoman por las esquinas. */
+  overflow: hidden;
 }
 
 /* --- PANEL IZQUIERDO ---
    Ya no flota sobre el mapa: ahora es una columna real del grid,
    con su propio fondo y scroll independiente si la lista es larga. */
 #panel {
-  background: #f7f7f8;
-  border-right: 1px solid #ddd;
+  background: var(--superficie);
   height: 100%;
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
+  border-radius: 18px;
+}
+
+/* --- DIVISOR ARRASTRABLE ---
+   Ocupa la columna del medio del grid. La barrita no es el elemento
+   entero: el elemento es ancho para que sea fácil de agarrar con el ratón,
+   y dentro se dibuja un tirador estrecho y redondeado. */
+#divisor {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: col-resize;
+  /* Evita que en pantalla táctil el arrastre haga desplazar la página. */
+  touch-action: none;
+}
+
+#divisor::before {
+  content: "";
+  width: 4px;
+  height: 44px;
+  border-radius: 999px;
+  background: #ded8ce;
+  transition: background 0.12s, height 0.12s;
+}
+
+#divisor:hover::before,
+#divisor:focus-visible::before,
+#divisor.arrastrando::before {
+  background: var(--acento);
+  height: 76px;
+}
+
+#divisor:focus {
+  outline: none; /* el tirador ya se resalta solo al recibir el foco */
 }
 
 /* Cabecera del panel: una banda del naranja de marca, con el logo centrado.
