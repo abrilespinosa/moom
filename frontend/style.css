@@ -56,31 +56,55 @@ body {
   flex-direction: column;
 }
 
-/* Cabecera del panel: cambia de texto según el estado (buscar / llegadas) */
+/* Cabecera del panel: una banda del naranja de marca, con el logo centrado.
+   Es el único bloque de color de toda la interfaz; de aquí para abajo todo
+   es blanco. */
 #panel-header {
-  padding: 16px;
-  border-bottom: 1px solid #ddd;
-  background: white;
+  padding: 18px 16px;
+  background: var(--acento);
+  display: flex;
+  justify-content: center;
 }
 
+/* El h1 ya no lleva texto, solo el logo: se queda como contenedor para no
+   perder el encabezado de la página. */
 #panel-header h1 {
-  font-size: 16px;
-  margin: 0 0 4px 0;
-  color: #1a1a1a;
+  margin: 0;
+  line-height: 0; /* si no, el hueco de la línea de texto añade espacio bajo la imagen */
 }
 
-#panel-header p {
-  font-size: 12px;
-  color: #777;
+/* El SVG es solo el nombre, en blanco y recortado a su caja: no arrastra el
+   cuadrado naranja del archivo original, así que el color del fondo lo pone
+   la banda de arriba y no hay dos naranjas que puedan no coincidir.
+   La altura se deja en auto para respetar su proporción (985x312). */
+#logo {
+  display: block;
+  width: 128px;
+  height: auto;
+}
+
+/* Texto de contexto de la vista actual ("Busca una parada o una línea",
+   "Próximas llegadas"...). Va ya en la zona blanca, debajo de la banda. */
+#subtitulo-header {
   margin: 0;
+  padding: 12px 16px 0 16px;
+  font-size: 12px;
+  color: var(--texto-suave);
 }
 
 #input-buscar {
   width: 100%;
   padding: 10px;
   font-size: 14px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+}
+
+#input-buscar:focus {
+  outline: none;
+  border-color: var(--acento);
+  box-shadow: 0 0 0 3px var(--acento-suave);
 }
 
 /* --- FILTRO DE FUENTE (Todos / Urbano / Interurbano) --- */
@@ -152,59 +176,93 @@ body {
 }
 
 /* Activo: el aro marca cuál está seleccionado sin tapar el icono, que es
-   lo que pasaría rellenando el cuadro de color. */
+   lo que pasaría rellenando el cuadro de color. El aro va en el naranja de
+   marca (es una forma, no texto) y la etiqueta en su variante oscura, que
+   es la única legible a 11px. */
 .filtro-boton.activo {
-  color: #0178bc;
+  color: var(--acento-texto);
   font-weight: bold;
 }
 
 .filtro-boton.activo .filtro-icono {
-  box-shadow: inset 0 0 0 2px #0178bc;
+  box-shadow: inset 0 0 0 2px var(--acento);
 }
 
 /* --- VISTA: LISTA DE RESULTADOS DE BÚSQUEDA --- */
+/* Los resultados son fichas redondeadas separadas entre sí, no filas
+   pegadas con una raya debajo: la lista se lee igual y encaja con el resto
+   de la interfaz, donde no hay ninguna esquina en pico. */
 #lista-resultados {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 6px 12px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 #lista-resultados li {
-  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
   cursor: pointer;
-  border-bottom: 1px solid #eee;
+  border-radius: 14px;
   font-size: 14px;
-  background: white;
+  background: var(--superficie);
 }
 
 #lista-resultados li:hover {
-  background: #f0f0f0;
+  background: var(--acento-suave);
 }
 
 /* El buscador mezcla líneas y paradas, así que cada bloque lleva su
    encabezado. No es clicable, de ahí que anule el cursor y el hover que
    heredaría del "li" de arriba. */
 #lista-resultados li.grupo-resultados {
-  padding: 10px 16px 4px 16px;
-  background: #f7f7f8;
-  border-bottom: none;
+  padding: 10px 6px 2px 6px;
+  background: none;
   cursor: default;
   font-size: 11px;
   font-weight: bold;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #8a8a8f;
+  color: var(--texto-suave);
 }
 
 #lista-resultados li.grupo-resultados:hover {
-  background: #f7f7f8;
+  background: none;
 }
 
-/* Resultado de línea: distintivo de color + nombre. */
-#lista-resultados li.resultado-linea {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+/* Explica de dónde salen los favoritos cuando todavía no hay ninguno. Solo
+   aparece con el buscador vacío, que es donde iría la lista. */
+#lista-resultados li.pista-favoritos {
+  display: block;
+  padding: 16px;
+  background: var(--fondo);
+  cursor: default;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--texto-suave);
+}
+
+#lista-resultados li.pista-favoritos:hover {
+  background: var(--fondo);
+}
+
+/* El texto de cada resultado ocupa el hueco que deja el distintivo (o el
+   icono) a la izquierda y la estrella a la derecha, y trunca si no cabe. */
+#lista-resultados .texto {
+  flex: 1;
+  min-width: 0;
+}
+
+/* En una parada el texto es una sola línea, así que trunca aquí mismo. En
+   una línea el truncado va en .titulo, porque debajo lleva el subtítulo. */
+#lista-resultados li:not(.resultado-linea) .texto {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .resultado-linea .tarjeta-linea {
@@ -265,7 +323,7 @@ body {
   align-items: center;
   gap: 12px;
   background: var(--superficie);
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
@@ -375,7 +433,7 @@ body {
   align-items: center;
   gap: 12px;
   background: var(--superficie);
-  border-radius: 16px;
+  border-radius: 12px;
   padding: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
@@ -606,65 +664,6 @@ body {
    #panel/#mapa. Lo posicionamos relativo a la ventana completa. */
 #boton-ubicacion {
   position: fixed;
-  bottom: 24px;
-  right: 24px;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: none;
-  background: white;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
-  font-size: 20px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  /* Leaflet usa z-index internamente para sus propias capas
-     (tiles, controles, paneles de animación durante zoom/paneo).
-     Sin esto, el botón queda tapado en ciertos momentos del zoom. */
-  z-index: 1000;
-}
-
-#boton-ubicacion:hover {
-  background: #f0f0f0;
-}
-
-/* --- MARCADOR DE "MI UBICACIÓN" (punto azul tipo Google Maps) ---
-   Dos capas: un halo translúcido grande (igual que Google Maps marca
-   el margen de error del GPS) y un punto sólido pequeño encima,
-   centrado con position:absolute + transform. */
-.icono-ubicacion {
-  background: transparent;
-  border: none;
-}
-
-.halo-ubicacion {
-  width: 36px;
-  height: 36px;
-  background: rgba(24, 144, 255, 0.25);
-  border-radius: 50%;
-  position: relative;
-}
-
-.punto-ubicacion {
-  width: 14px;
-  height: 14px;
-  background: #1890ff;
-  border: 2px solid white;
-  border-radius: 50%;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  box-shadow: 0 0 3px rgba(0, 0, 0, 0.4);
-}
-
-/* --- BOTÓN "MI UBICACIÓN" ---
-   position: fixed lo saca del flujo normal del documento, así que
-   "flota" sobre el mapa en vez de ocupar espacio en el grid de
-   #panel/#mapa. Lo posicionamos relativo a la ventana completa. */
-#boton-ubicacion {
-  position: fixed;
   bottom: 28px;
   right: 28px;
   width: 44px;
@@ -678,16 +677,75 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  /* Leaflet usa z-index internamente para sus propias capas
+     (tiles, controles, paneles de animación durante zoom/paneo).
+     Sin esto, el botón queda tapado en ciertos momentos del zoom. */
+  z-index: 1000;
 }
 
 #boton-ubicacion:hover {
-  background: #f0f0f0;
+  background: #e39412;
+}
+
+/* --- FAVORITOS ---
+   La estrella aparece en tres sitios con el mismo aspecto: la cabecera de
+   una parada, la de una línea y cada fila de resultados del buscador.
+
+   Vacía es un contorno gris que no compite con el nombre; guardada se
+   rellena del naranja de marca. Aquí el relleno no lleva texto encima, así
+   que el naranja claro se puede usar tal cual. */
+.boton-favorito {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: #b8b2a8; /* color del contorno cuando NO es favorito */
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.boton-favorito svg {
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linejoin: round;
+}
+
+.boton-favorito:hover {
+  background: var(--acento-suave);
+  color: var(--acento-texto);
+}
+
+.boton-favorito.activo {
+  color: var(--acento);
+}
+
+.boton-favorito.activo svg {
+  fill: var(--acento);
+}
+
+/* En las cabeceras la estrella se va al extremo derecho de la tarjeta, para
+   que no dependa de lo largo que sea el nombre de la parada. */
+#tarjeta-parada .boton-favorito,
+#tarjeta-linea .boton-favorito {
+  margin-left: auto;
 }
 
 /* --- MARCADOR DE "MI UBICACIÓN" (punto azul tipo Google Maps) ---
    Dos capas: un halo translúcido grande (igual que Google Maps marca
    el margen de error del GPS) y un punto sólido pequeño encima,
-   centrado con position:absolute + transform. */
+   centrado con position:absolute + transform.
+
+   Se queda azul a propósito, fuera de la paleta naranja: es la convención
+   universal de "estás aquí" y, siendo un punto más sobre el mapa, conviene
+   que no se confunda ni con una parada ni con un vehículo. */
 .icono-ubicacion {
   background: transparent;
   border: none;
