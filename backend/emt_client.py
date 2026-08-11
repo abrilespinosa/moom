@@ -30,6 +30,13 @@ PASSWORD = os.getenv("EMT_PASSWORD")
 BASE_URL = "https://openapi.emtmadrid.es/v1"
 LOGIN_URL = "https://openapi.emtmadrid.es/v1/mobilitylabs/user/login/"
 
+# Una sola sesión HTTP para todas las llamadas, por el mismo motivo que en
+# metro_client.py: requests.get abre una conexión TCP+TLS nueva cada vez y
+# el saludo cuesta unos 80ms que aquí no hacen falta. El poller de
+# autobuses pregunta cada 10 segundos, así que la conexión se mantiene
+# caliente entre refrescos.
+_sesion = requests.Session()
+
 # El token dura unas 24h (86399 segundos según la API).
 # Le restamos un margen de seguridad de 1 hora para renovarlo antes de que
 # caduque realmente, evitando que una petición falle justo en el límite.
@@ -78,7 +85,7 @@ def obtener_token():
         "password": PASSWORD,
     }
 
-    respuesta = requests.get(LOGIN_URL, headers=headers)
+    respuesta = _sesion.get(LOGIN_URL, headers=headers)
     respuesta.raise_for_status()
 
     datos = respuesta.json()
@@ -137,7 +144,7 @@ def obtener_llegadas_parada(stop_id):
         "Text_IncidencesRequired_YN": "N",
     }
 
-    respuesta = requests.post(url, headers=headers, json=cuerpo)
+    respuesta = _sesion.post(url, headers=headers, json=cuerpo)
     respuesta.raise_for_status()
     
     datos = respuesta.json()

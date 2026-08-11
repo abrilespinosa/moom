@@ -666,6 +666,19 @@ function seleccionarParada(parada, origen = "busqueda") {
   tituloSeccion.textContent =
     parada.fuente === "METRO" ? "Tiempos reales" : "Próximas llegadas";
 
+  // Aviso de que se está pidiendo, antes de lanzar la petición.
+  //
+  // La API del CRTM tarda entre medio segundo y cinco en devolver los
+  // tiempos de espera (medido), y hasta ahora el panel se quedaba vacío
+  // todo ese rato, que es exactamente lo que parece una aplicación rota.
+  // Esto solo se pinta al SELECCIONAR: los refrescos posteriores ya tienen
+  // tarjetas en pantalla y sustituirlas por un mensaje sería un parpadeo.
+  mostrarMensajeEnPanel(
+    parada.fuente === "METRO"
+      ? "Buscando próximos trenes…"
+      : "Buscando próximas llegadas…"
+  );
+
   // Limpiamos el buscador para la próxima vez que se use. Repintar la lista
   // en vez de vaciarla deja los favoritos ya puestos para cuando se vuelva.
   inputBuscar.value = "";
@@ -1263,7 +1276,15 @@ async function actualizarTrenesMetro() {
     // Ya hacemos esta llamada en actualizarTiemposMetro(), pero la
     // repetimos aquí: son funciones independientes y cada una debe
     // poder fallar o recargarse sin depender de que la otra ya corrió.
-    const respuestaEstacion = await fetch(`${URL_BACKEND}/metro/parada/${STOP_ID_METRO}`);
+    //
+    // Pero pide la variante "/lineas", que solo hace la llamada barata al
+    // CRTM. Antes pedía /metro/parada entero y se quedaba esperando a unos
+    // tiempos de espera que aquí no se usan y que el panel ya está pidiendo
+    // en paralelo: los trenes tardaban en salir entre medio segundo y cinco
+    // de más, según lo que tardase el CRTM ese día.
+    const respuestaEstacion = await fetch(
+      `${URL_BACKEND}/metro/parada/${STOP_ID_METRO}/lineas`
+    );
     const datosEstacion = await respuestaEstacion.json();
 
     if (!datosEstacion.codLines) {
