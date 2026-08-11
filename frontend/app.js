@@ -1323,6 +1323,99 @@ async function actualizarTrenesMetro() {
 
 setInterval(actualizarTrenesMetro, INTERVALO_REFRESCO_METRO);
 
+// --- ANCHO DEL PANEL ---
+//
+// El panel y el mapa son dos columnas de un grid cuya primera medida es la
+// variable CSS --ancho-panel. Arrastrar el divisor solo cambia esa
+// variable: el navegador recoloca las dos columnas y no hay que tocar
+// tamaños a mano en ningún sitio.
+const divisor = document.getElementById("divisor");
+const panel = document.getElementById("panel");
+
+const ANCHO_PANEL_POR_DEFECTO = 380;
+const ANCHO_PANEL_MINIMO = 300; // por debajo, los filtros no caben en una fila
+const ANCHO_MAPA_MINIMO = 320; // que el mapa nunca quede reducido a nada
+const CLAVE_ANCHO_PANEL = "moom:ancho-panel";
+
+let anchoPanel = ANCHO_PANEL_POR_DEFECTO;
+
+function aplicarAnchoPanel(ancho) {
+  // El máximo depende del tamaño de la ventana, así que se recalcula cada
+  // vez en vez de guardarse: al reducir la ventana, un panel que antes
+  // cabía puede dejar de caber.
+  const maximo = Math.max(
+    ANCHO_PANEL_MINIMO,
+    window.innerWidth - ANCHO_MAPA_MINIMO
+  );
+
+  anchoPanel = Math.min(Math.max(Math.round(ancho), ANCHO_PANEL_MINIMO), maximo);
+  document.body.style.setProperty("--ancho-panel", `${anchoPanel}px`);
+
+  // Leaflet mide el contenedor una sola vez y guarda ese tamaño. Si el mapa
+  // cambia de ancho sin que cambie la ventana —justo lo que pasa aquí— no
+  // se entera y deja franjas grises sin tiles hasta el siguiente zoom.
+  mapa.invalidateSize();
+}
+
+function guardarAnchoPanel() {
+  try {
+    localStorage.setItem(CLAVE_ANCHO_PANEL, String(anchoPanel));
+  } catch (error) {
+    console.error("No se pudo guardar el ancho del panel:", error);
+  }
+}
+
+try {
+  const guardado = Number(localStorage.getItem(CLAVE_ANCHO_PANEL));
+  aplicarAnchoPanel(guardado > 0 ? guardado : ANCHO_PANEL_POR_DEFECTO);
+} catch (error) {
+  console.error("No se pudo leer el ancho del panel:", error);
+}
+
+// setPointerCapture hace que el divisor siga recibiendo los eventos aunque
+// el puntero se salga de él, que es lo normal al arrastrar rápido. Sin eso
+// habría que escuchar en document y acordarse de dejar de hacerlo.
+divisor.addEventListener("pointerdown", (evento) => {
+  evento.preventDefault(); // no seleccionar texto del panel al arrastrar
+  divisor.setPointerCapture(evento.pointerId);
+  divisor.classList.add("arrastrando");
+});
+
+divisor.addEventListener("pointermove", (evento) => {
+  if (!divisor.hasPointerCapture(evento.pointerId)) {
+    return;
+  }
+  // El ancho es la distancia entre el borde izquierdo del panel y el
+  // puntero, no clientX a secas: el body tiene margen alrededor.
+  aplicarAnchoPanel(evento.clientX - panel.getBoundingClientRect().left);
+});
+
+divisor.addEventListener("pointerup", (evento) => {
+  divisor.releasePointerCapture(evento.pointerId);
+  divisor.classList.remove("arrastrando");
+  guardarAnchoPanel();
+});
+
+// Con el divisor enfocado, las flechas lo mueven de 16 en 16 píxeles.
+divisor.addEventListener("keydown", (evento) => {
+  const paso = { ArrowLeft: -16, ArrowRight: 16 }[evento.key];
+  if (paso === undefined) {
+    return;
+  }
+  evento.preventDefault();
+  aplicarAnchoPanel(anchoPanel + paso);
+  guardarAnchoPanel();
+});
+
+divisor.addEventListener("dblclick", () => {
+  aplicarAnchoPanel(ANCHO_PANEL_POR_DEFECTO);
+  guardarAnchoPanel();
+});
+
+// Al cambiar el tamaño de la ventana hay que volver a acotar: el panel
+// guardado puede ser más ancho de lo que cabe ahora.
+window.addEventListener("resize", () => aplicarAnchoPanel(anchoPanel));
+
 // --- BOTÓN "MI UBICACIÓN" ---
 const botonUbicacion = document.getElementById("boton-ubicacion");
 
