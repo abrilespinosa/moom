@@ -32,6 +32,10 @@ let COLORES_LINEAS_METRO = {};
 // cada una se pide aparte, solo al elegirla.
 let TODAS_LAS_LINEAS = [];
 
+// Las mismas líneas indexadas por id ("EMT-027"). Los favoritos se guardan
+// como ids, así que al pintarlos hay que recuperar cada línea entera.
+let LINEAS_POR_ID = new Map();
+
 // Filtro de fuente activo: "todos", "EMT" (urbano) o "CRTM" (interurbano).
 // Lo consulta actualizarVisibilidadParadas() para decidir qué paradas
 // dibujar, junto con el zoom y el área visible.
@@ -169,6 +173,10 @@ async function dibujarParadas() {
   // Una vez creados todos los círculos, decidimos cuáles mostrar
   // según el zoom con el que arrancó el mapa.
   actualizarVisibilidadParadas();
+
+  // Igual que con las líneas: las paradas favoritas se guardan por id y no
+  // se pueden pintar hasta tener aquí la lista completa.
+  actualizarResultadosBusqueda();
 }
 
 // Añade o quita los marcadores de parada del mapa según el zoom Y el
@@ -246,6 +254,11 @@ async function cargarLineas() {
   try {
     const respuesta = await fetch(`${URL_BACKEND}/lineas`);
     TODAS_LAS_LINEAS = await respuesta.json();
+    LINEAS_POR_ID = new Map(TODAS_LAS_LINEAS.map((linea) => [linea.id, linea]));
+
+    // Las líneas favoritas no se pueden pintar hasta que llega esta lista,
+    // así que repintamos el buscador ahora que ya la tenemos.
+    actualizarResultadosBusqueda();
   } catch (error) {
     console.error("No se pudieron cargar las líneas:", error);
   }
@@ -265,6 +278,8 @@ const chipsLineas = document.getElementById("chips-lineas");
 const tituloSeccion = document.getElementById("titulo-seccion");
 const listaLlegadas = document.getElementById("lista-llegadas");
 const botonVolver = document.getElementById("boton-volver");
+const botonFavoritoParada = document.getElementById("boton-favorito-parada");
+const botonFavoritoLinea = document.getElementById("boton-favorito-linea");
 const vistaLinea = document.getElementById("vista-linea");
 const botonVolverLinea = document.getElementById("boton-volver-linea");
 const distintivoLinea = document.getElementById("distintivo-linea");
@@ -294,6 +309,126 @@ botonesFiltro.forEach((boton) => {
     actualizarResultadosBusqueda();
   });
 });
+
+// --- FAVORITOS ---
+//
+// Se guardan en localStorage, no en el backend: no hay usuarios ni base de
+// datos, así que son los favoritos de ESTE navegador y no viajan a otro
+// dispositivo. Cuando exista la persistencia en PostgreSQL del roadmap,
+// este módulo es lo único que habría que cambiar: el resto de la interfaz
+// solo llama a esFavorito() y alternarFavorito().
+//
+// Guardamos únicamente ids ("EMT-027", "est_4_323"), nunca el objeto
+// entero: nombres y coordenadas cambian con cada volcado GTFS, mientras
+// que el id es lo único estable entre volcados.
+const CLAVE_FAVORITOS = "moom:favoritos";
+
+// Dos conjuntos separados porque los ids de línea y de parada son de
+// espacios distintos y se pintan de forma distinta.
+let FAVORITOS = { paradas: new Set(), lineas: new Set() };
+
+function cargarFavoritos() {
+  try {
+    const guardado = JSON.parse(localStorage.getItem(CLAVE_FAVORITOS)) ?? {};
+    FAVORITOS = {
+      paradas: new Set(guardado.paradas ?? []),
+      lineas: new Set(guardado.lineas ?? []),
+    };
+  } catch (error) {
+    // JSON corrupto, o localStorage no disponible (navegación privada de
+    // Safari, cookies bloqueadas). Los favoritos se quedan solo en memoria
+    // durante esta sesión, que es mejor que impedir que arranque el resto.
+    console.error("No se pudieron leer los favoritos guardados:", error);
+  }
+}
+
+function guardarFavoritos() {
+  try {
+    localStorage.setItem(
+      CLAVE_FAVORITOS,
+      JSON.stringify({
+        paradas: [...FAVORITOS.paradas],
+        lineas: [...FAVORITOS.lineas],
+      })
+    );
+  } catch (error) {
+    console.error("No se pudieron guardar los favoritos:", error);
+  }
+}
+
+cargarFavoritos();
+
+// "tipo" es "paradas" o "lineas", el mismo nombre que la clave de FAVORITOS.
+function esFavorito(tipo, id) {
+  return FAVORITOS[tipo].has(id);
+}
+
+function alternarFavorito(tipo, id) {
+  const guardados = FAVORITOS[tipo];
+
+  if (guardados.has(id)) {
+    guardados.delete(id);
+  } else {
+    guardados.add(id);
+  }
+
+  guardarFavoritos();
+  return guardados.has(id);
+}
+
+// La estrella va en SVG y no como carácter (★/☆) para que herede el color
+// del CSS y pueda pasar de contorno a relleno con una clase, sin cambiar el
+// texto del botón.
+const ESTRELLA_SVG = `
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M12 3.6l2.6 5.28 5.83.85-4.22 4.11.997 5.8L12 16.9l-5.21 2.74.996-5.8-4.22-4.11 5.83-.85z" />
+  </svg>
+`;
+
+function pintarEstadoFavorito(boton, guardado) {
+  const etiqueta = guardado ? "Quitar de favoritos" : "Guardar en favoritos";
+
+  boton.classList.toggle("activo", guardado);
+  boton.setAttribute("aria-pressed", guardado ? "true" : "false");
+  // El botón no tiene texto, solo el dibujo de la estrella, así que sin
+  // aria-label un lector de pantalla lo anunciaría como "botón" a secas.
+  boton.setAttribute("aria-label", etiqueta);
+  boton.title = etiqueta;
+}
+
+// Deja un botón listo para alternar el favorito de un elemento concreto.
+//
+// Se asigna "onclick" en vez de addEventListener a propósito: los dos
+// botones de cabecera son los MISMOS elementos para todas las paradas y
+// líneas, así que se preparan de nuevo en cada selección. Con
+// addEventListener se irían acumulando manejadores de las paradas
+// anteriores y un solo clic guardaría varias a la vez.
+function prepararBotonFavorito(boton, tipo, id) {
+  boton.innerHTML = ESTRELLA_SVG;
+  pintarEstadoFavorito(boton, esFavorito(tipo, id));
+
+  boton.onclick = (evento) => {
+    // En una fila del buscador, el clic en la estrella no debe abrir además
+    // la parada o la línea.
+    evento.stopPropagation();
+
+    pintarEstadoFavorito(boton, alternarFavorito(tipo, id));
+
+    // Si lo que se acaba de tocar es una fila de la lista de favoritos, esa
+    // fila ya no pertenece ahí: repintamos para que desaparezca.
+    if (vistaBusqueda.style.display !== "none") {
+      actualizarResultadosBusqueda();
+    }
+  };
+
+  return boton;
+}
+
+function crearBotonFavorito(tipo, id) {
+  const boton = document.createElement("button");
+  boton.className = "boton-favorito";
+  return prepararBotonFavorito(boton, tipo, id);
+}
 
 // --- Lógica del buscador ---
 //
@@ -367,15 +502,59 @@ function crearResultadoDeLinea(linea) {
     </span>
   `;
 
+  // La estrella va en cada resultado, no solo en la lista de favoritos: así
+  // se puede guardar una línea nada más encontrarla, sin tener que abrirla.
+  item.appendChild(crearBotonFavorito("lineas", linea.id));
+
   item.addEventListener("click", () => seleccionarLinea(linea));
   return item;
 }
 
 function crearResultadoDeParada(parada) {
   const item = document.createElement("li");
-  item.textContent = `${parada.nombre} (parada ${parada.id})`;
+
+  // El nombre va dentro de un span y no suelto como texto para que pueda
+  // truncar con puntos suspensivos cuando no cabe junto a la estrella.
+  const texto = document.createElement("span");
+  texto.className = "texto";
+  texto.textContent = `${parada.nombre} (parada ${parada.id})`;
+  item.appendChild(texto);
+  item.appendChild(crearBotonFavorito("paradas", parada.id));
+
   item.addEventListener("click", () => seleccionarParada(parada));
   return item;
+}
+
+// Con el buscador vacío, el panel enseña lo que hay guardado en vez de
+// quedarse en blanco. Respeta el filtro de modo activo, igual que los
+// resultados de búsqueda: si estás en "Metro", no aparecen tus paradas de
+// bus favoritas.
+//
+// Los ids guardados que ya no existen (un volcado GTFS que renumera una
+// parada, o las líneas cuando el backend no tiene los GTFS pesados) se
+// omiten al pintar, pero NO se borran de localStorage: pueden volver a
+// existir con el siguiente volcado.
+function pintarFavoritos() {
+  const lineas = [...FAVORITOS.lineas]
+    .map((id) => LINEAS_POR_ID.get(id))
+    .filter((linea) => linea && pasaElFiltroDeModo(linea));
+
+  const paradas = [...FAVORITOS.paradas]
+    .map((id) => PARADAS_POR_ID.get(id))
+    .filter((parada) => parada && pasaElFiltroDeModo(parada));
+
+  if (lineas.length === 0 && paradas.length === 0) {
+    const pista = document.createElement("li");
+    pista.className = "pista-favoritos";
+    pista.textContent =
+      "Aquí aparecerán tus paradas y líneas favoritas. Guárdalas con la estrella.";
+    listaResultados.appendChild(pista);
+    return;
+  }
+
+  listaResultados.appendChild(encabezadoDeGrupo("Favoritos"));
+  lineas.forEach((l) => listaResultados.appendChild(crearResultadoDeLinea(l)));
+  paradas.forEach((p) => listaResultados.appendChild(crearResultadoDeParada(p)));
 }
 
 function actualizarResultadosBusqueda() {
@@ -383,6 +562,7 @@ function actualizarResultadosBusqueda() {
   listaResultados.innerHTML = "";
 
   if (texto === "") {
+    pintarFavoritos();
     return;
   }
 
@@ -486,9 +666,10 @@ function seleccionarParada(parada, origen = "busqueda") {
   tituloSeccion.textContent =
     parada.fuente === "METRO" ? "Tiempos reales" : "Próximas llegadas";
 
-  // Limpiamos el buscador para la próxima vez que se use
+  // Limpiamos el buscador para la próxima vez que se use. Repintar la lista
+  // en vez de vaciarla deja los favoritos ya puestos para cuando se vuelva.
   inputBuscar.value = "";
-  listaResultados.innerHTML = "";
+  actualizarResultadosBusqueda();
 
   // Las estaciones de Metro usan un endpoint y un formato de respuesta
   // distintos a las paradas de bus (EMT/CRTM), así que necesitamos
@@ -604,6 +785,10 @@ async function seleccionarLinea(linea) {
     nombreLinea.textContent = datos.nombre;
     fuenteLinea.textContent = NOMBRE_DE_FUENTE[datos.fuente] ?? datos.fuente;
 
+    // El id del recorrido y el de la lista del buscador son el mismo, así
+    // que la estrella queda sincronizada entre las dos vistas.
+    prepararBotonFavorito(botonFavoritoLinea, "lineas", datos.id);
+
     // Un botón por sentido. Casi siempre son dos, pero alguna línea trae
     // más de un itinerario, así que se generan sobre la marcha.
     sentidosLinea.innerHTML = "";
@@ -622,7 +807,7 @@ async function seleccionarLinea(linea) {
     subtituloHeader.textContent = "Recorrido de la línea";
 
     inputBuscar.value = "";
-    listaResultados.innerHTML = "";
+    actualizarResultadosBusqueda();
   } catch (error) {
     console.error("Error al cargar el recorrido de la línea:", error);
   }
@@ -883,6 +1068,8 @@ function pintarCabeceraParada(parada) {
   nombreParadaActual.textContent = parada.nombre;
   codigoParadaActual.textContent =
     parada.fuente === "METRO" ? "" : `Parada ${parada.id}`;
+
+  prepararBotonFavorito(botonFavoritoParada, "paradas", parada.id);
 }
 
 async function actualizarAutobuses() {
@@ -1135,6 +1322,99 @@ async function actualizarTrenesMetro() {
 }
 
 setInterval(actualizarTrenesMetro, INTERVALO_REFRESCO_METRO);
+
+// --- ANCHO DEL PANEL ---
+//
+// El panel y el mapa son dos columnas de un grid cuya primera medida es la
+// variable CSS --ancho-panel. Arrastrar el divisor solo cambia esa
+// variable: el navegador recoloca las dos columnas y no hay que tocar
+// tamaños a mano en ningún sitio.
+const divisor = document.getElementById("divisor");
+const panel = document.getElementById("panel");
+
+const ANCHO_PANEL_POR_DEFECTO = 380;
+const ANCHO_PANEL_MINIMO = 300; // por debajo, los filtros no caben en una fila
+const ANCHO_MAPA_MINIMO = 320; // que el mapa nunca quede reducido a nada
+const CLAVE_ANCHO_PANEL = "moom:ancho-panel";
+
+let anchoPanel = ANCHO_PANEL_POR_DEFECTO;
+
+function aplicarAnchoPanel(ancho) {
+  // El máximo depende del tamaño de la ventana, así que se recalcula cada
+  // vez en vez de guardarse: al reducir la ventana, un panel que antes
+  // cabía puede dejar de caber.
+  const maximo = Math.max(
+    ANCHO_PANEL_MINIMO,
+    window.innerWidth - ANCHO_MAPA_MINIMO
+  );
+
+  anchoPanel = Math.min(Math.max(Math.round(ancho), ANCHO_PANEL_MINIMO), maximo);
+  document.body.style.setProperty("--ancho-panel", `${anchoPanel}px`);
+
+  // Leaflet mide el contenedor una sola vez y guarda ese tamaño. Si el mapa
+  // cambia de ancho sin que cambie la ventana —justo lo que pasa aquí— no
+  // se entera y deja franjas grises sin tiles hasta el siguiente zoom.
+  mapa.invalidateSize();
+}
+
+function guardarAnchoPanel() {
+  try {
+    localStorage.setItem(CLAVE_ANCHO_PANEL, String(anchoPanel));
+  } catch (error) {
+    console.error("No se pudo guardar el ancho del panel:", error);
+  }
+}
+
+try {
+  const guardado = Number(localStorage.getItem(CLAVE_ANCHO_PANEL));
+  aplicarAnchoPanel(guardado > 0 ? guardado : ANCHO_PANEL_POR_DEFECTO);
+} catch (error) {
+  console.error("No se pudo leer el ancho del panel:", error);
+}
+
+// setPointerCapture hace que el divisor siga recibiendo los eventos aunque
+// el puntero se salga de él, que es lo normal al arrastrar rápido. Sin eso
+// habría que escuchar en document y acordarse de dejar de hacerlo.
+divisor.addEventListener("pointerdown", (evento) => {
+  evento.preventDefault(); // no seleccionar texto del panel al arrastrar
+  divisor.setPointerCapture(evento.pointerId);
+  divisor.classList.add("arrastrando");
+});
+
+divisor.addEventListener("pointermove", (evento) => {
+  if (!divisor.hasPointerCapture(evento.pointerId)) {
+    return;
+  }
+  // El ancho es la distancia entre el borde izquierdo del panel y el
+  // puntero, no clientX a secas: el body tiene margen alrededor.
+  aplicarAnchoPanel(evento.clientX - panel.getBoundingClientRect().left);
+});
+
+divisor.addEventListener("pointerup", (evento) => {
+  divisor.releasePointerCapture(evento.pointerId);
+  divisor.classList.remove("arrastrando");
+  guardarAnchoPanel();
+});
+
+// Con el divisor enfocado, las flechas lo mueven de 16 en 16 píxeles.
+divisor.addEventListener("keydown", (evento) => {
+  const paso = { ArrowLeft: -16, ArrowRight: 16 }[evento.key];
+  if (paso === undefined) {
+    return;
+  }
+  evento.preventDefault();
+  aplicarAnchoPanel(anchoPanel + paso);
+  guardarAnchoPanel();
+});
+
+divisor.addEventListener("dblclick", () => {
+  aplicarAnchoPanel(ANCHO_PANEL_POR_DEFECTO);
+  guardarAnchoPanel();
+});
+
+// Al cambiar el tamaño de la ventana hay que volver a acotar: el panel
+// guardado puede ser más ancho de lo que cabe ahora.
+window.addEventListener("resize", () => aplicarAnchoPanel(anchoPanel));
 
 // --- BOTÓN "MI UBICACIÓN" ---
 const botonUbicacion = document.getElementById("boton-ubicacion");

@@ -1,61 +1,156 @@
+/* --- PALETA ---
+   Naranja de marca sobre blanco. Un único color de acento para toda la
+   interfaz, y neutros para el resto: así los colores que SÍ significan algo
+   (el rojo de la Línea 2, el verde del interurbano, el azul de la EMT) no
+   compiten con los botones.
+
+   Los dos naranjas no son un capricho. #F5A623 sobre blanco da 2:1 de
+   contraste, muy por debajo del 4.5:1 que hace falta para leer texto, así
+   que se reparten el trabajo: el naranja de marca solo se usa como RELLENO
+   o como aro, siempre con texto oscuro encima (10:1), y para texto naranja
+   sobre blanco va la variante oscura (5.5:1). */
+:root {
+  --acento: #f5a623;
+  --acento-texto: #9a5b00;
+  --acento-suave: #fdf1dd; /* relleno de hover y de fila seleccionada */
+  --texto-sobre-acento: #1a1a1a;
+
+  --superficie: #ffffff; /* tarjetas y cabecera */
+  --fondo: #faf9f7; /* el panel, un blanco apenas cálido para que las tarjetas se despeguen */
+  --borde: #e6e3de;
+
+  --texto: #1a1a1a;
+  --texto-suave: #767068;
+}
+
 * {
   box-sizing: border-box;
 }
 
 body {
+  /* Ancho del panel izquierdo. Es una variable y no un valor fijo porque
+     se puede arrastrar el divisor para ensanchar o estrechar el panel; el
+     JS solo cambia esta propiedad y el grid se recoloca solo. */
+  --ancho-panel: 380px;
+
   margin: 0;
   font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  background: var(--fondo);
 
   /* --- LAYOUT PRINCIPAL ---
-     Dos columnas: el panel (380px fijos) y el mapa (el resto del espacio).
-     height: 100vh hace que el grid ocupe toda la altura de la ventana. */
+     Tres columnas: el panel, el divisor que se arrastra y el mapa.
+     height: 100vh hace que el grid ocupe toda la altura de la ventana, y
+     el padding deja ver el fondo alrededor, que es lo que permite que
+     panel y mapa se vean como dos bloques redondeados y separados. */
   display: grid;
-  grid-template-columns: 380px 1fr;
+  grid-template-columns: var(--ancho-panel) 14px 1fr;
   height: 100vh;
+  padding: 10px;
 }
 
 #mapa {
   height: 100%;
   width: 100%;
+  border-radius: 18px;
+  /* Sin esto los tiles cuadrados de Leaflet asoman por las esquinas. */
+  overflow: hidden;
 }
 
 /* --- PANEL IZQUIERDO ---
    Ya no flota sobre el mapa: ahora es una columna real del grid,
    con su propio fondo y scroll independiente si la lista es larga. */
 #panel {
-  background: #f7f7f8;
-  border-right: 1px solid #ddd;
+  background: var(--superficie);
   height: 100%;
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
+  border-radius: 18px;
 }
 
-/* Cabecera del panel: cambia de texto según el estado (buscar / llegadas) */
+/* --- DIVISOR ARRASTRABLE ---
+   Ocupa la columna del medio del grid. La barrita no es el elemento
+   entero: el elemento es ancho para que sea fácil de agarrar con el ratón,
+   y dentro se dibuja un tirador estrecho y redondeado. */
+#divisor {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: col-resize;
+  /* Evita que en pantalla táctil el arrastre haga desplazar la página. */
+  touch-action: none;
+}
+
+#divisor::before {
+  content: "";
+  width: 4px;
+  height: 44px;
+  border-radius: 999px;
+  background: #ded8ce;
+  transition: background 0.12s, height 0.12s;
+}
+
+#divisor:hover::before,
+#divisor:focus-visible::before,
+#divisor.arrastrando::before {
+  background: var(--acento);
+  height: 76px;
+}
+
+#divisor:focus {
+  outline: none; /* el tirador ya se resalta solo al recibir el foco */
+}
+
+/* Cabecera del panel: una banda del naranja de marca, con el logo centrado.
+   Es el único bloque de color de toda la interfaz; de aquí para abajo todo
+   es blanco. */
 #panel-header {
-  padding: 16px;
-  border-bottom: 1px solid #ddd;
-  background: white;
+  padding: 18px 16px;
+  background: var(--acento);
+  display: flex;
+  justify-content: center;
 }
 
+/* El h1 ya no lleva texto, solo el logo: se queda como contenedor para no
+   perder el encabezado de la página. */
 #panel-header h1 {
-  font-size: 16px;
-  margin: 0 0 4px 0;
-  color: #1a1a1a;
+  margin: 0;
+  line-height: 0; /* si no, el hueco de la línea de texto añade espacio bajo la imagen */
 }
 
-#panel-header p {
-  font-size: 12px;
-  color: #777;
+/* El SVG es solo el nombre, en blanco y recortado a su caja: no arrastra el
+   cuadrado naranja del archivo original, así que el color del fondo lo pone
+   la banda de arriba y no hay dos naranjas que puedan no coincidir.
+   La altura se deja en auto para respetar su proporción (985x312). */
+#logo {
+  display: block;
+  width: 128px;
+  height: auto;
+}
+
+/* Texto de contexto de la vista actual ("Busca una parada o una línea",
+   "Próximas llegadas"...). Va ya en la zona blanca, debajo de la banda. */
+#subtitulo-header {
   margin: 0;
+  padding: 12px 16px 0 16px;
+  font-size: 12px;
+  color: var(--texto-suave);
 }
 
 #input-buscar {
   width: 100%;
   padding: 10px;
   font-size: 14px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+}
+
+#input-buscar:focus {
+  outline: none;
+  border-color: var(--acento);
+  box-shadow: 0 0 0 3px var(--acento-suave);
 }
 
 /* --- FILTRO DE FUENTE (Todos / Urbano / Interurbano) --- */
@@ -127,59 +222,93 @@ body {
 }
 
 /* Activo: el aro marca cuál está seleccionado sin tapar el icono, que es
-   lo que pasaría rellenando el cuadro de color. */
+   lo que pasaría rellenando el cuadro de color. El aro va en el naranja de
+   marca (es una forma, no texto) y la etiqueta en su variante oscura, que
+   es la única legible a 11px. */
 .filtro-boton.activo {
-  color: #0178bc;
+  color: var(--acento-texto);
   font-weight: bold;
 }
 
 .filtro-boton.activo .filtro-icono {
-  box-shadow: inset 0 0 0 2px #0178bc;
+  box-shadow: inset 0 0 0 2px var(--acento);
 }
 
 /* --- VISTA: LISTA DE RESULTADOS DE BÚSQUEDA --- */
+/* Los resultados son fichas redondeadas separadas entre sí, no filas
+   pegadas con una raya debajo: la lista se lee igual y encaja con el resto
+   de la interfaz, donde no hay ninguna esquina en pico. */
 #lista-resultados {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 6px 12px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 #lista-resultados li {
-  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
   cursor: pointer;
-  border-bottom: 1px solid #eee;
+  border-radius: 14px;
   font-size: 14px;
-  background: white;
+  background: var(--superficie);
 }
 
 #lista-resultados li:hover {
-  background: #f0f0f0;
+  background: var(--acento-suave);
 }
 
 /* El buscador mezcla líneas y paradas, así que cada bloque lleva su
    encabezado. No es clicable, de ahí que anule el cursor y el hover que
    heredaría del "li" de arriba. */
 #lista-resultados li.grupo-resultados {
-  padding: 10px 16px 4px 16px;
-  background: #f7f7f8;
-  border-bottom: none;
+  padding: 10px 6px 2px 6px;
+  background: none;
   cursor: default;
   font-size: 11px;
   font-weight: bold;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #8a8a8f;
+  color: var(--texto-suave);
 }
 
 #lista-resultados li.grupo-resultados:hover {
-  background: #f7f7f8;
+  background: none;
 }
 
-/* Resultado de línea: distintivo de color + nombre. */
-#lista-resultados li.resultado-linea {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+/* Explica de dónde salen los favoritos cuando todavía no hay ninguno. Solo
+   aparece con el buscador vacío, que es donde iría la lista. */
+#lista-resultados li.pista-favoritos {
+  display: block;
+  padding: 16px;
+  background: var(--fondo);
+  cursor: default;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--texto-suave);
+}
+
+#lista-resultados li.pista-favoritos:hover {
+  background: var(--fondo);
+}
+
+/* El texto de cada resultado ocupa el hueco que deja el distintivo (o el
+   icono) a la izquierda y la estrella a la derecha, y trunca si no cabe. */
+#lista-resultados .texto {
+  flex: 1;
+  min-width: 0;
+}
+
+/* En una parada el texto es una sola línea, así que trunca aquí mismo. En
+   una línea el truncado va en .titulo, porque debajo lleva el subtítulo. */
+#lista-resultados li:not(.resultado-linea) .texto {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .resultado-linea .tarjeta-linea {
@@ -188,11 +317,8 @@ body {
   font-size: 12px;
 }
 
-.resultado-linea .texto {
-  min-width: 0;
-}
-
 .resultado-linea .titulo {
+  display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -200,7 +326,7 @@ body {
 
 .resultado-linea .subtitulo {
   font-size: 12px;
-  color: #888;
+  color: var(--texto-suave);
 }
 
 /* --- VISTA: LLEGADAS A LA PARADA SELECCIONADA --- */
@@ -216,7 +342,7 @@ body {
 .boton-volver {
   background: none;
   border: none;
-  color: #0178bc;
+  color: var(--acento-texto);
   font-size: 14px;
   cursor: pointer;
   padding: 0;
@@ -242,8 +368,8 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: white;
-  border-radius: 12px;
+  background: var(--superficie);
+  border-radius: 16px;
   padding: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
@@ -251,13 +377,13 @@ body {
 #nombre-linea {
   font-weight: bold;
   font-size: 14px;
-  color: #1a1a1a;
+  color: var(--texto);
   line-height: 1.25;
 }
 
 #fuente-linea {
   font-size: 12px;
-  color: #888;
+  color: var(--texto-suave);
   margin-top: 1px;
 }
 
@@ -274,9 +400,9 @@ body {
   min-width: 0;
   padding: 7px 8px;
   font-size: 12px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--borde);
   border-radius: 16px;
-  background: white;
+  background: var(--superficie);
   color: #555;
   cursor: pointer;
   white-space: nowrap;
@@ -285,13 +411,16 @@ body {
 }
 
 .boton-sentido:hover {
-  background: #f0f0f0;
+  background: var(--acento-suave);
 }
 
+/* Relleno naranja con texto oscuro, no blanco: sobre este naranja el blanco
+   se queda en 2:1 y el texto casi desaparece. */
 .boton-sentido.activo {
-  background: #0178bc;
-  border-color: #0178bc;
-  color: white;
+  background: var(--acento);
+  border-color: var(--acento);
+  color: var(--texto-sobre-acento);
+  font-weight: bold;
 }
 
 #titulo-recorrido {
@@ -300,7 +429,7 @@ body {
   font-weight: bold;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #8a8a8f;
+  color: var(--texto-suave);
 }
 
 #lista-recorrido {
@@ -317,14 +446,14 @@ body {
   align-items: center;
   gap: 10px;
   padding: 9px 10px;
-  border-radius: 8px;
+  border-radius: 12px;
   cursor: pointer;
   font-size: 13px;
   color: #333;
 }
 
 .parada-recorrido:hover {
-  background: #eceef1;
+  background: var(--acento-suave);
 }
 
 .parada-recorrido .orden {
@@ -349,7 +478,7 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: white;
+  background: var(--superficie);
   border-radius: 12px;
   padding: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -364,7 +493,7 @@ body {
   flex-shrink: 0;
   object-fit: contain;
   background: #f0f1f3;
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 7px;
 }
 
@@ -375,13 +504,13 @@ body {
 #nombre-parada-actual {
   font-weight: bold;
   font-size: 15px;
-  color: #1a1a1a;
+  color: var(--texto);
   line-height: 1.25;
 }
 
 #codigo-parada-actual {
   font-size: 12px;
-  color: #888;
+  color: var(--texto-suave);
   margin-top: 1px;
 }
 
@@ -396,7 +525,7 @@ body {
   font-weight: bold;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #8a8a8f;
+  color: var(--texto-suave);
 }
 
 #titulo-seccion:empty {
@@ -432,7 +561,7 @@ body {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  border-radius: 8px;
+  border-radius: 10px;
   border: 1px solid rgba(0, 0, 0, 0.12);
   font-weight: bold;
   line-height: 1;
@@ -460,8 +589,8 @@ body {
 .tarjeta-bus {
   display: flex;
   align-items: flex-start; /* el distintivo se alinea con el destino, no al centro */
-  background: white;
-  border-radius: 10px;
+  background: var(--superficie);
+  border-radius: 16px;
   padding: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   gap: 12px;
@@ -496,7 +625,7 @@ body {
 .tiempo-proximo {
   font-size: 20px;
   font-weight: bold;
-  color: #1a1a1a;
+  color: var(--texto);
   margin-top: 3px;
 }
 
@@ -514,7 +643,7 @@ body {
   vertical-align: middle;
   margin-left: 8px;
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: 8px;
   background: #eceef1;
   color: #6b7280;
   font-size: 10px;
@@ -526,13 +655,13 @@ body {
 /* Los tiempos siguientes, en pequeño y en gris bajo el principal. */
 .tarjeta-tiempos {
   font-size: 12px;
-  color: #888;
+  color: var(--texto-suave);
   margin-top: 3px;
 }
 
 #mensaje-vacio {
   padding: 20px 16px;
-  color: #888;
+  color: var(--texto-suave);
   font-size: 13px;
   text-align: center;
 }
@@ -581,13 +710,13 @@ body {
    #panel/#mapa. Lo posicionamos relativo a la ventana completa. */
 #boton-ubicacion {
   position: fixed;
-  bottom: 24px;
-  right: 24px;
+  bottom: 28px;
+  right: 28px;
   width: 44px;
   height: 44px;
   border-radius: 50%;
   border: none;
-  background: white;
+  background: var(--acento);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
   font-size: 20px;
   cursor: pointer;
@@ -601,68 +730,68 @@ body {
 }
 
 #boton-ubicacion:hover {
-  background: #f0f0f0;
+  background: #e39412;
 }
 
-/* --- MARCADOR DE "MI UBICACIÓN" (punto azul tipo Google Maps) ---
-   Dos capas: un halo translúcido grande (igual que Google Maps marca
-   el margen de error del GPS) y un punto sólido pequeño encima,
-   centrado con position:absolute + transform. */
-.icono-ubicacion {
-  background: transparent;
+/* --- FAVORITOS ---
+   La estrella aparece en tres sitios con el mismo aspecto: la cabecera de
+   una parada, la de una línea y cada fila de resultados del buscador.
+
+   Vacía es un contorno gris que no compite con el nombre; guardada se
+   rellena del naranja de marca. Aquí el relleno no lleva texto encima, así
+   que el naranja claro se puede usar tal cual. */
+.boton-favorito {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  padding: 0;
   border: none;
-}
-
-.halo-ubicacion {
-  width: 36px;
-  height: 36px;
-  background: rgba(24, 144, 255, 0.25);
   border-radius: 50%;
-  position: relative;
-}
-
-.punto-ubicacion {
-  width: 14px;
-  height: 14px;
-  background: #1890ff;
-  border: 2px solid white;
-  border-radius: 50%;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  box-shadow: 0 0 3px rgba(0, 0, 0, 0.4);
-}
-
-/* --- BOTÓN "MI UBICACIÓN" ---
-   position: fixed lo saca del flujo normal del documento, así que
-   "flota" sobre el mapa en vez de ocupar espacio en el grid de
-   #panel/#mapa. Lo posicionamos relativo a la ventana completa. */
-#boton-ubicacion {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: none;
-  background: white;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
-  font-size: 20px;
+  background: none;
+  color: #b8b2a8; /* color del contorno cuando NO es favorito */
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-#boton-ubicacion:hover {
-  background: #f0f0f0;
+.boton-favorito svg {
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linejoin: round;
+}
+
+.boton-favorito:hover {
+  background: var(--acento-suave);
+  color: var(--acento-texto);
+}
+
+.boton-favorito.activo {
+  color: var(--acento);
+}
+
+.boton-favorito.activo svg {
+  fill: var(--acento);
+}
+
+/* En las cabeceras la estrella se va al extremo derecho de la tarjeta, para
+   que no dependa de lo largo que sea el nombre de la parada. */
+#tarjeta-parada .boton-favorito,
+#tarjeta-linea .boton-favorito {
+  margin-left: auto;
 }
 
 /* --- MARCADOR DE "MI UBICACIÓN" (punto azul tipo Google Maps) ---
    Dos capas: un halo translúcido grande (igual que Google Maps marca
    el margen de error del GPS) y un punto sólido pequeño encima,
-   centrado con position:absolute + transform. */
+   centrado con position:absolute + transform.
+
+   Se queda azul a propósito, fuera de la paleta naranja: es la convención
+   universal de "estás aquí" y, siendo un punto más sobre el mapa, conviene
+   que no se confunda ni con una parada ni con un vehículo. */
 .icono-ubicacion {
   background: transparent;
   border: none;
