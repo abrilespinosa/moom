@@ -169,6 +169,10 @@ async function dibujarParadas() {
   // Una vez creados todos los círculos, decidimos cuáles mostrar
   // según el zoom con el que arrancó el mapa.
   actualizarVisibilidadParadas();
+
+  // Igual que con las líneas: las paradas favoritas se guardan por id y no
+  // se pueden pintar hasta tener aquí la lista completa.
+  actualizarResultadosBusqueda();
 }
 
 // Añade o quita los marcadores de parada del mapa según el zoom Y el
@@ -246,6 +250,11 @@ async function cargarLineas() {
   try {
     const respuesta = await fetch(`${URL_BACKEND}/lineas`);
     TODAS_LAS_LINEAS = await respuesta.json();
+    LINEAS_POR_ID = new Map(TODAS_LAS_LINEAS.map((linea) => [linea.id, linea]));
+
+    // Las líneas favoritas no se pueden pintar hasta que llega esta lista,
+    // así que repintamos el buscador ahora que ya la tenemos.
+    actualizarResultadosBusqueda();
   } catch (error) {
     console.error("No se pudieron cargar las líneas:", error);
   }
@@ -622,7 +631,7 @@ async function seleccionarLinea(linea) {
     subtituloHeader.textContent = "Recorrido de la línea";
 
     inputBuscar.value = "";
-    listaResultados.innerHTML = "";
+    actualizarResultadosBusqueda();
   } catch (error) {
     console.error("Error al cargar el recorrido de la línea:", error);
   }
@@ -883,6 +892,8 @@ function pintarCabeceraParada(parada) {
   nombreParadaActual.textContent = parada.nombre;
   codigoParadaActual.textContent =
     parada.fuente === "METRO" ? "" : `Parada ${parada.id}`;
+
+  prepararBotonFavorito(botonFavoritoParada, "paradas", parada.id);
 }
 
 async function actualizarAutobuses() {
