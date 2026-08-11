@@ -61,6 +61,19 @@ BASE_URL = "https://www.crtm.es/widgets/api"
 # candado); lo que no admite es compartirse entre procesos.
 _sesion = requests.Session()
 
+# (conectar, leer) en segundos. Sin timeout, requests espera indefinidamente:
+# una conexión que el CRTM deje colgada retiene para siempre un hilo del pool
+# de FastAPI, y con unas pocas la aplicación entera deja de responder aunque
+# el servidor siga vivo. En local no se nota porque el proceso se reinicia
+# constantemente.
+#
+# El límite de lectura es 10s y no menos porque la latencia del CRTM es
+# errática de por sí: de 0,1s a 4,5s para la MISMA consulta, con picos
+# medidos de 6,9s. Cortar antes convertiría en error lo que solo es un
+# servidor lento. El de conexión es corto porque ahí no hay ambigüedad: si
+# no llegamos a saludar, no vamos a llegar.
+TIMEOUT_SEGUNDOS = (5, 10)
+
 # Dentro de codIssue viene incrustada la hora PROGRAMADA de ese viaje, entre
 # guiones bajos: "8__621____4_13:15:00_1_-__20_8__621___" -> "13:15:00".
 _HORA_EN_CODISSUE = re.compile(r"_(\d{2}:\d{2}:\d{2})_")
@@ -183,7 +196,7 @@ def obtener_info_estacion(cod_stop):
     url = f"{BASE_URL}/GetStops.php"
     parametros = {"codStop": cod_stop}
 
-    respuesta = _sesion.get(url, params=parametros)
+    respuesta = _sesion.get(url, params=parametros, timeout=TIMEOUT_SEGUNDOS)
     respuesta.raise_for_status()
 
     datos = respuesta.json()
@@ -250,7 +263,7 @@ def obtener_info_linea(cod_line):
     url = f"{BASE_URL}/GetLinesInformation.php"
     parametros = {"activeItinerary": 1, "codLine": cod_line}
 
-    respuesta = _sesion.get(url, params=parametros)
+    respuesta = _sesion.get(url, params=parametros, timeout=TIMEOUT_SEGUNDOS)
     respuesta.raise_for_status()
 
     datos = respuesta.json()
@@ -312,7 +325,7 @@ def obtener_tiempos_espera(cod_stop, stop_type=TIPO_PARADA_POR_DEFECTO):
         "stopTimesByIti": cod_stop,
     }
 
-    respuesta = _sesion.get(url, params=parametros)
+    respuesta = _sesion.get(url, params=parametros, timeout=TIMEOUT_SEGUNDOS)
     respuesta.raise_for_status()
 
     datos = respuesta.json()
@@ -363,7 +376,7 @@ def obtener_posicion_trenes(mode_cod, cod_itinerary, cod_line, cod_stop, directi
         "direction": direction,
     }
 
-    respuesta = _sesion.get(url, params=parametros)
+    respuesta = _sesion.get(url, params=parametros, timeout=TIMEOUT_SEGUNDOS)
     respuesta.raise_for_status()
 
     datos = respuesta.json()

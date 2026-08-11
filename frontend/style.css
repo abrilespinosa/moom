@@ -659,6 +659,29 @@ body {
   margin-top: 3px;
 }
 
+/* Aviso de fallo de red. Deliberadamente discreto y no rojo: mientras se
+   ve, el panel sigue enseñando los últimos datos buenos, así que esto no
+   es un error que rompa nada, es una advertencia de que lo que hay debajo
+   puede estar envejeciendo. El ámbar de marca no llega a 4,5:1 sobre
+   blanco, así que el texto usa --acento-texto y el naranja se queda en el
+   fondo y el borde. */
+#aviso-conexion {
+  margin: 0 16px 10px;
+  padding: 9px 12px;
+  border: 1px solid var(--acento);
+  border-radius: 12px;
+  background: var(--acento-suave);
+  color: var(--acento-texto);
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+
+/* El atributo hidden lo pisaría el display de cualquier regla posterior;
+   con esto el ocultado sigue funcionando pase lo que pase. */
+#aviso-conexion[hidden] {
+  display: none;
+}
+
 #mensaje-vacio {
   padding: 20px 16px;
   color: var(--texto-suave);

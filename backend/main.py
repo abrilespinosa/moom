@@ -13,8 +13,10 @@ Luego puedes visitar en el navegador, por ejemplo:
 
 from concurrent.futures import ThreadPoolExecutor
 
-from fastapi import FastAPI
+import requests
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from backend.emt_client import obtener_llegadas_parada
 from backend.gtfs_loader import (
     cargar_todas_las_paradas,
@@ -54,6 +56,47 @@ PARADAS_POR_ID = {parada["id"]: parada for parada in PARADAS}
 # desactiva sola, sin afectar al resto de la aplicación.
 LINEAS = cargar_lineas()
 LINEAS_POR_ID = {linea["id"]: linea for linea in LINEAS}
+
+
+@app.exception_handler(requests.RequestException)
+def fallo_de_api_externa(peticion: Request, excepcion: requests.RequestException):
+    """
+    Convierte cualquier fallo de red contra EMT o el CRTM en un 503 con
+    mensaje, en vez del 500 pelado que salía antes.
+
+    Un único manejador para todos los endpoints porque el fallo es siempre
+    el mismo: ninguna de estas rutas hace nada más que hablar con una API
+    externa. requests.RequestException es la clase madre de todo lo que
+    pueden lanzar los dos clientes — el Timeout que ahora sí puede saltar,
+    la conexión rechazada, y el HTTPError de raise_for_status cuando la API
+    responde con un 4xx o 5xx propio.
+
+    503 y no 500 porque describe lo que de verdad pasa: no está roto
+    nuestro código, está caída (o lenta) una API de la que dependemos.
+    El frontend lo distingue por el código, sin leer el cuerpo.
+
+    Las excepciones que ocurren dentro de en_paralelo() llegan igual aquí:
+    .result() las vuelve a lanzar en el hilo del endpoint.
+    """
+    # flush=True porque cuando la salida no es una terminal (un servidor
+    # desplegado, o uvicorn redirigido a un fichero) Python la almacena en
+    # un búfer: sin esto, el aviso se pierde justo en el caso en el que
+    # hace falta, que es depurar un fallo en producción. Comprobado.
+    print(
+        f"[api externa] {peticion.url.path}: {type(excepcion).__name__}: {excepcion}",
+        flush=True,
+    )
+
+    return JSONResponse(
+        status_code=503,
+        content={
+            "error": "api_externa_no_disponible",
+            "mensaje": (
+                "El servicio de datos en tiempo real no responde ahora mismo. "
+                "Inténtalo de nuevo en unos segundos."
+            ),
+        },
+    )
 
 
 def en_paralelo(*funciones):
