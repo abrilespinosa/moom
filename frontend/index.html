@@ -4,6 +4,14 @@
   <meta charset="UTF-8" />
   <title>Moom — Autobuses de Madrid en tiempo real</title>
 
+  <!-- Icono de la pestaña. El SVG es el que usan Chrome y Firefox: al ser
+       vectorial se ve nítido a cualquier tamaño. El PNG de 64px queda de
+       respaldo para los navegadores que todavía no admiten favicon en SVG.
+       Si tras cambiarlo sigue saliendo el de antes, es la caché de iconos
+       del navegador: recarga forzada (Cmd+Shift+R) o pestaña nueva. -->
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="icon" type="image/png" sizes="64x64" href="assets/favicon.png" />
+
   <!-- Hoja de estilos de Leaflet, necesaria para que el mapa se vea bien -->
   <link
     rel="stylesheet"
@@ -18,10 +26,17 @@
   <!-- PANEL IZQUIERDO: contiene dos vistas, solo una visible a la vez -->
   <div id="panel">
 
+    <!-- Banda naranja de marca. El logo es el nombre en blanco sobre fondo
+         transparente, así que el color sale del CSS y no del archivo. -->
     <div id="panel-header">
-      <h1>🚌 Moom</h1>
-      <p id="subtitulo-header">Busca una parada o una línea</p>
+      <!-- El logo va dentro del h1 y con alt: sigue siendo el título de la
+           página para un lector de pantalla, aunque se vea como imagen. -->
+      <h1><img id="logo" src="assets/logo.svg" alt="Moom" /></h1>
     </div>
+
+    <!-- Fuera de la banda naranja: es texto que cambia con la vista
+         (buscador / recorrido / llegadas), no parte del logotipo. -->
+    <p id="subtitulo-header">Busca una parada o una línea</p>
 
     <!-- VISTA 1: buscador -->
     <div id="vista-busqueda">

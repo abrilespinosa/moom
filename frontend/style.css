@@ -1,3 +1,28 @@
+/* --- PALETA ---
+   Naranja de marca sobre blanco. Un único color de acento para toda la
+   interfaz, y neutros para el resto: así los colores que SÍ significan algo
+   (el rojo de la Línea 2, el verde del interurbano, el azul de la EMT) no
+   compiten con los botones.
+
+   Los dos naranjas no son un capricho. #F5A623 sobre blanco da 2:1 de
+   contraste, muy por debajo del 4.5:1 que hace falta para leer texto, así
+   que se reparten el trabajo: el naranja de marca solo se usa como RELLENO
+   o como aro, siempre con texto oscuro encima (10:1), y para texto naranja
+   sobre blanco va la variante oscura (5.5:1). */
+:root {
+  --acento: #f5a623;
+  --acento-texto: #9a5b00;
+  --acento-suave: #fdf1dd; /* relleno de hover y de fila seleccionada */
+  --texto-sobre-acento: #1a1a1a;
+
+  --superficie: #ffffff; /* tarjetas y cabecera */
+  --fondo: #faf9f7; /* el panel, un blanco apenas cálido para que las tarjetas se despeguen */
+  --borde: #e6e3de;
+
+  --texto: #1a1a1a;
+  --texto-suave: #767068;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -188,11 +213,8 @@ body {
   font-size: 12px;
 }
 
-.resultado-linea .texto {
-  min-width: 0;
-}
-
 .resultado-linea .titulo {
+  display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -200,7 +222,7 @@ body {
 
 .resultado-linea .subtitulo {
   font-size: 12px;
-  color: #888;
+  color: var(--texto-suave);
 }
 
 /* --- VISTA: LLEGADAS A LA PARADA SELECCIONADA --- */
@@ -216,7 +238,7 @@ body {
 .boton-volver {
   background: none;
   border: none;
-  color: #0178bc;
+  color: var(--acento-texto);
   font-size: 14px;
   cursor: pointer;
   padding: 0;
@@ -242,7 +264,7 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: white;
+  background: var(--superficie);
   border-radius: 12px;
   padding: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -251,13 +273,13 @@ body {
 #nombre-linea {
   font-weight: bold;
   font-size: 14px;
-  color: #1a1a1a;
+  color: var(--texto);
   line-height: 1.25;
 }
 
 #fuente-linea {
   font-size: 12px;
-  color: #888;
+  color: var(--texto-suave);
   margin-top: 1px;
 }
 
@@ -274,9 +296,9 @@ body {
   min-width: 0;
   padding: 7px 8px;
   font-size: 12px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--borde);
   border-radius: 16px;
-  background: white;
+  background: var(--superficie);
   color: #555;
   cursor: pointer;
   white-space: nowrap;
@@ -285,13 +307,16 @@ body {
 }
 
 .boton-sentido:hover {
-  background: #f0f0f0;
+  background: var(--acento-suave);
 }
 
+/* Relleno naranja con texto oscuro, no blanco: sobre este naranja el blanco
+   se queda en 2:1 y el texto casi desaparece. */
 .boton-sentido.activo {
-  background: #0178bc;
-  border-color: #0178bc;
-  color: white;
+  background: var(--acento);
+  border-color: var(--acento);
+  color: var(--texto-sobre-acento);
+  font-weight: bold;
 }
 
 #titulo-recorrido {
@@ -300,7 +325,7 @@ body {
   font-weight: bold;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #8a8a8f;
+  color: var(--texto-suave);
 }
 
 #lista-recorrido {
@@ -317,14 +342,14 @@ body {
   align-items: center;
   gap: 10px;
   padding: 9px 10px;
-  border-radius: 8px;
+  border-radius: 12px;
   cursor: pointer;
   font-size: 13px;
   color: #333;
 }
 
 .parada-recorrido:hover {
-  background: #eceef1;
+  background: var(--acento-suave);
 }
 
 .parada-recorrido .orden {
@@ -349,8 +374,8 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: white;
-  border-radius: 12px;
+  background: var(--superficie);
+  border-radius: 16px;
   padding: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
@@ -364,7 +389,7 @@ body {
   flex-shrink: 0;
   object-fit: contain;
   background: #f0f1f3;
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 7px;
 }
 
@@ -375,13 +400,13 @@ body {
 #nombre-parada-actual {
   font-weight: bold;
   font-size: 15px;
-  color: #1a1a1a;
+  color: var(--texto);
   line-height: 1.25;
 }
 
 #codigo-parada-actual {
   font-size: 12px;
-  color: #888;
+  color: var(--texto-suave);
   margin-top: 1px;
 }
 
@@ -396,7 +421,7 @@ body {
   font-weight: bold;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #8a8a8f;
+  color: var(--texto-suave);
 }
 
 #titulo-seccion:empty {
@@ -432,7 +457,7 @@ body {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  border-radius: 8px;
+  border-radius: 10px;
   border: 1px solid rgba(0, 0, 0, 0.12);
   font-weight: bold;
   line-height: 1;
@@ -460,8 +485,8 @@ body {
 .tarjeta-bus {
   display: flex;
   align-items: flex-start; /* el distintivo se alinea con el destino, no al centro */
-  background: white;
-  border-radius: 10px;
+  background: var(--superficie);
+  border-radius: 16px;
   padding: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   gap: 12px;
@@ -496,7 +521,7 @@ body {
 .tiempo-proximo {
   font-size: 20px;
   font-weight: bold;
-  color: #1a1a1a;
+  color: var(--texto);
   margin-top: 3px;
 }
 
@@ -514,7 +539,7 @@ body {
   vertical-align: middle;
   margin-left: 8px;
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: 8px;
   background: #eceef1;
   color: #6b7280;
   font-size: 10px;
@@ -526,13 +551,13 @@ body {
 /* Los tiempos siguientes, en pequeño y en gris bajo el principal. */
 .tarjeta-tiempos {
   font-size: 12px;
-  color: #888;
+  color: var(--texto-suave);
   margin-top: 3px;
 }
 
 #mensaje-vacio {
   padding: 20px 16px;
-  color: #888;
+  color: var(--texto-suave);
   font-size: 13px;
   text-align: center;
 }
@@ -640,13 +665,13 @@ body {
    #panel/#mapa. Lo posicionamos relativo a la ventana completa. */
 #boton-ubicacion {
   position: fixed;
-  bottom: 24px;
-  right: 24px;
+  bottom: 28px;
+  right: 28px;
   width: 44px;
   height: 44px;
   border-radius: 50%;
   border: none;
-  background: white;
+  background: var(--acento);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
   font-size: 20px;
   cursor: pointer;
