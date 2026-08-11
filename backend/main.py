@@ -46,7 +46,7 @@ app.add_middleware(
 PARADAS = cargar_todas_las_paradas()
 
 # Diccionario id -> parada, para búsquedas rápidas por id en vez de
-# recorrer las 13.560 paradas cada vez que el endpoint de Metro necesita
+# recorrer las 13.542 paradas cada vez que el endpoint de Metro necesita
 # encontrar el codAnden de una estación.
 PARADAS_POR_ID = {parada["id"]: parada for parada in PARADAS}
 

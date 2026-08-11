@@ -307,10 +307,11 @@ def _estacion_de_cada_anden(carpeta, encoding):
     estaciones. Sin esta traducción, las paradas de una línea de Metro no
     se podrían casar con ningún punto del mapa.
 
-    Es el camino inverso al de cargar_paradas_metro, y usa las dos mismas
-    estrategias: el prefijo "par_" -> "est_" para la gran mayoría, y el
-    campo parent_station para los grandes intercambiadores, cuya
-    numeración no coincide con la de sus andenes.
+    Es el camino inverso al de cargar_paradas_metro, y usa las tres mismas
+    estrategias: el prefijo "par_" -> "est_" para la gran mayoría, el campo
+    parent_station para los grandes intercambiadores (cuya numeración no
+    coincide con la de sus andenes), y el id sintético para los dos andenes
+    huérfanos que no tienen ni lo uno ni lo otro.
     """
     with open(f"{carpeta}/stops.txt", encoding=encoding) as archivo:
         filas = list(csv.DictReader(archivo))
@@ -347,11 +348,15 @@ def _andenes_a_estaciones(recorridos, mapa):
     itinerario pertenecen a la misma estación, en el mapa es un único punto
     y listarlo dos veces sería confuso.
 
-    Los andenes sin estación se descartan y se avisa por consola. No es un
-    fallo de esta función: el GTFS de Metro publicado por el CRTM (volcado
-    de mayo de 2025) no trae fila de estación para Noviciado ni Acacias,
-    solo su andén. Esas dos estaciones tampoco aparecen en el mapa por el
-    mismo motivo, así que no se pueden listar en el recorrido de su línea.
+    Noviciado y Acacias, cuyos andenes no tienen fila de estación en el
+    volcado del CRTM, SÍ salen aquí: el mapa que recibe esta función les
+    asigna el id sintético que cargar_paradas_metro les fabrica, así que
+    aparecen en el recorrido de su línea igual que en el mapa.
+
+    Queda el aviso por consola para los andenes que ni siquiera están en
+    stops.txt (los recorridos salen de stop_times.txt, y los dos volcados no
+    siempre van a la par). Esos sí se descartan, porque no hay de dónde
+    sacar sus coordenadas.
     """
     huerfanos = set()
 

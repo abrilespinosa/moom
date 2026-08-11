@@ -177,7 +177,7 @@ async function dibujarParadas() {
 
     // Y guardamos la referencia inversa: el marcador necesita saber
     // de qué parada es para poder consultar su "fuente" al filtrar,
-    // sin tener que buscar en el array de 13.320 paradas cada vez.
+    // sin tener que buscar en el array de 13.542 paradas cada vez.
     marcador.parada = parada;
 
     marcadoresParadas.push(marcador);
@@ -194,7 +194,7 @@ async function dibujarParadas() {
 
 // Añade o quita los marcadores de parada del mapa según el zoom Y el
 // área visible actual. Antes solo filtrábamos por zoom: al cruzar
-// ZOOM_MINIMO_PARADAS, las ~13.320 paradas se recorrían igual, pero
+// ZOOM_MINIMO_PARADAS, las ~13.542 paradas se recorrían igual, pero
 // con circleMarker (forma vectorial barata) no se notaba el coste.
 // Ahora cada parada es una imagen PNG, más cara de crear/posicionar,
 // así que añadir potencialmente miles de golpe causaba el lag al
