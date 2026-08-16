@@ -2,6 +2,13 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+  <!-- Sin esto el móvil renderiza la página como si fuera de escritorio y
+       luego la encoge: el panel quedaba en unos 100px y el mapa inservible.
+       viewport-fit=cover deja que la hoja inferior llegue hasta el borde en
+       los móviles con muesca; el hueco de la barra de gestos se recupera
+       después con safe-area-inset-bottom. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
   <title>Moom — Autobuses de Madrid en tiempo real</title>
 
   <!-- Icono de la pestaña. El SVG es el que usan Chrome y Firefox: al ser

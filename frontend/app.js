@@ -1587,3 +1587,129 @@ botonUbicacion.addEventListener("click", () => {
     }
   );
 });
+
+// --- HOJA INFERIOR (SOLO MÓVIL) ---
+//
+// En pantalla estrecha el panel deja de ser una columna y pasa a ser una
+// hoja que sube desde abajo. La geometría (cuánto mide y cuánto asoma
+// recogida) vive en el CSS, en --hoja-alto y --hoja-recogida; aquí solo se
+// lee, para no tener los mismos números escritos en dos sitios.
+//
+// Solo hay dos posiciones de reposo, recogida y desplegada. Se descartaron
+// los puntos intermedios: obligan a recordar en qué posición se dejó la
+// hoja y no aportan nada, porque el contenido ya se desplaza por dentro.
+const consultaMovil = window.matchMedia("(max-width: 768px)");
+const cabeceraPanel = document.getElementById("panel-header");
+
+let hojaDesplegada = false;
+let arrastreHoja = null;
+
+function alturaRecogidaEnPixeles() {
+  const valor = getComputedStyle(document.body)
+    .getPropertyValue("--hoja-recogida")
+    .trim();
+
+  const numero = parseFloat(valor);
+
+  // La declaración está en vh para que se adapte a cada teléfono, así que
+  // hay que convertirla; se acepta px por si algún día se cambia.
+  return valor.endsWith("vh") ? (numero / 100) * window.innerHeight : numero;
+}
+
+// Cuánto hay que bajar la hoja para dejarla recogida: su alto total menos
+// lo que debe seguir asomando.
+function topeRecogido() {
+  return Math.max(0, panel.offsetHeight - alturaRecogidaEnPixeles());
+}
+
+function colocarHoja(desplazamiento) {
+  document.body.style.setProperty("--hoja-y", `${desplazamiento}px`);
+}
+
+function fijarEstadoHoja(desplegada) {
+  hojaDesplegada = desplegada;
+  colocarHoja(desplegada ? 0 : topeRecogido());
+}
+
+cabeceraPanel.addEventListener("pointerdown", (evento) => {
+  if (!consultaMovil.matches) {
+    return; // en escritorio la cabecera no es un tirador
+  }
+
+  arrastreHoja = {
+    yInicial: evento.clientY,
+    desplazamientoInicial: hojaDesplegada ? 0 : topeRecogido(),
+  };
+
+  cabeceraPanel.setPointerCapture(evento.pointerId);
+  panel.classList.add("arrastrando");
+});
+
+cabeceraPanel.addEventListener("pointermove", (evento) => {
+  if (!arrastreHoja) {
+    return;
+  }
+
+  const recorrido = evento.clientY - arrastreHoja.yInicial;
+
+  // Acotado a los dos topes: sin esto la hoja se puede arrastrar fuera de
+  // la pantalla por arriba o despegarse del borde inferior.
+  const desplazamiento = Math.min(
+    Math.max(arrastreHoja.desplazamientoInicial + recorrido, 0),
+    topeRecogido()
+  );
+
+  colocarHoja(desplazamiento);
+});
+
+cabeceraPanel.addEventListener("pointerup", (evento) => {
+  if (!arrastreHoja) {
+    return;
+  }
+
+  const recorrido = evento.clientY - arrastreHoja.yInicial;
+
+  // Se decide por el gesto, no por dónde quedó la hoja: un empujón corto y
+  // rápido hacia arriba despliega aunque no se haya recorrido ni la mitad,
+  // que es como se comporta cualquier hoja de este tipo. El umbral de 60px
+  // evita que un toque con temblor cuente como arrastre.
+  if (Math.abs(recorrido) > 60) {
+    fijarEstadoHoja(recorrido < 0);
+  } else {
+    fijarEstadoHoja(hojaDesplegada);
+  }
+
+  cabeceraPanel.releasePointerCapture(evento.pointerId);
+  panel.classList.remove("arrastrando");
+  arrastreHoja = null;
+});
+
+// Un toque limpio en la cabecera, sin arrastre, alterna las dos posiciones.
+cabeceraPanel.addEventListener("click", () => {
+  if (consultaMovil.matches && !arrastreHoja) {
+    fijarEstadoHoja(!hojaDesplegada);
+  }
+});
+
+// Al cruzar el punto de ruptura cambian tanto el tamaño del mapa como su
+// posicionamiento, y Leaflet mide su contenedor una sola vez: sin esto
+// quedan franjas grises sin tiles, igual que al arrastrar el divisor.
+consultaMovil.addEventListener("change", (evento) => {
+  if (evento.matches) {
+    fijarEstadoHoja(false);
+  } else {
+    // En escritorio la variable no pinta nada, pero se limpia para que al
+    // volver a móvil no quede fijado un desplazamiento medido con la
+    // ventana de otro tamaño.
+    document.body.style.removeProperty("--hoja-y");
+  }
+
+  mapa.invalidateSize();
+});
+
+// Al girar el teléfono cambia innerHeight y con él los dos topes.
+window.addEventListener("resize", () => {
+  if (consultaMovil.matches) {
+    fijarEstadoHoja(hojaDesplegada);
+  }
+});

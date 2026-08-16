@@ -850,3 +850,126 @@ body {
   transform: translate(-50%, -50%);
   box-shadow: 0 0 3px rgba(0, 0, 0, 0.4);
 }
+
+/* ============================================================
+   MÓVIL — HOJA INFERIOR DESLIZABLE
+   ============================================================
+   En pantalla estrecha el grid de tres columnas no vale: el panel quedaba
+   en unos 100px. Aquí el mapa pasa a ocupar la pantalla entera y el panel
+   se convierte en una hoja que sube desde abajo, como en Google Maps.
+
+   El desplazamiento vertical vive en --hoja-y, que mueve la hoja con
+   transform. Se anima transform y no height ni top a propósito: es lo
+   único que el navegador puede componer sin recalcular la disposición,
+   así que el arrastre va suave incluso con la lista de paradas llena.
+
+   Igual que en escritorio, cambiar el tamaño del mapa obliga a llamar a
+   mapa.invalidateSize() desde app.js, o Leaflet deja franjas sin tiles. */
+@media (max-width: 768px) {
+  body {
+    /* Alto visible de la hoja cuando está recogida. Deja ver la cabecera,
+       el buscador y las primeras fichas, que es lo que se usa de pie en
+       una parada sin desplegar nada. */
+    --hoja-recogida: 46vh;
+    --hoja-alto: 88vh;
+
+    /* Posición de reposo: recogida. app.js sobrescribe esta variable
+       durante el arrastre y al soltar la fija en uno de los dos topes. */
+    --hoja-y: calc(var(--hoja-alto) - var(--hoja-recogida));
+
+    display: block;
+    padding: 0;
+    height: 100dvh; /* dvh y no vh: descuenta la barra del navegador móvil */
+  }
+
+  #mapa {
+    position: fixed;
+    inset: 0;
+    height: 100dvh;
+    width: 100%;
+    border-radius: 0;
+  }
+
+  #panel {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: var(--hoja-alto);
+    transform: translateY(var(--hoja-y));
+    border-radius: 26px 26px 0 0;
+    /* Más difusa y menos oscura que una sombra normal: la hoja tiene que
+       parecer apoyada sobre el mapa, no recortada encima de él. */
+    box-shadow: 0 -1px 3px rgba(18, 18, 18, 0.05),
+      0 -12px 40px rgba(18, 18, 18, 0.12);
+    z-index: 1000; /* por encima de los controles de Leaflet */
+    transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  /* Durante el arrastre la hoja debe seguir al dedo sin suavizado, o va
+     siempre un cuarto de segundo por detrás y se siente rota. */
+  #panel.arrastrando {
+    transition: none;
+  }
+
+  /* El divisor es para redimensionar en horizontal; aquí no tiene sentido. */
+  #divisor {
+    display: none;
+  }
+
+  /* La banda naranja hace de tirador de la hoja: ya estaba arriba del todo
+     y es la zona más fácil de acertar con el pulgar. */
+  #panel-header {
+    position: relative;
+    padding: 15px 16px 16px;
+    border-radius: 26px 26px 0 0;
+    cursor: grab;
+    touch-action: none; /* si no, el gesto lo captura el scroll de la página */
+    flex-shrink: 0;
+  }
+
+  #panel-header::before {
+    content: "";
+    position: absolute;
+    top: 7px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(18, 18, 18, 0.28);
+  }
+
+  #panel.arrastrando #panel-header {
+    cursor: grabbing;
+  }
+
+  /* El hueco de la barra de gestos del iPhone: sin esto, la última ficha
+     de la lista queda debajo de ella y no se puede pulsar. */
+  #panel {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* El botón de ubicación sube por encima de la hoja recogida en vez de
+     quedarse detrás. */
+  #boton-ubicacion {
+    bottom: calc(var(--hoja-recogida) + 16px);
+    right: 16px;
+    z-index: 999;
+    transition: bottom 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  /* Objetivos táctiles: en escritorio se pulsan con ratón, aquí con el
+     pulgar. 44px es el mínimo recomendado para no fallar el toque. */
+  .filtro-boton,
+  .boton-favorito,
+  .boton-volver {
+    min-height: 44px;
+  }
+
+  /* 16px es el umbral por debajo del cual Safari en iOS hace zoom
+     automático al enfocar un campo, descuadrando toda la página. */
+  #input-buscar {
+    font-size: 16px;
+  }
+}
