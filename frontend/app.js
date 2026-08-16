@@ -402,6 +402,20 @@ function alternarFavorito(tipo, id) {
 // La estrella va en SVG y no como carácter (★/☆) para que herede el color
 // del CSS y pueda pasar de contorno a relleno con una clase, sin cambiar el
 // texto del botón.
+// Los colores de línea se interpolan dentro de un atributo style de una
+// plantilla que acaba en innerHTML. Un valor con una comilla dentro cerraría
+// el atributo y permitiría añadir otros — por ejemplo un onerror — así que
+// se comprueba que sea exactamente lo que dice ser: seis dígitos
+// hexadecimales, que es como el GTFS escribe los colores (sin la almohadilla).
+//
+// Hoy esos valores salen del GTFS y de la API del CRTM, o sea que no los
+// controla nadie de fuera; esto es para que siga siendo verdad si mañana
+// cambia la procedencia. Ante cualquier cosa rara devuelve null, y quien
+// llama ya sabe caer al color por defecto.
+function colorSeguro(valor) {
+  return /^[0-9A-Fa-f]{6}$/.test(valor ?? "") ? valor : null;
+}
+
 const ESTRELLA_SVG = `
   <svg viewBox="0 0 24 24" aria-hidden="true">
     <path d="M12 3.6l2.6 5.28 5.83.85-4.22 4.11.997 5.8L12 16.9l-5.21 2.74.996-5.8-4.22-4.11 5.83-.85z" />
@@ -513,8 +527,11 @@ function crearResultadoDeLinea(linea) {
   const item = document.createElement("li");
   item.className = "resultado-linea";
 
-  const estilo = linea.color
-    ? ` style="background-color:#${linea.color}; color:#${linea.colorTexto ?? "FFFFFF"}"`
+  const fondo = colorSeguro(linea.color);
+  const estilo = fondo
+    ? ` style="background-color:#${fondo}; color:#${
+        colorSeguro(linea.colorTexto) ?? "FFFFFF"
+      }"`
     : "";
 
   item.innerHTML = `
@@ -824,8 +841,11 @@ async function seleccionarLinea(linea) {
 
     lineaActual = datos;
 
-    const estilo = datos.color
-      ? `background-color:#${datos.color}; color:#${datos.colorTexto ?? "FFFFFF"}`
+    const fondo = colorSeguro(datos.color);
+    const estilo = fondo
+      ? `background-color:#${fondo}; color:#${
+          colorSeguro(datos.colorTexto) ?? "FFFFFF"
+        }`
       : "";
     distintivoLinea.setAttribute("style", estilo);
     distintivoLinea.textContent = datos.numero;
@@ -1077,8 +1097,11 @@ function crearTarjetaLlegada({
     .map((s) => textoEspera(s))
     .join(", ");
 
-  const estilo = color
-    ? ` style="background-color:#${color}; color:#${colorTexto ?? "FFFFFF"}"`
+  const fondo = colorSeguro(color);
+  const estilo = fondo
+    ? ` style="background-color:#${fondo}; color:#${
+        colorSeguro(colorTexto) ?? "FFFFFF"
+      }"`
     : "";
 
   // El número va grande y la unidad pequeña. En "En camino" la unidad sale
@@ -1412,8 +1435,8 @@ async function actualizarTrenesMetro() {
     limpiarMarcadoresTrenes();
 
     respuestas.forEach((datosLinea) => {
-      const color = datosLinea.color ?? "0078BC"; // azul de respaldo si faltase
-      const colorTexto = datosLinea.colorTexto ?? "FFFFFF";
+      const color = colorSeguro(datosLinea.color) ?? "0078BC"; // azul de respaldo si faltase
+      const colorTexto = colorSeguro(datosLinea.colorTexto) ?? "FFFFFF";
 
       datosLinea.vehiculos.forEach((tren) => {
         const { latitude, longitude } = tren.coordinates;
@@ -1587,7 +1610,6 @@ botonUbicacion.addEventListener("click", () => {
     }
   );
 });
-
 // --- HOJA INFERIOR (SOLO MÓVIL) ---
 //
 // En pantalla estrecha el panel deja de ser una columna y pasa a ser una

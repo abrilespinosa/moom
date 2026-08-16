@@ -14,7 +14,7 @@ Luego puedes visitar en el navegador, por ejemplo:
 from concurrent.futures import ThreadPoolExecutor
 
 import requests
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from backend.emt_client import obtener_llegadas_parada
@@ -36,10 +36,21 @@ from backend.metro_client import (
 # llamada "app" en este archivo.
 app = FastAPI(title="Moom API")
 
+# CORS solo para desarrollo. En el despliegue el frontend y la API comparten
+# dominio (la API cuelga de /api, ver vercel.json), así que el navegador ni
+# llega a hacer la comprobación: producción no necesita ninguna de estas
+# reglas. Quedan acotadas a los dos orígenes locales con los que se trabaja
+# —el servidor estático del frontend y uvicorn— en vez del "*" de antes,
+# que dejaba a cualquier página leer esta API desde el navegador.
+#
+# Solo GET: no hay un solo endpoint que escriba nada.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # En desarrollo, permitimos cualquier origen
-    allow_methods=["*"],
+    allow_origins=[
+        "http://127.0.0.1:5500",
+        "http://localhost:5500",
+    ],
+    allow_methods=["GET"],
     allow_headers=["*"],
 )
 
@@ -267,6 +278,21 @@ def llegadas_parada(stop_id: str):
     metro_client.py para el matiz de qué llegadas son en vivo y cuáles son
     horario teórico.
     """
+    # Solo se aceptan ids que existan en el GTFS cargado. Además de dar un
+    # 404 honesto en vez de un error de la API remota, esto cierra una vía
+    # de abuso: el id se interpola en la RUTA de la URL de EMT (ver
+    # obtener_llegadas_parada), así que un valor con "?" o con "../" dentro
+    # cambiaba la petición que sale de aquí, y esa petición lleva nuestro
+    # token. El host es fijo, o sea que nunca se pudo saltar a otro
+    # dominio, pero sí alcanzar otras rutas de la propia API de EMT.
+    #
+    # En producción esto lo frenaba el edge de Vercel, que rechaza las
+    # barras codificadas antes de llegar aquí; en local con uvicorn no hay
+    # nada que lo pare, así que la comprobación tiene que estar en el
+    # código. Es la misma validación que ya hacían los endpoints de Metro.
+    if stop_id not in PARADAS_POR_ID:
+        raise HTTPException(status_code=404, detail="Parada desconocida")
+
     if stop_id.startswith("par_"):
         # La API del CRTM solo entiende el código sin el prefijo del GTFS:
         # "par_8_06002" -> "8_06002". Misma traducción que en Metro.
