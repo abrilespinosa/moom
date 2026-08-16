@@ -13,14 +13,55 @@
   --acento: #f5a623;
   --acento-texto: #9a5b00;
   --acento-suave: #fdf1dd; /* relleno de hover y de fila seleccionada */
-  --texto-sobre-acento: #1a1a1a;
+  --texto-sobre-acento: #121212;
 
   --superficie: #ffffff; /* tarjetas y cabecera */
   --fondo: #faf9f7; /* el panel, un blanco apenas cálido para que las tarjetas se despeguen */
   --borde: #e6e3de;
 
-  --texto: #1a1a1a;
+  --texto: #121212;
   --texto-suave: #767068;
+
+  /* --- COLORES CON SIGNIFICADO ---
+     Del manual de marca, que los toma de los colores de sistema de iOS. Se
+     reservan para estado (una incidencia, un retraso, una confirmación) y
+     nunca para decorar: si se usan porque sí, dejan de querer decir nada.
+
+     OJO con dos del manual que NO se copian tal cual, por contraste medido
+     sobre blanco:
+       - su gris de textos #8E8E93 da 3,26:1, por debajo del 4,5:1 de AA.
+         Para texto secundario se sigue usando --texto-suave (4,90:1); este
+         queda solo para bordes y elementos desactivados, que no son texto.
+       - los botones del manual llevan texto BLANCO sobre el naranja de
+         marca: 2,03:1, ilegible. Ver la nota de arriba sobre los dos
+         naranjas; encima del relleno naranja va --texto-sobre-acento. */
+  --verde: #34c759;
+  --azul: #007aff;
+  --rojo: #ff3b30;
+  --gris-desactivado: #8e8e93;
+  --gris-superficie: #f2f2f2;
+
+  /* --- PROFUNDIDAD ---
+     Sombras en dos capas en vez de bordes de 1px. La capa corta define el
+     canto del elemento y la larga y muy tenue lo despega del fondo; juntas
+     dan volumen sin que se vea una línea, que es de lo que va el soft UI.
+     Un borde sólido, por claro que sea, siempre lee como una raya. */
+  --sombra-sutil: 0 1px 2px rgba(18, 18, 18, 0.04),
+    0 4px 12px rgba(18, 18, 18, 0.04);
+  --sombra-media: 0 1px 2px rgba(18, 18, 18, 0.05),
+    0 8px 24px rgba(18, 18, 18, 0.07);
+  --sombra-flotante: 0 2px 6px rgba(18, 18, 18, 0.08),
+    0 12px 32px rgba(18, 18, 18, 0.1);
+
+  /* Separador de grosor real de un píxel físico: en pantallas de retina
+     0.5px es una línea de verdad, no una gris difuminada. */
+  --separador: rgba(18, 18, 18, 0.08);
+
+  /* Radios. Generosos y proporcionales al tamaño del elemento, como en
+     iOS, donde una tarjeta grande curva más que un chip pequeño. */
+  --radio-grande: 22px;
+  --radio-medio: 16px;
+  --radio-pequeno: 12px;
 }
 
 * {
@@ -34,8 +75,19 @@ body {
   --ancho-panel: 380px;
 
   margin: 0;
-  font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  /* Inter es la tipografía de la identidad. La pila del sistema queda
+     detrás para el rato que tarda en cargar y por si Google Fonts no
+     responde: la interfaz se ve peor, pero se ve. */
+  font-family: "Inter", -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
   background: var(--fondo);
+
+  /* Sin esto, en macOS los trazos de Inter salen más gruesos de lo que la
+     tipografía pide y la interfaz pierde la ligereza que busca. */
+  -webkit-font-smoothing: antialiased;
+
+  /* Los títulos de iOS van con el interletrado ligeramente cerrado; a
+     tamaños grandes el espaciado por defecto se ve suelto. */
+  letter-spacing: -0.01em;
 
   /* --- LAYOUT PRINCIPAL ---
      Tres columnas: el panel, el divisor que se arrastra y el mapa.
@@ -51,7 +103,7 @@ body {
 #mapa {
   height: 100%;
   width: 100%;
-  border-radius: 18px;
+  border-radius: var(--radio-grande);
   /* Sin esto los tiles cuadrados de Leaflet asoman por las esquinas. */
   overflow: hidden;
 }
@@ -66,7 +118,8 @@ body {
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  border-radius: 18px;
+  border-radius: var(--radio-grande);
+  box-shadow: var(--sombra-sutil);
 }
 
 /* --- DIVISOR ARRASTRABLE ---
@@ -138,26 +191,50 @@ body {
   color: var(--texto-suave);
 }
 
+/* Campo de búsqueda al modo de iOS: un relleno gris sin borde, con la lupa
+   dentro. El icono va como background-image en data URI y no como <img> en
+   el HTML porque así el campo sigue siendo un único elemento: no hay que
+   envolverlo en un contenedor ni posicionar nada encima. */
 #input-buscar {
   width: 100%;
-  padding: 10px;
-  font-size: 14px;
-  border: 1px solid var(--borde);
-  border-radius: 14px;
-  background: var(--superficie);
+  padding: 11px 12px 11px 38px;
+  font-size: 15px;
+  border: none;
+  border-radius: var(--radio-pequeno);
+  background-color: var(--gris-superficie);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238e8e93' stroke-width='2.4' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-3.5-3.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 12px center;
+  background-size: 16px 16px;
+  color: var(--texto);
+  transition: background-color 0.15s, box-shadow 0.15s;
 }
 
+#input-buscar::placeholder {
+  color: var(--gris-desactivado);
+}
+
+/* Al enfocar, el campo pasa a blanco y se levanta con un aro del color de
+   marca. Se cambia el fondo en vez de añadir un borde: mantiene la caja
+   del mismo tamaño y no descoloca lo que hay debajo. */
 #input-buscar:focus {
   outline: none;
-  border-color: var(--acento);
-  box-shadow: 0 0 0 3px var(--acento-suave);
+  background-color: var(--superficie);
+  box-shadow: 0 0 0 3px var(--acento-suave), var(--sombra-sutil);
 }
 
-/* --- FILTRO DE FUENTE (Todos / Urbano / Interurbano) --- */
+/* --- FILTRO DE FUENTE (Todos / Urbano / Interurbano / Metro) ---
+   Montado como el control segmentado de iOS: una bandeja gris hundida y,
+   dentro, la opción activa levantada en blanco. La jerarquía la da la
+   elevación y no el color, así que los colores de cada modo (azul EMT,
+   verde interurbano) siguen queriendo decir lo que decían. */
 #filtros-fuente {
   display: flex;
-  gap: 6px;
-  padding: 12px 16px 0 16px;
+  gap: 2px;
+  margin: 12px 16px 0 16px;
+  padding: 3px;
+  background: var(--gris-superficie);
+  border-radius: 14px;
 }
 
 /* Cada filtro es el icono de su modo con la etiqueta debajo. El icono va
@@ -170,26 +247,28 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
-  padding: 6px 2px;
+  gap: 4px;
+  padding: 7px 2px 6px;
   border: none;
   background: none;
-  color: #666;
+  border-radius: 11px;
+  color: var(--texto-suave);
   font-size: 11px;
+  font-family: inherit;
   cursor: pointer;
+  transition: background 0.18s, box-shadow 0.18s, color 0.18s;
 }
 
+/* El icono ya no necesita su propio cuadro de color: dentro de la bandeja
+   segmentada, ese segundo fondo era una caja dentro de otra caja. */
 .filtro-icono {
-  width: 38px;
-  height: 38px;
+  width: 26px;
+  height: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 7px;
-  border-radius: 10px;
-  background: #f0f1f3;
+  background: none;
   box-sizing: border-box;
-  transition: background 0.12s, box-shadow 0.12s;
 }
 
 .filtro-icono img,
@@ -210,28 +289,20 @@ body {
 /* Fondo pastel propio de cada modo, tomado de su color corporativo: azul
    de la EMT, verde del interurbano, y neutro para Metro, cuyo rombo ya
    lleva rojo y azul y se ensucia sobre un fondo de color. */
-.filtro-boton[data-filtro="EMT"] .filtro-icono {
-  background: #e7f0f9;
-}
-.filtro-boton[data-filtro="CRTM"] .filtro-icono {
-  background: #eaf4e0;
+.filtro-boton:hover:not(.activo) {
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--texto);
 }
 
-.filtro-boton:hover .filtro-icono {
-  box-shadow: inset 0 0 0 1px #c9ccd1;
-}
-
-/* Activo: el aro marca cuál está seleccionado sin tapar el icono, que es
-   lo que pasaría rellenando el cuadro de color. El aro va en el naranja de
-   marca (es una forma, no texto) y la etiqueta en su variante oscura, que
-   es la única legible a 11px. */
+/* Activo: la pastilla blanca se levanta sobre la bandeja gris, que es como
+   marca la selección un control segmentado. El aro naranja de antes sobra
+   aquí — sumado a la elevación serían dos señales para lo mismo. La
+   etiqueta va en la variante oscura del naranja, la única legible a 11px. */
 .filtro-boton.activo {
+  background: var(--superficie);
   color: var(--acento-texto);
-  font-weight: bold;
-}
-
-.filtro-boton.activo .filtro-icono {
-  box-shadow: inset 0 0 0 2px var(--acento);
+  font-weight: 600;
+  box-shadow: var(--sombra-sutil);
 }
 
 /* --- VISTA: LISTA DE RESULTADOS DE BÚSQUEDA --- */
@@ -250,16 +321,30 @@ body {
 #lista-resultados li {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
+  gap: 12px;
+  padding: 12px 14px;
   cursor: pointer;
-  border-radius: 14px;
-  font-size: 14px;
+  border-radius: var(--radio-medio);
+  font-size: 15px;
   background: var(--superficie);
+  box-shadow: var(--sombra-sutil);
+  transition: transform 0.14s, box-shadow 0.14s, background 0.14s;
 }
 
+/* Al pasar por encima la ficha se levanta un poco en vez de teñirse: el
+   movimiento comunica que es pulsable sin gastar color, y así el naranja
+   se reserva para lo que está seleccionado de verdad. */
 #lista-resultados li:hover {
-  background: var(--acento-suave);
+  background: var(--superficie);
+  box-shadow: var(--sombra-media);
+  transform: translateY(-1px);
+}
+
+/* Al pulsar se hunde. Es el gesto táctil de iOS: la respuesta ocurre
+   mientras el dedo sigue abajo, no al soltar. */
+#lista-resultados li:active {
+  transform: scale(0.985);
+  box-shadow: var(--sombra-sutil);
 }
 
 /* El buscador mezcla líneas y paradas, así que cada bloque lleva su
@@ -398,13 +483,15 @@ body {
 .boton-sentido {
   flex: 1;
   min-width: 0;
-  padding: 7px 8px;
-  font-size: 12px;
-  border: 1px solid var(--borde);
-  border-radius: 16px;
-  background: var(--superficie);
-  color: #555;
+  padding: 8px 10px;
+  font-size: 12.5px;
+  font-family: inherit;
+  border: none;
+  border-radius: 999px; /* pastilla completa, como los controles de iOS */
+  background: var(--gris-superficie);
+  color: var(--texto-suave);
   cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -418,9 +505,9 @@ body {
    se queda en 2:1 y el texto casi desaparece. */
 .boton-sentido.activo {
   background: var(--acento);
-  border-color: var(--acento);
-  color: var(--texto-sobre-acento);
-  font-weight: bold;
+  color: var(--texto-sobre-acento); /* oscuro sobre naranja: 9,24:1 */
+  font-weight: 600;
+  box-shadow: var(--sombra-sutil);
 }
 
 #titulo-recorrido {
@@ -590,9 +677,9 @@ body {
   display: flex;
   align-items: flex-start; /* el distintivo se alinea con el destino, no al centro */
   background: var(--superficie);
-  border-radius: 16px;
-  padding: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-radius: var(--radio-grande);
+  padding: 14px;
+  box-shadow: var(--sombra-sutil);
   gap: 12px;
 }
 
@@ -623,10 +710,17 @@ body {
 /* El tiempo más próximo es el dato principal de la tarjeta: va debajo del
    destino y en grande, como en la app oficial. */
 .tiempo-proximo {
-  font-size: 20px;
-  font-weight: bold;
+  font-size: 24px;
+  font-weight: 600;
   color: var(--texto);
   margin-top: 3px;
+
+  /* Cifras de ancho fijo: sin esto, al refrescar cada 10s el número baila
+     de anchura ("11 min" ocupa menos que "44 min") y la tarjeta entera da
+     un salto lateral. Es el detalle que separa un contador que se
+     actualiza de uno que parpadea. */
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }
 
 .tiempo-proximo .unidad {
@@ -667,12 +761,14 @@ body {
    fondo y el borde. */
 #aviso-conexion {
   margin: 0 16px 10px;
-  padding: 9px 12px;
-  border: 1px solid var(--acento);
-  border-radius: 12px;
+  padding: 10px 13px;
+  /* El borde sólido se cambia por un aro interior traslúcido: marca el
+     canto sin dibujar una raya, igual que el resto de superficies. */
+  box-shadow: inset 0 0 0 1px rgba(245, 166, 35, 0.35);
+  border-radius: var(--radio-pequeno);
   background: var(--acento-suave);
   color: var(--acento-texto);
-  font-size: 12.5px;
+  font-size: 13px;
   line-height: 1.35;
 }
 
@@ -745,14 +841,25 @@ body {
   position: fixed;
   bottom: 28px;
   right: 28px;
-  width: 44px;
-  height: 44px;
+  width: 46px;
+  height: 46px;
   border-radius: 50%;
   border: none;
-  background: var(--acento);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
-  font-size: 20px;
+
+  /* Material translúcido sobre el mapa: el fondo se ve difuminado a través
+     del botón, así que el control se siente apoyado encima del mapa en vez
+     de pegado sobre él. Es lo que iOS llama material, y necesita las dos
+     declaraciones: -webkit- para Safari, que es justo donde más se nota.
+     El color de reserva es opaco, para navegadores sin backdrop-filter:
+     translúcido sin desenfoque se leería como un botón medio borrado. */
+  background: rgba(255, 255, 255, 0.98);
+  background: rgba(255, 255, 255, 0.72);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--sombra-flotante), inset 0 0 0 0.5px rgba(255, 255, 255, 0.6);
+  font-size: 19px;
   cursor: pointer;
+  transition: transform 0.14s, box-shadow 0.14s;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -763,7 +870,13 @@ body {
 }
 
 #boton-ubicacion:hover {
-  background: #e39412;
+  background: rgba(255, 255, 255, 0.88);
+  transform: scale(1.04);
+}
+
+#boton-ubicacion:active {
+  transform: scale(0.94);
+  box-shadow: var(--sombra-media);
 }
 
 /* --- FAVORITOS ---
@@ -850,7 +963,6 @@ body {
   transform: translate(-50%, -50%);
   box-shadow: 0 0 3px rgba(0, 0, 0, 0.4);
 }
-
 /* ============================================================
    MÓVIL — HOJA INFERIOR DESLIZABLE
    ============================================================

@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+
   <!-- Sin esto el móvil renderiza la página como si fuera de escritorio y
        luego la encoge: el panel quedaba en unos 100px y el mapa inservible.
        viewport-fit=cover deja que la hoja inferior llegue hasta el borde en
@@ -10,6 +11,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 
   <title>Moom — Autobuses de Madrid en tiempo real</title>
+
+  <!-- Inter, la tipografía de la identidad de marca. Se piden solo los tres
+       grosores que se usan (400 normal, 500 medio, 600 semibold) en vez de
+       la familia entera. display=swap enseña el texto con la fuente del
+       sistema mientras Inter carga, en lugar de dejar huecos en blanco. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"
+  />
 
   <!-- Icono de la pestaña. El SVG es el que usan Chrome y Firefox: al ser
        vectorial se ve nítido a cualquier tamaño. El PNG de 64px queda de
