@@ -1,5 +1,16 @@
-// URL de tu servidor FastAPI corriendo en local
-const URL_BACKEND = "http://127.0.0.1:8000";
+// Dónde está el backend, que no es el mismo sitio en local y en producción.
+//
+// En Vercel los dos comparten dominio (el backend cuelga de /api, ver
+// vercel.json), así que basta una ruta relativa: además de ahorrar la
+// configuración de CORS, el frontend deja de tener escrito un dominio
+// concreto y el mismo archivo sirve para cualquier despliegue.
+//
+// En local no vale, porque el flujo de desarrollo son dos servidores en
+// puertos distintos: el frontend en el 5500 y uvicorn en el 8000. Una ruta
+// relativa apuntaría al 5500, donde no hay backend. De ahí la distinción.
+const EN_DESARROLLO_LOCAL = location.port === "5500";
+
+const URL_BACKEND = EN_DESARROLLO_LOCAL ? "http://127.0.0.1:8000" : "/api";
 
 // Número de parada que vamos a consultar
 let STOP_ID = null;

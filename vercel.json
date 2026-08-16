@@ -1,0 +1,15 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+
+  "outputDirectory": "frontend",
+
+  "framework": null,
+
+  "functions": {
+    "api/index.py": {
+      "excludeFiles": "{venv/**,.git/**,**/__pycache__/**,.env,backend/data/emt/**,backend/data/crtm/**,backend/data/metro/**}"
+    }
+  },
+
+  "rewrites": [{ "source": "/api/(.*)", "destination": "/api/index" }]
+}

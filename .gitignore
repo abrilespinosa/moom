@@ -38,3 +38,4 @@ backend/data/**/calendar_dates.txt
 # volvería a colar.
 CLAUDE.md
 claude_context.md
+.vercel

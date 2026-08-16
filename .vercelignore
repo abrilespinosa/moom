@@ -1,0 +1,27 @@
+# Qué NO se sube a Vercel.
+#
+# Este archivo es lo primero que hay que escribir, antes que vercel.json:
+# backend/data/ ocupa 188 MB y el venv otro tanto, así que sin esto el
+# despliegue se va muy por encima del límite de tamaño de una función.
+
+venv/
+.git/
+__pycache__/
+*.pyc
+
+# Credenciales: en Vercel van como variables de entorno del proyecto,
+# configuradas en su panel, nunca en un archivo del repositorio.
+.env
+
+# El GTFS crudo. Se excluyen las tres carpetas de fuente UNA A UNA, en vez
+# de ignorar backend/data/ entera con una excepción, porque lo que hay que
+# conservar (backend/data/precalculado/) es justo lo único que hace
+# funcionar la búsqueda por línea en producción: un patrón de negación mal
+# puesto la borraría en silencio y el fallo solo se vería ya desplegado.
+backend/data/emt/
+backend/data/crtm/
+backend/data/metro/
+
+# Notas de trabajo personales, igual que en .gitignore.
+CLAUDE.md
+claude_context.md
