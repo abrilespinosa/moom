@@ -1,5 +1,35 @@
 import csv
+import json
 import os
+
+# Los datos ya precalculados por scripts/precalcular_datos.py.
+#
+# La ruta se construye desde __file__ y NO relativa al directorio de trabajo,
+# a diferencia del resto de rutas de este archivo. El motivo es el despliegue:
+# en un entorno serverless el directorio de trabajo no está garantizado, así
+# que "backend/data/..." solo funciona por la convención de arrancar siempre
+# desde la raíz, que aquí no se puede sostener. Las rutas del GTFS crudo se
+# quedan como estaban porque solo se leen en local, al regenerar el JSON.
+DIRECTORIO_PRECALCULADO = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "data", "precalculado"
+)
+
+
+def _leer_precalculado(nombre):
+    """
+    Devuelve el contenido del JSON precalculado, o None si no está.
+
+    Que falte no es un error: en local, con el GTFS completo descargado, se
+    puede trabajar sin haberlo generado nunca. Quien lo necesita de verdad es
+    el despliegue, donde los archivos pesados del GTFS no existen.
+    """
+    ruta = os.path.join(DIRECTORIO_PRECALCULADO, nombre)
+
+    if not os.path.exists(ruta):
+        return None
+
+    with open(ruta, encoding="utf-8") as archivo:
+        return json.load(archivo)
 
 def cargar_paradas_emt():
     paradas = []
@@ -172,8 +202,20 @@ def cargar_paradas_metro():
     return paradas
 
 
-def cargar_todas_las_paradas():
+def _paradas_desde_gtfs():
     return cargar_paradas_emt() + cargar_paradas_crtm() + cargar_paradas_metro()
+
+
+def cargar_todas_las_paradas():
+    """
+    Las paradas de las tres redes, del JSON precalculado si lo hay.
+
+    Leerlas del GTFS crudo cuesta bastante más que leer el JSON, pero la
+    razón de preferir el precalculado no es la velocidad: es que en un
+    despliegue los stops.txt podrían no estar, y que así producción y local
+    sirven exactamente los mismos datos.
+    """
+    return _leer_precalculado("paradas.json") or _paradas_desde_gtfs()
 
 
 # Caché en memoria: igual que las paradas, los colores de las líneas no
@@ -206,6 +248,21 @@ def cargar_colores_lineas_metro():
     if _cache_colores_lineas_metro is not None:
         return _cache_colores_lineas_metro
 
+    # Igual que las paradas y las líneas, esto también se precalcula: son
+    # datos estáticos y leerlos de routes.txt obligaría a llevar el GTFS de
+    # Metro al despliegue solo por este archivo. Se descubrió desplegando:
+    # sin esta rama, /metro/lineas/colores y todo lo que pasa por
+    # lineas_de_metro_de() reventaban con FileNotFoundError en producción.
+    precalculado = _leer_precalculado("colores_metro.json")
+
+    _cache_colores_lineas_metro = (
+        precalculado if precalculado is not None else _colores_metro_desde_gtfs()
+    )
+
+    return _cache_colores_lineas_metro
+
+
+def _colores_metro_desde_gtfs():
     colores = {}
 
     with open("backend/data/metro/routes.txt", encoding="utf-8-sig") as archivo:
@@ -217,8 +274,6 @@ def cargar_colores_lineas_metro():
                 "color": fila["route_color"],
                 "color_texto": fila["route_text_color"],
             }
-
-    _cache_colores_lineas_metro = colores
 
     return colores
 
@@ -385,6 +440,18 @@ def _andenes_a_estaciones(recorridos, mapa):
 
 
 def cargar_lineas():
+    """
+    Las líneas con su recorrido, del JSON precalculado si lo hay.
+
+    Es el caso que de verdad justifica el precálculo: construir esto lee
+    trips.txt y stop_times.txt (1,9 M de filas, 188 MB), que no van al
+    repositorio. Sin el JSON, un clon limpio o un despliegue se quedan sin
+    búsqueda por línea. Ver scripts/precalcular_datos.py.
+    """
+    return _leer_precalculado("lineas.json") or _lineas_desde_gtfs()
+
+
+def _lineas_desde_gtfs():
     """
     Carga todas las líneas de las tres redes con su recorrido de paradas.
 
