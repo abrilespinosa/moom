@@ -976,8 +976,19 @@ body {
    así que el arrastre va suave incluso con la lista de paradas llena.
 
    Igual que en escritorio, cambiar el tamaño del mapa obliga a llamar a
-   mapa.invalidateSize() desde app.js, o Leaflet deja franjas sin tiles. */
-@media (max-width: 768px) {
+   mapa.invalidateSize() desde app.js, o Leaflet deja franjas sin tiles.
+
+   La condición cubre también las tabletas EN VERTICAL, no solo los móviles.
+   Medido: a 820px —iPad Air y iPad de 10ª en vertical— el grid de tres
+   columnas dejaba el mapa en 406px, la mitad de la pantalla, porque el
+   panel mide 380px pase lo que pase. En horizontal (1180px y más) el grid
+   sí funciona y se conserva, que es donde una tableta se parece más a un
+   escritorio.
+
+   OJO: esta condición está DUPLICADA en app.js (CONSULTA_HOJA). Si se
+   toca aquí, hay que tocarla allí o el arrastre dejará de responder
+   justo en los tamaños que acaban de cambiar. */
+@media (max-width: 768px), (max-width: 1024px) and (orientation: portrait) {
   body {
     /* Alto visible de la hoja cuando está recogida. Deja ver la cabecera,
        el buscador y las primeras fichas, que es lo que se usa de pie en
@@ -1083,5 +1094,38 @@ body {
      automático al enfocar un campo, descuadrando toda la página. */
   #input-buscar {
     font-size: 16px;
+  }
+}
+
+/* En una tableta vertical la pantalla es mucho más alta que un móvil, así
+   que el mismo 46vh dejaba asomar más de 500px de hoja y se comía el mapa.
+   Se declara en vh y no con min() a propósito: app.js lee esta variable y
+   la convierte a píxeles, y solo sabe interpretar vh o px. */
+@media (min-width: 769px) and (max-width: 1024px) and (orientation: portrait) {
+  body {
+    --hoja-recogida: 32vh;
+  }
+}
+
+/* --- PANTALLAS TÁCTILES ---
+   En un dispositivo sin ratón, :hover se activa al tocar y se queda pegado
+   hasta que se toca otra cosa: una ficha levantada, un botón agrandado. El
+   navegador lo declara en (hover: none), así que aquí se devuelven a su
+   estado normal los efectos que se notan, que son los de movimiento.
+   Los cambios de color se dejan estar: son sutiles y no descolocan nada. */
+@media (hover: none) {
+  #lista-resultados li:hover {
+    box-shadow: var(--sombra-sutil);
+    transform: none;
+  }
+
+  #boton-ubicacion:hover {
+    background: rgba(255, 255, 255, 0.72);
+    transform: none;
+  }
+
+  .filtro-boton:hover:not(.activo) {
+    background: none;
+    color: var(--texto-suave);
   }
 }

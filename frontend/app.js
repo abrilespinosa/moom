@@ -1620,7 +1620,17 @@ botonUbicacion.addEventListener("click", () => {
 // Solo hay dos posiciones de reposo, recogida y desplegada. Se descartaron
 // los puntos intermedios: obligan a recordar en qué posición se dejó la
 // hoja y no aportan nada, porque el contenido ya se desplaza por dentro.
-const consultaMovil = window.matchMedia("(max-width: 768px)");
+// La misma condición que abre el bloque de la hoja en style.css, palabra por
+// palabra. Está duplicada porque CSS y JS no pueden compartir una consulta de
+// medios: si cambia una hay que cambiar la otra, o el diseño pasará a modo
+// hoja en tamaños donde el arrastre ya no responde (o al revés).
+//
+// Incluye las tabletas en vertical hasta 1024px: con el grid de tres
+// columnas, a 820px el mapa se quedaba en 406px.
+const CONSULTA_HOJA =
+  "(max-width: 768px), (max-width: 1024px) and (orientation: portrait)";
+
+const consultaMovil = window.matchMedia(CONSULTA_HOJA);
 const cabeceraPanel = document.getElementById("panel-header");
 
 let hojaDesplegada = false;
