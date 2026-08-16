@@ -20,6 +20,8 @@ en tiempo real de los autobuses.
 import os
 import time
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -36,6 +38,37 @@ LOGIN_URL = "https://openapi.emtmadrid.es/v1/mobilitylabs/user/login/"
 # autobuses pregunta cada 10 segundos, así que la conexión se mantiene
 # caliente entre refrescos.
 _sesion = requests.Session()
+
+# --- REINTENTOS ---
+# El login de EMT falla el saludo TLS con mucha frecuencia. Medido lanzando
+# 12 logins seguidos, cada uno con una sesión nueva: 4 fallaron con
+# SSLError("EOF occurred in violation of protocol"). Un tercio. Y no es cosa
+# del alojamiento: sale igual desde una máquina de casa.
+#
+# Nunca se había notado porque con un servidor de toda la vida el login
+# ocurre UNA vez y el token vale 23h; si esa única vez sale bien, no vuelves
+# a mirar. Desplegado en funciones, cada instancia fría hace su propio
+# login, así que ese tercio se convierte en autobuses que no aparecen justo
+# cuando alguien abre el enlace después de un rato sin tráfico.
+#
+# Con estos reintentos, los mismos 12 logins salieron 12/12. Y sale casi
+# gratis: el fallo de TLS se produce al instante, no agotando el tiempo de
+# espera, así que la mediana se quedó en 0,16s y el peor caso en 0,36s.
+#
+# Se permite reintentar también POST, que por defecto urllib3 excluye por si
+# la petición modifica algo. Aquí no: la única llamada POST pide las
+# llegadas de una parada, o sea que es una consulta y repetirla no cambia
+# nada en el servidor.
+_reintentos = Retry(
+    total=3,
+    connect=3,  # el saludo TLS fallido cae aquí, y falla rápido
+    read=1,  # una relectura como mucho: cada una puede costar 15s
+    status=2,
+    backoff_factor=0.4,
+    status_forcelist=(502, 503, 504),
+    allowed_methods=frozenset({"GET", "POST"}),
+)
+_sesion.mount("https://", HTTPAdapter(max_retries=_reintentos))
 
 # (conectar, leer) en segundos, por el mismo motivo que en metro_client.py:
 # sin timeout, una conexión colgada retiene un hilo del pool de FastAPI para

@@ -41,6 +41,8 @@ citram-python-api y verificados manualmente contra el servidor real):
 import re
 import time
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 BASE_URL = "https://www.crtm.es/widgets/api"
 
@@ -60,6 +62,26 @@ BASE_URL = "https://www.crtm.es/widgets/api"
 # eso en la práctica (urllib3 mantiene un pool de conexiones con su propio
 # candado); lo que no admite es compartirse entre procesos.
 _sesion = requests.Session()
+
+# Reintentos, pero afinados distinto que en emt_client.py porque el fallo de
+# este servidor es otro. Medido con 12 consultas seguidas: 11 salieron y la
+# que falló fue un ReadTimeout, o sea su latencia errática de siempre (de
+# 0,1s a 6,9s), no un saludo TLS caído como en EMT.
+#
+# Por eso aquí read=0: una relectura sobre una consulta que ya puede tardar
+# 10 segundos duplicaría la espera para recuperar un dato que el frontend va
+# a volver a pedir dentro de 20s de todas formas, enseñando mientras tanto
+# los últimos tiempos buenos. Los reintentos de conexión sí se quedan:
+# fallan al instante y no cuestan nada.
+_reintentos = Retry(
+    total=2,
+    connect=2,
+    read=0,
+    status=1,
+    backoff_factor=0.3,
+    status_forcelist=(502, 503, 504),
+)
+_sesion.mount("https://", HTTPAdapter(max_retries=_reintentos))
 
 # (conectar, leer) en segundos. Sin timeout, requests espera indefinidamente:
 # una conexión que el CRTM deje colgada retiene para siempre un hilo del pool
