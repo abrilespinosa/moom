@@ -106,7 +106,23 @@
           placeholder="Buscar parada o línea..."
         />
       </div>
+      <button id="boton-como-llegar">Cómo llegar a un sitio</button>
       <ul id="lista-resultados"></ul>
+    </div>
+
+    <!-- VISTA 4: cómo llegar de un sitio a otro -->
+    <div id="vista-ruta">
+      <button id="boton-volver-ruta" class="boton-volver">← Volver a buscar</button>
+
+      <div id="formulario-ruta">
+        <input type="text" id="ruta-origen" placeholder="Desde: mi ubicación" />
+        <input type="text" id="ruta-destino" placeholder="Hasta: dirección o lugar" />
+        <button id="boton-calcular-ruta">Buscar ruta</button>
+      </div>
+
+      <!-- Lo rellena app.js: el resumen del viaje y sus tramos, o el aviso
+           de que no hay combinación posible. -->
+      <div id="resultado-ruta"></div>
     </div>
 
     <!-- VISTA 2: recorrido de una línea (oculta al inicio) -->

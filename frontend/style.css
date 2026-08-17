@@ -1163,3 +1163,158 @@ body {
 #codigo-parada-actual .distancia-andando::before {
   content: " · ";
 }
+
+/* --- CÓMO LLEGAR --- */
+#vista-ruta {
+  display: none;
+  flex-direction: column;
+  padding: 0 16px 16px;
+  gap: 10px;
+}
+
+#boton-como-llegar {
+  display: block;
+  width: calc(100% - 32px);
+  margin: 10px 16px 0;
+  padding: 11px;
+  border: none;
+  border-radius: var(--radio-pequeno);
+  background: var(--acento);
+  color: var(--texto-sobre-acento); /* oscuro sobre naranja: 9,24:1 */
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--sombra-sutil);
+}
+
+#formulario-ruta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#ruta-origen,
+#ruta-destino {
+  width: 100%;
+  padding: 11px 12px;
+  border: none;
+  border-radius: var(--radio-pequeno);
+  background: var(--gris-superficie);
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--texto);
+}
+
+#ruta-origen:focus,
+#ruta-destino:focus {
+  outline: none;
+  background: var(--superficie);
+  box-shadow: 0 0 0 3px var(--acento-suave), var(--sombra-sutil);
+}
+
+#boton-calcular-ruta {
+  padding: 11px;
+  border: none;
+  border-radius: var(--radio-pequeno);
+  background: var(--acento);
+  color: var(--texto-sobre-acento);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* El dato principal del resultado es cuánto se tarda: va en grande y con
+   cifras de ancho fijo, igual que los tiempos de llegada. */
+.ruta-resumen {
+  padding: 14px;
+  border-radius: var(--radio-grande);
+  background: var(--superficie);
+  box-shadow: var(--sombra-sutil);
+}
+
+.ruta-duracion {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.ruta-duracion .unidad {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--texto-suave);
+}
+
+.ruta-horas,
+.ruta-trasbordos {
+  font-size: 13px;
+  color: var(--texto-suave);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Mismo tratamiento que el aviso de conexión: informa sin alarmar, porque
+   lo de debajo se sigue pudiendo usar. */
+.ruta-aviso {
+  margin: 0;
+  padding: 10px 13px;
+  border-radius: var(--radio-pequeno);
+  background: var(--acento-suave);
+  color: var(--acento-texto);
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+
+.ruta-tramos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ruta-tramos li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radio-medio);
+  background: var(--superficie);
+  box-shadow: var(--sombra-sutil);
+}
+
+.tramo-andando {
+  color: var(--texto-suave);
+  font-size: 13px;
+}
+
+.tramo-icono {
+  font-size: 16px;
+}
+
+.tramo-detalle {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.tramo-titulo {
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tramo-horas {
+  font-size: 12px;
+  color: var(--texto-suave);
+  font-variant-numeric: tabular-nums;
+}
+
+.ruta-vacia {
+  margin: 0;
+  font-size: 13px;
+  color: var(--texto-suave);
+}

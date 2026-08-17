@@ -783,6 +783,12 @@ function mostrarVista(nombre) {
   vistaBusqueda.style.display = nombre === "busqueda" ? "block" : "none";
   vistaLinea.style.display = nombre === "linea" ? "flex" : "none";
   vistaLlegadas.style.display = nombre === "llegadas" ? "flex" : "none";
+  // La vista de ruta se declara más abajo en el archivo, así que puede no
+  // existir todavía cuando mostrarVista() se llama al arrancar.
+  const ruta = document.getElementById("vista-ruta");
+  if (ruta) {
+    ruta.style.display = nombre === "ruta" ? "flex" : "none";
+  }
 }
 
 // Desde dónde se llegó al panel de llegadas. Sirve para que "Volver"
@@ -1896,5 +1902,182 @@ consultaMovil.addEventListener("change", (evento) => {
 window.addEventListener("resize", () => {
   if (consultaMovil.matches) {
     fijarEstadoHoja(hojaDesplegada);
+  }
+});
+
+// --- CÓMO LLEGAR ---
+//
+// Cuarta vista del panel: dos campos, origen y destino, y la mejor
+// combinación de transporte que devuelve el backend.
+//
+// El origen se deja vacío a propósito para que signifique "donde estoy":
+// es el caso normal, y obligar a escribir la propia dirección para pedir
+// una ruta es de las cosas que hacen abandonar una app.
+const vistaRuta = document.getElementById("vista-ruta");
+const botonComoLlegar = document.getElementById("boton-como-llegar");
+const botonVolverRuta = document.getElementById("boton-volver-ruta");
+const rutaOrigen = document.getElementById("ruta-origen");
+const rutaDestino = document.getElementById("ruta-destino");
+const botonCalcularRuta = document.getElementById("boton-calcular-ruta");
+const resultadoRuta = document.getElementById("resultado-ruta");
+
+function horaLegible(segundos) {
+  // El GTFS pasa de las 24h en los viajes que cruzan la medianoche, así que
+  // hay que devolverlo al reloj antes de enseñarlo.
+  const s = Math.round(segundos) % 86400;
+  return `${String(Math.floor(s / 3600)).padStart(2, "0")}:${String(
+    Math.floor((s % 3600) / 60)
+  ).padStart(2, "0")}`;
+}
+
+// Convierte lo escrito en coordenadas. Si el campo está vacío usa la
+// ubicación del navegador; si no, pregunta al geocodificador y se queda con
+// el primer resultado.
+async function resolverPunto(texto, permitirUbicacion) {
+  if (!texto.trim()) {
+    if (permitirUbicacion && ubicacionUsuario) {
+      return ubicacionUsuario;
+    }
+    return null;
+  }
+
+  const lugares = await pedirJson(
+    `${URL_BACKEND}/lugares?q=${encodeURIComponent(texto)}`
+  );
+
+  return lugares.length > 0 ? lugares[0] : null;
+}
+
+function pintarRuta(ruta) {
+  resultadoRuta.innerHTML = "";
+
+  if (!ruta.encontrada) {
+    resultadoRuta.innerHTML =
+      '<p class="ruta-vacia">No se encontró ninguna combinación a esa hora. ' +
+      "Prueba a otra hora o desde un punto más céntrico.</p>";
+    return;
+  }
+
+  const resumen = document.createElement("div");
+  resumen.className = "ruta-resumen";
+  resumen.innerHTML = `
+    <div class="ruta-duracion">${Math.round(ruta.duracion / 60)}<span class="unidad"> min</span></div>
+    <div class="ruta-horas">${horaLegible(ruta.sale)} → ${horaLegible(ruta.llega)}</div>
+    <div class="ruta-trasbordos">${
+      ruta.trasbordos === 0
+        ? "sin trasbordos"
+        : `${ruta.trasbordos} trasbordo${ruta.trasbordos > 1 ? "s" : ""}`
+    }</div>`;
+  resultadoRuta.appendChild(resumen);
+
+  // Aviso de calendario caducado. Va aquí y no escondido en la consola
+  // porque cambia lo fiables que son las horas de abajo.
+  if (ruta.calendariosCaducados && ruta.calendariosCaducados.length > 0) {
+    const aviso = document.createElement("p");
+    aviso.className = "ruta-aviso";
+    aviso.textContent =
+      `Horario de ${ruta.calendariosCaducados.join(", ")} tomado de un ` +
+      "calendario que ya venció: las horas pueden no ser exactas.";
+    resultadoRuta.appendChild(aviso);
+  }
+
+  const lista = document.createElement("ul");
+  lista.className = "ruta-tramos";
+
+  ruta.tramos.forEach((tramo) => {
+    const item = document.createElement("li");
+
+    if (tramo.modo === "andando") {
+      const minutos = Math.max(1, Math.round((tramo.metros * 1.25) / 4500 * 60));
+      item.className = "tramo-andando";
+      item.innerHTML = `<span class="tramo-icono">🚶</span>
+        <span>Andar ${tramo.metros} m · ${minutos} min</span>`;
+    } else {
+      const fondo = colorSeguro(tramo.color);
+      const estilo = fondo
+        ? ` style="background-color:#${fondo}; color:#${
+            colorSeguro(tramo.colorTexto) ?? "FFFFFF"
+          }"`
+        : "";
+
+      item.className = "tramo-linea";
+      item.innerHTML = `
+        <span class="tarjeta-linea"${estilo}>${tramo.numero ?? "?"}</span>
+        <span class="tramo-detalle">
+          <span class="tramo-titulo">${tramo.nombreSubida ?? tramo.subida} → ${
+        tramo.nombreBajada ?? tramo.bajada
+      }</span>
+          <span class="tramo-horas">${horaLegible(tramo.sale)} – ${horaLegible(
+        tramo.llega
+      )} · ${tramo.paradas} paradas</span>
+        </span>`;
+    }
+
+    lista.appendChild(item);
+  });
+
+  resultadoRuta.appendChild(lista);
+}
+
+async function calcularRuta() {
+  resultadoRuta.innerHTML = '<p class="ruta-vacia">Buscando…</p>';
+
+  try {
+    const [origen, destino] = await Promise.all([
+      resolverPunto(rutaOrigen.value, true),
+      resolverPunto(rutaDestino.value, false),
+    ]);
+
+    if (!origen) {
+      resultadoRuta.innerHTML =
+        '<p class="ruta-vacia">Escribe de dónde sales, o pulsa el botón de ' +
+        "ubicación del mapa para usar dónde estás.</p>";
+      return;
+    }
+
+    if (!destino) {
+      resultadoRuta.innerHTML =
+        '<p class="ruta-vacia">No encontré ese sitio. Prueba con la calle y el número.</p>';
+      return;
+    }
+
+    const ruta = await pedirJson(
+      `${URL_BACKEND}/ruta?desde=${origen.lat},${origen.lon}` +
+        `&hasta=${destino.lat},${destino.lon}`
+    );
+
+    ocultarAvisoConexion();
+    pintarRuta(ruta);
+  } catch (error) {
+    console.error("No se pudo calcular la ruta:", error);
+    mostrarAvisoConexion();
+    resultadoRuta.innerHTML =
+      '<p class="ruta-vacia">No se pudo calcular la ruta ahora mismo.</p>';
+  }
+}
+
+botonComoLlegar.addEventListener("click", () => {
+  mostrarVista("ruta");
+  subtituloHeader.textContent = "Cómo llegar";
+
+  // Si ya sabemos dónde está, se dice en el propio campo en vez de dejar un
+  // "mi ubicación" que podría ser mentira.
+  rutaOrigen.placeholder = ubicacionUsuario
+    ? "Desde: mi ubicación"
+    : "Desde: escribe una dirección";
+
+  rutaDestino.focus();
+});
+
+botonVolverRuta.addEventListener("click", () => {
+  mostrarVista("busqueda");
+  subtituloHeader.textContent = "Busca una parada o una línea";
+});
+
+botonCalcularRuta.addEventListener("click", calcularRuta);
+
+rutaDestino.addEventListener("keydown", (evento) => {
+  if (evento.key === "Enter") {
+    calcularRuta();
   }
 });
