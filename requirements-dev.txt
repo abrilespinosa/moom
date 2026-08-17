@@ -1,0 +1,13 @@
+# Dependencias solo para desarrollar y pasar los tests.
+#
+# Van aparte de requirements.txt a propósito: ese es el que instala Vercel
+# al desplegar, y pytest en el paquete de una función serverless solo suma
+# peso para algo que allí no se ejecuta nunca.
+#
+#     pip install -r requirements-dev.txt
+#     pytest
+
+pytest==9.1.1
+
+# Lo necesita el TestClient de FastAPI, que por dentro es un cliente httpx.
+httpx==0.28.1

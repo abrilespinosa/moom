@@ -1,0 +1,34 @@
+name: tests
+
+# En cada push y en cada pull request contra main. La suite tarda menos de
+# un segundo, así que no hay motivo para limitarla a ciertas ramas.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          # La misma que usa el despliegue, declarada en .python-version.
+          python-version-file: .python-version
+          cache: pip
+
+      - name: Instalar dependencias
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      # Aquí no hay .env ni archivos GTFS pesados: los tests se apoyan en
+      # backend/data/precalculado/, que sí viaja en el repositorio, y
+      # ninguno sale a la red. Comprobado ejecutándolos sobre un clon
+      # limpio y con las conexiones salientes bloqueadas.
+      - name: Pasar los tests
+        run: pytest
