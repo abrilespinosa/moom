@@ -202,8 +202,24 @@ def cargar_paradas_metro():
     return paradas
 
 
+# Decimales que se conservan de cada coordenada. Cinco dan algo menos de un
+# metro de precisión en Madrid, de sobra para clavar una marquesina.
+#
+# Los GTFS traen 13 decimales de mediana, que es precisión de nanómetro y
+# solo sirve para engordar la respuesta: son 13.542 paradas con dos
+# coordenadas cada una, y recortarlas quita el 25% del peso que viaja por la
+# red (330 KB -> 247 KB ya comprimido).
+DECIMALES_COORDENADAS = 5
+
+
 def _paradas_desde_gtfs():
-    return cargar_paradas_emt() + cargar_paradas_crtm() + cargar_paradas_metro()
+    paradas = cargar_paradas_emt() + cargar_paradas_crtm() + cargar_paradas_metro()
+
+    for parada in paradas:
+        parada["lat"] = round(parada["lat"], DECIMALES_COORDENADAS)
+        parada["lon"] = round(parada["lon"], DECIMALES_COORDENADAS)
+
+    return paradas
 
 
 def cargar_todas_las_paradas():

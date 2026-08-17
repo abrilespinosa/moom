@@ -82,3 +82,29 @@ def test_listar_paradas_devuelve_las_tres_redes():
     paradas = cliente.get("/paradas").json()
 
     assert len({parada["fuente"] for parada in paradas}) == 3
+
+
+def test_los_datos_del_gtfs_se_pueden_cachear():
+    """
+    Paradas, líneas y colores solo cambian al regenerar el volcado, así que
+    piden caché larga: sin ella cada visita vuelve a bajarlos.
+
+    Lo que NO debe llevar esta cabecera es ningún endpoint de tiempos en
+    vivo: serviría llegadas de hace una hora como si fueran de ahora. Por eso
+    la lista de aquí es explícita y no un recorrido de todas las rutas.
+    """
+    for ruta in ("/paradas", "/lineas", "/metro/lineas/colores"):
+        cabecera = cliente.get(ruta).headers.get("cache-control", "")
+        assert "max-age=3600" in cabecera, ruta
+
+
+def test_las_coordenadas_no_arrastran_precision_inutil():
+    """
+    Los GTFS traen 13 decimales, que son nanómetros. Redondearlas a 5 (algo
+    menos de un metro) quita el 25% del peso de la respuesta.
+    """
+    paradas = cliente.get("/paradas").json()
+
+    for parada in paradas:
+        assert len(str(parada["lat"]).split(".")[-1]) <= 5, parada
+        assert len(str(parada["lon"]).split(".")[-1]) <= 5, parada

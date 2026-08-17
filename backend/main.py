@@ -14,7 +14,7 @@ Luego puedes visitar en el navegador, por ejemplo:
 from concurrent.futures import ThreadPoolExecutor
 
 import requests
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from backend.emt_client import obtener_llegadas_parada
@@ -170,15 +170,32 @@ def agrupar_llegadas(llegadas):
 
     return list(grupos.values())
 
+# Cuánto puede guardarse una respuesta que no cambia mientras el servidor
+# viva. Son los datos del volcado GTFS: paradas, líneas y colores. No se
+# parecen en nada a los tiempos de llegada, que caducan en segundos.
+#
+# Dos plazos porque son dos cachés distintas: max-age es la del navegador y
+# s-maxage la del CDN de Vercel. Al navegador se le da una hora —si
+# regeneras el GTFS, quien tenga la página abierta lo verá pronto— y al CDN
+# un día, porque Vercel vacía su caché en cada despliegue y ahí no hay
+# riesgo de servir datos viejos.
+#
+# Lo que se gana no es tanto el ancho de banda como las visitas repetidas:
+# hoy cada carga ejecuta la función y baja 247 KB (x-vercel-cache: MISS);
+# con esto, la segunda visita no descarga nada.
+CACHE_DATOS_ESTATICOS = "public, max-age=3600, s-maxage=86400"
+
+
 @app.get("/paradas")
-def listar_paradas():
+def listar_paradas(respuesta: Response):
     """
-    Devuelve todas las paradas de la red EMT (id, nombre, lat, lon).
+    Devuelve todas las paradas de las tres redes (id, nombre, lat, lon).
     """
+    respuesta.headers["Cache-Control"] = CACHE_DATOS_ESTATICOS
     return PARADAS
 
 @app.get("/lineas")
-def listar_lineas():
+def listar_lineas(respuesta: Response):
     """
     Devuelve todas las líneas de las tres redes, SIN su recorrido.
 
@@ -193,6 +210,8 @@ def listar_lineas():
     la 1 y la 2, que existen a la vez en EMT y en Metro. Por eso cada línea
     lleva su "fuente", y el "id" la incluye como prefijo.
     """
+    respuesta.headers["Cache-Control"] = CACHE_DATOS_ESTATICOS
+
     return [
         {clave: linea[clave] for clave in linea if clave != "sentidos"}
         for linea in LINEAS
@@ -517,7 +536,7 @@ def vehiculos_linea_metro(cod_line: str, cod_stop: str | None = None):
 
 
 @app.get("/metro/lineas/colores")
-def colores_lineas_metro():
+def colores_lineas_metro(respuesta: Response):
     """
     Devuelve el número y los colores oficiales de todas las líneas de Metro,
     indexados por su código de línea.
@@ -539,4 +558,6 @@ def colores_lineas_metro():
     Los colores vienen en hexadecimal SIN el "#" inicial, tal como los trae
     routes.txt; quien los use tendrá que añadirlo.
     """
+    respuesta.headers["Cache-Control"] = CACHE_DATOS_ESTATICOS
+
     return cargar_colores_lineas_metro()
