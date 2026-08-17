@@ -12,11 +12,13 @@ Luego puedes visitar en el navegador, por ejemplo:
 """
 
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
 
 import requests
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from backend import geocodificador, planificador
 from backend.emt_client import obtener_llegadas_parada
 from backend.gtfs_loader import (
     cargar_todas_las_paradas,
@@ -561,3 +563,92 @@ def colores_lineas_metro(respuesta: Response):
     respuesta.headers["Cache-Control"] = CACHE_DATOS_ESTATICOS
 
     return cargar_colores_lineas_metro()
+
+def _coordenadas(texto):
+    """
+    "40.41695,-3.70346" -> {"lat": ..., "lon": ...}
+
+    Se valida a conciencia porque estos dos números entran directos al
+    cálculo de rutas: un valor raro daría una lista de paradas cercanas
+    vacía y un 404 confuso en vez de decir que el parámetro está mal.
+    """
+    try:
+        lat, lon = (float(parte) for parte in texto.split(","))
+    except (ValueError, AttributeError):
+        raise HTTPException(400, "Se esperaba 'latitud,longitud'")
+
+    if not (-90 <= lat <= 90 and -180 <= lon <= 180):
+        raise HTTPException(400, "Coordenadas fuera de rango")
+
+    return {"lat": lat, "lon": lon}
+
+
+@app.get("/ruta")
+def calcular_ruta(desde: str, hasta: str, hora: str | None = None):
+    """
+    La mejor manera de ir de un punto a otro, con horas reales.
+
+    Ejemplo: GET /ruta?desde=40.41695,-3.70346&hasta=40.47230,-3.68250
+
+    "Mejor" es llegar lo antes posible, contando lo que se tarda en andar
+    hasta la parada, lo que hay que esperar al vehículo y los trasbordos.
+    Sin "hora" se calcula desde este momento.
+
+    Devuelve encontrada: False en vez de un 404 cuando no hay combinación
+    posible: no es un error de la petición, es que a esa hora no se puede
+    llegar, que es una respuesta legítima y el frontend la explica distinto.
+    """
+    if not planificador.hay_datos():
+        raise HTTPException(
+            503,
+            "El planificador no está disponible: falta rutas.json "
+            "(se genera con 'python -m scripts.precalcular_rutas').",
+        )
+
+    if hora:
+        try:
+            partes = [int(p) for p in hora.split(":")]
+            segundos = partes[0] * 3600 + partes[1] * 60
+        except (ValueError, IndexError):
+            raise HTTPException(400, "La hora se escribe como HH:MM")
+    else:
+        ahora = datetime.now()
+        segundos = ahora.hour * 3600 + ahora.minute * 60
+
+    ruta = planificador.planificar(
+        PARADAS, _coordenadas(desde), _coordenadas(hasta), segundos
+    )
+
+    if ruta is None:
+        return {"encontrada": False}
+
+    # Los tramos llevan ids de parada y de línea; el frontend necesita
+    # nombres y colores para pintarlos, y resolverlos aquí le ahorra cruzar
+    # tres listas por su cuenta.
+    for tramo in ruta["tramos"]:
+        if tramo["modo"] != "linea":
+            continue
+
+        linea = LINEAS_POR_ID.get(tramo["linea"], {})
+        tramo["numero"] = linea.get("numero")
+        tramo["fuente"] = linea.get("fuente")
+        tramo["color"] = linea.get("color")
+        tramo["colorTexto"] = linea.get("colorTexto")
+        tramo["nombreSubida"] = PARADAS_POR_ID.get(tramo["subida"], {}).get("nombre")
+        tramo["nombreBajada"] = PARADAS_POR_ID.get(tramo["bajada"], {}).get("nombre")
+
+    return {"encontrada": True, **ruta}
+
+
+@app.get("/lugares")
+def buscar_lugares(q: str):
+    """
+    Busca una dirección o un sitio de Madrid y devuelve sus coordenadas.
+
+    Ejemplo: GET /lugares?q=Puerta de Alcalá
+
+    Hace falta para poder pedir una ruta "a un sitio" y no solo entre
+    paradas. Va contra Nominatim (OpenStreetMap); ver geocodificador.py
+    para los límites de uso que hay que respetar.
+    """
+    return geocodificador.buscar(q)
