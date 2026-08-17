@@ -4,9 +4,13 @@ Aplicación para visualizar en un mapa, en tiempo real, el transporte público d
 
 *Moom* viene de **mo**vilidad + **M**adrid.
 
+**▶ Pruébalo: <https://moom-abril-espinosa.vercel.app>**
+
 ## Estado del proyecto
 
-🚧 En desarrollo — Backend funcional con datos de EMT, CRTM y Metro, y frontend con mapa interactivo, buscador de paradas y líneas, y favoritos.
+Desplegado y funcionando, con las tres redes en tiempo real. En desarrollo activo.
+
+Funciona en móvil, tableta y escritorio, y no necesita instalación ni cuenta.
 
 ## Funcionalidades actuales
 
@@ -30,12 +34,13 @@ Aplicación para visualizar en un mapa, en tiempo real, el transporte público d
 **Búsqueda por línea**
 - Un único buscador para paradas y líneas: al escribir un número, las líneas aparecen primero y se prioriza la coincidencia exacta (quien busca "27" quiere la línea 27, no la 270).
 - Al elegir una línea se ve su recorrido completo, con las paradas en orden y separadas por sentido; desde ahí se salta a las llegadas de cualquiera de ellas.
-- Requiere los archivos GTFS pesados (`trips.txt` y `stop_times.txt`), que no están en el repositorio. Si faltan, esta función se desactiva sola y el resto de la aplicación sigue funcionando con normalidad.
+- Funciona nada más clonar el repositorio: los recorridos vienen precalculados en `backend/data/precalculado/`, así que no hacen falta los archivos GTFS pesados (ver [Datos precalculados](#datos-precalculados)).
 - Hay 21 líneas que los datos abiertos no detallan (la F y la G de la EMT, la Línea 3 de Metro y varias interurbanas). Se pueden buscar y abrir igual, avisando de que su recorrido no está disponible; sus paradas y sus tiempos en vivo funcionan con normalidad.
 
-**Favoritos**
+**Favoritos y cercanía**
 - Paradas y líneas se pueden marcar como favoritas, y se guardan en el navegador (`localStorage`).
 - Con el buscador vacío, la lista muestra los favoritos, filtrados por el modo de transporte activo igual que una búsqueda.
+- Al compartir tu ubicación aparece un grupo **Cerca de ti** con las paradas más próximas, y cada una indica a qué distancia está y cuánto se tarda andando. Es una estimación: línea recta más un 25% por el rodeo de las manzanas, y tira ligeramente alto a propósito, porque quedarse corto hace perder el autobús.
 
 **Mapa e interfaz**
 - Leaflet con tiles de CartoDB Voyager.
@@ -43,6 +48,7 @@ Aplicación para visualizar en un mapa, en tiempo real, el transporte público d
 - Filtros por fuente: Todos / Urbano / Interurbano / Metro.
 - Botón de geolocalización para centrar el mapa en tu posición.
 - Panel lateral redimensionable arrastrando el divisor; el ancho elegido se recuerda entre visitas.
+- **En móvil y en tableta vertical** el panel deja de ser una columna y pasa a ser una hoja que sube desde abajo, arrastrable desde la banda naranja, con el mapa a pantalla completa detrás. En tableta horizontal y en escritorio se mantiene la vista de dos paneles, que es donde tiene sentido.
 - Refresco automático: cada 10 s para EMT y cada 20 s para Metro, acompasado con el ritmo al que cada API actualiza sus datos. Si un refresco falla, se avisa en el panel en vez de seguir mostrando los tiempos viejos como si fueran actuales.
 
 ## Estructura del proyecto
@@ -57,11 +63,17 @@ backend/
     emt/               # GTFS de EMT (stops.txt, routes.txt)
     crtm/              # GTFS interurbano de CRTM
     metro/             # GTFS de Metro
+    precalculado/      # Paradas, líneas y colores ya resueltos, en JSON
 frontend/
   index.html           # Estructura de la página
   style.css            # Estilos del mapa y los paneles
   app.js               # Lógica del mapa, búsqueda, favoritos, llegadas y vehículos
   assets/              # Logo e iconos de parada y estación
+scripts/
+  precalcular_datos.py # Genera backend/data/precalculado/ desde el GTFS crudo
+tests/                 # Suite de pytest (32 tests, sin red)
+api/index.py           # Punto de entrada del backend en Vercel
+vercel.json            # Reparto de rutas entre frontend estático y API
 ```
 
 ## Endpoints
@@ -79,9 +91,42 @@ frontend/
 
 Cuando una API externa no responde, los endpoints que dependen de ella devuelven `503` con un mensaje, en vez de un error genérico.
 
+## Datos precalculados
+
+`backend/data/` ocupa 188 MB en disco, pero al repositorio solo van `stops.txt` y `routes.txt` de cada fuente. Los archivos pesados —`stop_times.txt` son 1,9 millones de filas— están excluidos.
+
+Eso dejaba un problema: la búsqueda por línea los necesitaba, así que un clon limpio se quedaba sin ella. La clave es que esos 188 MB se leen al arrancar y se tiran: de todos esos viajes solo sobrevive **uno representativo por línea y sentido**. El resultado son 2 MB, que sí caben en el repositorio.
+
+Por eso `backend/data/precalculado/` va versionado. Se regenera con:
+
+```bash
+python -m scripts.precalcular_datos
+```
+
+**Hay que volver a ejecutarlo cada vez que se descargue un volcado GTFS nuevo**, o la aplicación seguirá sirviendo los datos del anterior. De paso, el arranque baja de 2,77 s a 0,03 s.
+
+## Tests
+
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
+
+32 tests en menos de medio segundo. **Ninguno sale a la red**: solo se prueban rutas que responden desde memoria o que cortan antes de llamar a EMT o al CRTM, comprobado ejecutándolos con las conexiones salientes bloqueadas. Una caída de una API externa no puede poner la suite en rojo.
+
+Cubren la lógica pura (agrupación de llegadas, distinción entre tiempo real y horario teórico, filtrado de líneas que no son de Metro, validación de identificadores) y varios invariantes de los datos, que es donde más duelen los fallos de este proyecto: un volcado GTFS nuevo puede romperlos en silencio y no se nota hasta que una estación desaparece del mapa.
+
+Se ejecutan también en GitHub Actions en cada push.
+
+## Despliegue
+
+Está desplegado en Vercel: el frontend como archivos estáticos y FastAPI como función, montada bajo `/api`. Al compartir dominio, en producción no hace falta CORS.
+
+La pieza que hay que respetar es `.vercelignore`: sin él, el despliegue se lleva los 188 MB de GTFS crudo. Ojo a que se aplica al build estático **pero no al paquete de la función**, que necesita además `excludeFiles` en `vercel.json` para lo mismo.
+
 ## Requisitos
 
-- Python 3.10+
+- Python 3.10 o superior (el despliegue usa 3.14)
 - Una cuenta en [Mobility Labs Madrid](https://mobilitylabs.emtmadrid.es) con tu email y contraseña registrados (solo necesaria para los autobuses de EMT; Metro y CRTM usan una API pública sin autenticación)
 
 ## Configuración
@@ -143,6 +188,6 @@ Una nota sobre esas APIs: la de EMT es oficial y está documentada. La del CRTM 
 
 ## Notas
 
-Los archivos GTFS pesados (`shapes.txt`, `stop_times.txt`, `trips.txt`, `calendar*.txt`) están excluidos del repositorio: solo se versionan `stops.txt` y `routes.txt` de cada fuente. `trips.txt` y `stop_times.txt` son los que alimentan la búsqueda por línea, así que en un clon limpio hay que volver a descargarlos de los portales de EMT y CRTM para que esa parte funcione.
+Los archivos GTFS pesados (`shapes.txt`, `stop_times.txt`, `trips.txt`, `calendar*.txt`) están excluidos del repositorio: solo se versionan `stops.txt` y `routes.txt` de cada fuente. Un clon limpio funciona igual, incluida la búsqueda por línea, gracias a los [datos precalculados](#datos-precalculados); solo hacen falta los archivos pesados para **regenerarlos** tras descargar un volcado nuevo de los portales de EMT y CRTM.
 
 Los GTFS publicados por EMT y CRTM no incluyen ningún viaje de 21 de sus líneas (entre ellas la F y la G de la EMT y la Línea 3 de Metro), así que de esas no se puede mostrar el recorrido. Sus paradas y sus tiempos en vivo funcionan con normalidad.
