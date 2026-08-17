@@ -501,11 +501,37 @@ function buscarLineas(texto) {
 }
 
 function buscarParadas(texto) {
-  return TODAS_LAS_PARADAS.filter(
+  const coincidencias = TODAS_LAS_PARADAS.filter(
     (parada) =>
       pasaElFiltroDeModo(parada) &&
       (parada.nombre.toLowerCase().includes(texto) || parada.id.includes(texto))
-  ).slice(0, MAXIMO_PARADAS);
+  );
+
+  // Sabiendo dónde está el usuario, entre las paradas que coinciden va
+  // primero la que tiene más cerca. Buscar "sol" desde Chamberí y desde
+  // Vallecas debería dar un primer resultado distinto.
+  //
+  // Se ordena ANTES de recortar a MAXIMO_PARADAS: al revés se quedaría con
+  // las doce primeras del archivo y las ordenaría entre ellas, que es
+  // justamente no ordenar nada.
+  if (ubicacionUsuario) {
+    coincidencias.sort(
+      (a, b) => distanciaEnMetros(ubicacionUsuario, a) - distanciaEnMetros(ubicacionUsuario, b)
+    );
+  }
+
+  return coincidencias.slice(0, MAXIMO_PARADAS);
+}
+
+// Las paradas más cercanas, sin buscar nada. Es lo que enseña el panel
+// cuando ya sabemos dónde estás: de pie en la calle, lo que quieres es
+// "qué tengo alrededor", no escribir un nombre.
+function paradasCercanas() {
+  return TODAS_LAS_PARADAS.filter(pasaElFiltroDeModo)
+    .map((parada) => ({ parada, metros: distanciaEnMetros(ubicacionUsuario, parada) }))
+    .sort((a, b) => a.metros - b.metros)
+    .slice(0, MAXIMO_PARADAS)
+    .map((x) => x.parada);
 }
 
 function encabezadoDeGrupo(texto) {
@@ -562,6 +588,94 @@ function codigoDeParada(parada) {
   return parada.id.replace(/^[a-z]+_\d+_/, "");
 }
 
+// --- DISTANCIA ANDANDO ---
+//
+// Dónde está el usuario, si nos lo ha dejado saber. Se rellena al pulsar el
+// botón de ubicación y no al cargar: pedir el permiso de geolocalización
+// nada más abrir es intrusivo, y además los navegadores lo bloquean si no
+// viene de un gesto de la persona.
+let ubicacionUsuario = null;
+
+// Velocidad a pie, en metros por hora. 4,5 km/h y no los 5 de un paseo en
+// llano: por ciudad se anda más lento de lo que dice el cálculo, entre
+// semáforos, esperas para cruzar y aceras llenas.
+const VELOCIDAD_ANDANDO = 4500;
+
+// Lo que se camina de más respecto a la línea recta, por rodear manzanas.
+//
+// El número es un juicio, no una medida, y conviene decirlo: no encontré
+// forma de sacar rutas a pie reales para calibrarlo (el servidor público de
+// OSRM solo trae perfil de coche, y devolvía 2.189 m para un paseo de 900 m
+// porque respeta los sentidos únicos). Lo que sí comprobé es que Sol ->
+// Cibeles son 895 m en línea recta y el paseo por Alcalá es prácticamente
+// eso, o sea que por una avenida recta el rodeo es casi cero.
+//
+// Pero ese es el mejor caso. En trayectos cortos —los que importan aquí, ir
+// a la parada de al lado— el rodeo pesa mucho más: 100 m en recta pueden ser
+// 200 andando si hay que dar la vuelta a la manzana.
+//
+// Se queda en 1,25 y errando por arriba a propósito: decir 7 minutos cuando
+// son 5 hace esperar un poco; decir 5 cuando son 7 hace perder el autobús.
+const RODEO_CALLEJERO = 1.25;
+
+function distanciaEnMetros(desde, hasta) {
+  // Fórmula del semiverseno. Sobre distancias de barrio una aproximación
+  // plana valdría igual, pero esto no es más caro y no obliga a razonar
+  // sobre a partir de qué distancia deja de servir.
+  const RADIO_TIERRA = 6371000;
+  const aRadianes = (grados) => (grados * Math.PI) / 180;
+
+  const dLat = aRadianes(hasta.lat - desde.lat);
+  const dLon = aRadianes(hasta.lon - desde.lon);
+
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(aRadianes(desde.lat)) *
+      Math.cos(aRadianes(hasta.lat)) *
+      Math.sin(dLon / 2) ** 2;
+
+  return RADIO_TIERRA * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// Distancia a pie estimada hasta una parada, o null si no sabemos dónde
+// está el usuario. Devolver null y no 0 importa: quien llama tiene que
+// poder distinguir "no lo sé" de "lo tienes encima".
+function distanciaAndando(parada) {
+  if (!ubicacionUsuario) {
+    return null;
+  }
+
+  return distanciaEnMetros(ubicacionUsuario, parada) * RODEO_CALLEJERO;
+}
+
+function describirDistancia(metros) {
+  const minutos = Math.round(metros / VELOCIDAD_ANDANDO * 60);
+
+  // Por debajo de un minuto el número sobra y encima suena raro ("0 min").
+  const tiempo = minutos < 1 ? "aquí al lado" : `${minutos} min`;
+
+  const distancia =
+    metros < 1000
+      ? `${Math.round(metros / 10) * 10} m` // redondeado a 10m: es una estimación, no un GPS
+      : `${(metros / 1000).toFixed(1)} km`;
+
+  return `${distancia} · ${tiempo}`;
+}
+
+function crearEtiquetaDistancia(parada) {
+  const metros = distanciaAndando(parada);
+
+  if (metros === null) {
+    return null;
+  }
+
+  const etiqueta = document.createElement("span");
+  etiqueta.className = "distancia-andando";
+  etiqueta.textContent = describirDistancia(metros);
+  etiqueta.title = "Tiempo andando aproximado, en línea recta más un margen";
+  return etiqueta;
+}
+
 function crearResultadoDeParada(parada) {
   const item = document.createElement("li");
 
@@ -569,7 +683,19 @@ function crearResultadoDeParada(parada) {
   // truncar con puntos suspensivos cuando no cabe junto a la estrella.
   const texto = document.createElement("span");
   texto.className = "texto";
-  texto.textContent = `${parada.nombre} (parada ${codigoDeParada(parada)})`;
+
+  const nombre = document.createElement("span");
+  nombre.className = "titulo";
+  nombre.textContent = `${parada.nombre} (parada ${codigoDeParada(parada)})`;
+  texto.appendChild(nombre);
+
+  // La distancia va debajo del nombre, en la línea del subtítulo, y solo
+  // aparece si hemos podido calcularla.
+  const distancia = crearEtiquetaDistancia(parada);
+  if (distancia) {
+    texto.appendChild(distancia);
+  }
+
   item.appendChild(texto);
   item.appendChild(crearBotonFavorito("paradas", parada.id));
 
@@ -614,6 +740,18 @@ function actualizarResultadosBusqueda() {
   listaResultados.innerHTML = "";
 
   if (texto === "") {
+    // Con la ubicación conocida, lo cercano va antes que lo guardado: si
+    // estás en la calle mirando el móvil, la parada de al lado es más útil
+    // que una favorita que está a tres barrios.
+    if (ubicacionUsuario) {
+      const cercanas = paradasCercanas();
+
+      if (cercanas.length > 0) {
+        listaResultados.appendChild(encabezadoDeGrupo("Cerca de ti"));
+        cercanas.forEach((p) => listaResultados.appendChild(crearResultadoDeParada(p)));
+      }
+    }
+
     pintarFavoritos();
     return;
   }
@@ -1194,6 +1332,13 @@ function pintarCabeceraParada(parada) {
   codigoParadaActual.textContent =
     parada.fuente === "METRO" ? "" : `Parada ${codigoDeParada(parada)}`;
 
+  // La distancia también aquí: es donde se mira justo antes de decidir si
+  // da tiempo a llegar al autobús que sale en cuatro minutos.
+  const distancia = crearEtiquetaDistancia(parada);
+  if (distancia) {
+    codigoParadaActual.appendChild(distancia);
+  }
+
   prepararBotonFavorito(botonFavoritoParada, "paradas", parada.id);
 }
 
@@ -1591,6 +1736,14 @@ botonUbicacion.addEventListener("click", () => {
     (posicion) => {
       const lat = posicion.coords.latitude;
       const lon = posicion.coords.longitude;
+
+      // Se guarda para poder calcular distancias a pie. A partir de aquí,
+      // las fichas de parada llevan cuánto se tarda en llegar.
+      ubicacionUsuario = { lat, lon };
+
+      // Lo que hubiera en pantalla se pintó sin distancias, así que se
+      // rehace. Es también lo que hace aparecer el grupo "Cerca de ti".
+      actualizarResultadosBusqueda();
 
       if (marcadorUbicacion) {
         marcadorUbicacion.setLatLng([lat, lon]);

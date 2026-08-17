@@ -1129,3 +1129,37 @@ body {
     color: var(--texto-suave);
   }
 }
+
+/* --- DISTANCIA ANDANDO ---
+   Va bajo el nombre de la parada, en tono secundario: informa de cuánto
+   cuesta llegar sin competir con el nombre, que es lo que se busca al leer
+   la lista. */
+.distancia-andando {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--texto-suave);
+  font-variant-numeric: tabular-nums;
+}
+
+/* El nombre de la parada trunca igual que el de las líneas. La regla que ya
+   existía estaba acotada a .resultado-linea; ahora que las paradas también
+   tienen dos líneas de texto, se aplica a las dos clases de resultado. */
+#lista-resultados .titulo {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* En la ficha de la parada abierta va junto al código, separada por un
+   punto, en vez de en su propia línea: ahí el espacio vertical es más caro
+   porque debajo vienen ya los tiempos. */
+#codigo-parada-actual .distancia-andando {
+  display: inline;
+  margin-top: 0;
+}
+
+#codigo-parada-actual .distancia-andando::before {
+  content: " · ";
+}
