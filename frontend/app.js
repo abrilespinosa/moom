@@ -363,6 +363,32 @@ botonesFiltro.forEach((boton) => {
 // que el id es lo único estable entre volcados.
 const CLAVE_FAVORITOS = "moom:favoritos";
 
+// La última parada consultada. Se guarda SOLO el id, por el mismo motivo que
+// los favoritos: nombres y coordenadas cambian con cada volcado GTFS.
+//
+// Existe porque quien usa esto a diario va casi siempre a la misma parada, y
+// hoy tenía que buscarla otra vez en cada visita. Es el atajo con más uso
+// posible de toda la aplicación y cuesta un id en localStorage.
+const CLAVE_ULTIMA_PARADA = "moom:ultima-parada";
+
+function recordarUltimaParada(id) {
+  try {
+    localStorage.setItem(CLAVE_ULTIMA_PARADA, id);
+  } catch (error) {
+    // Navegación privada, o almacenamiento lleno. No es motivo para romper
+    // nada: simplemente no habrá atajo la próxima vez.
+    console.error("No se pudo recordar la última parada:", error);
+  }
+}
+
+function ultimaParadaGuardada() {
+  try {
+    return PARADAS_POR_ID.get(localStorage.getItem(CLAVE_ULTIMA_PARADA)) ?? null;
+  } catch (error) {
+    return null;
+  }
+}
+
 // Dos conjuntos separados porque los ids de línea y de parada son de
 // espacios distintos y se pintan de forma distinta.
 let FAVORITOS = { paradas: new Set(), lineas: new Set() };
@@ -796,13 +822,28 @@ function actualizarResultadosBusqueda() {
     // Con la ubicación conocida, lo cercano va antes que lo guardado: si
     // estás en la calle mirando el móvil, la parada de al lado es más útil
     // que una favorita que está a tres barrios.
+    let yaListadas = [];
+
     if (ubicacionUsuario) {
       const cercanas = paradasCercanas();
 
       if (cercanas.length > 0) {
         listaResultados.appendChild(encabezadoDeGrupo("Cerca de ti"));
         cercanas.forEach((p) => listaResultados.appendChild(crearResultadoDeParada(p)));
+        yaListadas = cercanas;
       }
+    }
+
+    // La última consultada va DESPUÉS de lo cercano y no antes, por el mismo
+    // motivo del comentario de arriba: si sabemos dónde estás, lo que tienes
+    // al lado manda. Y se omite si ya ha salido ahí arriba, que es lo que
+    // ocurre justamente en el caso más común —estás en tu parada de siempre—
+    // y repetirla sería ruido.
+    const ultima = ultimaParadaGuardada();
+
+    if (ultima && pasaElFiltroDeModo(ultima) && !yaListadas.includes(ultima)) {
+      listaResultados.appendChild(encabezadoDeGrupo("La última que miraste"));
+      listaResultados.appendChild(crearResultadoDeParada(ultima));
     }
 
     pintarFavoritos();
@@ -889,6 +930,7 @@ function seleccionarParada(parada, origen = "busqueda") {
     parada.circuloEnMapa.setIcon(iconoSeleccionadoPara(parada));
   }
   paradaSeleccionada = parada;
+  recordarUltimaParada(parada.id);
 
   // Centramos el mapa en la parada elegida, con buen zoom
   mapa.setView([parada.lat, parada.lon], 17);
@@ -1526,7 +1568,6 @@ async function actualizarAutobuses() {
   }
 }
 
-setInterval(actualizarAutobuses, INTERVALO_REFRESCO_EMT);
 
 // Convierte una hora ISO absoluta (ej. "2026-06-21T16:43:51+02:00") en
 // minutos restantes desde ahora. A diferencia de bus (que da segundos
@@ -1580,7 +1621,6 @@ async function actualizarTiemposMetro() {
   }
 }
 
-setInterval(actualizarTiemposMetro, INTERVALO_REFRESCO_METRO);
 
 // Dado el texto de itinerario que devuelve la API (ej. "2-Las Rosas-
 // Cuatro Caminos"), nos quedamos solo con el último tramo tras el
@@ -1676,7 +1716,6 @@ async function actualizarTrenesMetro() {
   }
 }
 
-setInterval(actualizarTrenesMetro, INTERVALO_REFRESCO_METRO);
 
 // --- ANCHO DEL PANEL ---
 //
@@ -1794,30 +1833,7 @@ botonUbicacion.addEventListener("click", () => {
   }
 
   navigator.geolocation.getCurrentPosition(
-    // Éxito: el navegador nos da la posición
-    (posicion) => {
-      const lat = posicion.coords.latitude;
-      const lon = posicion.coords.longitude;
-
-      // Se guarda para poder calcular distancias a pie. A partir de aquí,
-      // las fichas de parada llevan cuánto se tarda en llegar.
-      ubicacionUsuario = { lat, lon };
-
-      // Lo que hubiera en pantalla se pintó sin distancias, así que se
-      // rehace. Es también lo que hace aparecer el grupo "Cerca de ti".
-      actualizarResultadosBusqueda();
-
-      if (marcadorUbicacion) {
-        marcadorUbicacion.setLatLng([lat, lon]);
-      } else {
-        marcadorUbicacion = L.marker([lat, lon], {
-          icon: iconoUbicacion,
-          zIndexOffset: 1000, // por encima de las paradas, para que no quede tapado
-        }).addTo(mapa);
-      }
-
-      mapa.setView([lat, lon], 16);
-    },
+    (posicion) => usarUbicacion(posicion),
     // Error: permiso denegado, GPS no disponible, timeout, etc.
     (error) => {
       console.error("Error de geolocalización:", error);
@@ -1825,6 +1841,70 @@ botonUbicacion.addEventListener("click", () => {
     }
   );
 });
+
+// Lo que se hace con una posición, venga del botón o de la comprobación
+// silenciosa al abrir. Está extraído para que las dos entradas hagan
+// exactamente lo mismo.
+function usarUbicacion(posicion) {
+  const lat = posicion.coords.latitude;
+  const lon = posicion.coords.longitude;
+
+  // Se guarda para poder calcular distancias a pie. A partir de aquí, las
+  // fichas de parada llevan cuánto se tarda en llegar.
+  ubicacionUsuario = { lat, lon };
+
+  // Lo que hubiera en pantalla se pintó sin distancias, así que se rehace.
+  // Es también lo que hace aparecer el grupo "Cerca de ti".
+  actualizarResultadosBusqueda();
+
+  if (marcadorUbicacion) {
+    marcadorUbicacion.setLatLng([lat, lon]);
+  } else {
+    marcadorUbicacion = L.marker([lat, lon], {
+      icon: iconoUbicacion,
+      zIndexOffset: 1000, // por encima de las paradas, para que no quede tapado
+    }).addTo(mapa);
+  }
+
+  mapa.setView([lat, lon], 16);
+}
+
+// --- UBICACIÓN YA CONCEDIDA ---
+//
+// Seguimos sin PEDIR el permiso al cargar: hacerlo de entrada es intrusivo y
+// los navegadores lo bloquean sin un gesto. Pero si la persona YA lo concedió
+// en una visita anterior, preguntarle otra vez con un botón es hacerle repetir
+// una decisión que ya tomó.
+//
+// permissions.query no muestra ningún diálogo: solo dice en qué estado está.
+// Si es "granted" —y solo entonces— se localiza sola y la aplicación abre
+// directamente en "Cerca de ti", que es la pantalla correcta para quien está
+// de pie en una parada. Con "prompt" o "denied" no se hace nada.
+async function usarUbicacionSiYaEstabaConcedida() {
+  if (!navigator.geolocation || !navigator.permissions) {
+    return;
+  }
+
+  try {
+    const permiso = await navigator.permissions.query({ name: "geolocation" });
+
+    if (permiso.state !== "granted") {
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(usarUbicacion, (error) => {
+      // Sin alert: esto no lo ha pedido nadie, así que un aviso modal por
+      // algo que ocurre solo sería una interrupción injustificada.
+      console.error("No se pudo releer la ubicación ya concedida:", error);
+    });
+  } catch (error) {
+    // Safari no admitió durante años el nombre "geolocation" en
+    // permissions.query. Si falla, se sigue sin ubicación y queda el botón.
+    console.error("permissions.query no disponible:", error);
+  }
+}
+
+usarUbicacionSiYaEstabaConcedida();
 // --- HOJA INFERIOR (SOLO MÓVIL) ---
 //
 // En pantalla estrecha el panel deja de ser una columna y pasa a ser una
@@ -1960,3 +2040,58 @@ window.addEventListener("resize", () => {
     fijarEstadoHoja(hojaDesplegada);
   }
 });
+
+// --- EL RELOJ ---
+//
+// Un único temporizador mueve los tres refrescos, en vez de tres setInterval
+// independientes. Cada fuente conserva su ritmo —EMT cada 10s, Metro cada
+// 20s, acompasados al ritmo real al que cambia cada API— pero quien decide
+// cuándo toca es este reloj y no el navegador.
+//
+// El motivo no es la elegancia. Es que un setInterval suelto no se puede
+// parar: seguía pidiendo llegadas cada 10 segundos con el teléfono en el
+// bolsillo y la pantalla apagada. Para quien está en la calle eso es batería
+// en el peor momento, y para el proyecto es cuota diaria de EMT gastada en
+// respuestas que nadie llega a ver.
+const PASO_DEL_RELOJ = 10000;
+
+let ciclos = 0;
+let relojDeRefrescos = null;
+
+function unCicloDeRefresco() {
+  ciclos += 1;
+
+  // El de bus va a cada paso; los de Metro, uno de cada dos.
+  actualizarAutobuses();
+
+  if (ciclos % (INTERVALO_REFRESCO_METRO / PASO_DEL_RELOJ) === 0) {
+    actualizarTiemposMetro();
+    actualizarTrenesMetro();
+  }
+}
+
+function arrancarReloj() {
+  if (relojDeRefrescos === null) {
+    relojDeRefrescos = setInterval(unCicloDeRefresco, PASO_DEL_RELOJ);
+  }
+}
+
+function pararReloj() {
+  clearInterval(relojDeRefrescos);
+  relojDeRefrescos = null;
+}
+
+// Con la pestaña oculta o el teléfono bloqueado no hay nada que refrescar:
+// nadie lo está mirando. Al volver se refresca INMEDIATAMENTE y sin esperar
+// al siguiente paso, porque lo que había en pantalla es justo de antes de
+// guardarse el móvil y es lo primero que la persona va a leer.
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    pararReloj();
+  } else {
+    unCicloDeRefresco();
+    arrancarReloj();
+  }
+});
+
+arrancarReloj();
