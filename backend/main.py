@@ -480,6 +480,21 @@ def vehiculos_linea_metro(cod_line: str, cod_stop: str | None = None):
     anterior (primera parada del itinerario), para que la ruta siga
     funcionando si se llama a mano desde el navegador o con curl.
     """
+    # Solo líneas de Metro que existan. Sin esta comprobación, un código
+    # cualquiera llegaba hasta el CRTM, que responde {"lines": {}}, y
+    # obtener_info_linea lanzaba un KeyError. Ese KeyError NO es un
+    # RequestException, así que se saltaba el manejador que convierte los
+    # fallos de API externa en 503 y salía un 500 pelado, que además miente:
+    # no está roto el servidor, es que la línea pedida no existe.
+    #
+    # Es la misma validación que /parada/{stop_id} hace con las paradas, y
+    # usa la misma fuente de verdad que lineas_de_metro_de(): los colores de
+    # Metro, que salen de su routes.txt.
+    colores_lineas = cargar_colores_lineas_metro()
+
+    if cod_line not in colores_lineas:
+        raise HTTPException(status_code=404, detail="Línea de Metro desconocida")
+
     # El frontend maneja ids de ESTACIÓN ("est_4_323"), pero la API del
     # CRTM solo entiende ids de ANDÉN ("4_323"). Hacemos aquí la misma
     # traducción que en /metro/parada/{cod_stop}, en vez de obligar al
@@ -523,14 +538,15 @@ def vehiculos_linea_metro(cod_line: str, cod_stop: str | None = None):
         )
         vehiculos_totales.extend(vehiculos)
 
-    colores_lineas = cargar_colores_lineas_metro()
-    color_linea = colores_lineas.get(cod_line, {})
+    # Ya está garantizado que existe: se comprobó al entrar, antes de gastar
+    # ninguna llamada al CRTM.
+    color_linea = colores_lineas[cod_line]
 
     return {
         "linea": info_linea["description"],
         "codLine": cod_line,
-        "color": color_linea.get("color"),
-        "colorTexto": color_linea.get("color_texto"),
+        "color": color_linea["color"],
+        "colorTexto": color_linea["color_texto"],
         "vehiculos": vehiculos_totales,
     }
 
