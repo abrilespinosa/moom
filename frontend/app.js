@@ -2142,3 +2142,22 @@ document.addEventListener("visibilitychange", () => {
 });
 
 arrancarReloj();
+
+// --- CONCHA SIN CONEXIÓN ---
+//
+// Registra el service worker que guarda la interfaz para que abra al instante
+// y funcione sin cobertura. Los detalles y, sobre todo, los motivos de su
+// estrategia están en sw.js.
+//
+// Va al final y sin bloquear nada: si falla, la aplicación funciona igual que
+// antes. Y se registra después de "load" para no competir por ancho de banda
+// con las paradas y los tiempos, que es lo que la persona está esperando.
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch((error) => {
+      // Falla en contextos no seguros (http:// que no sea localhost) y en
+      // navegación privada de algunos navegadores. No es motivo de aviso.
+      console.error("No se pudo registrar el service worker:", error);
+    });
+  });
+}
