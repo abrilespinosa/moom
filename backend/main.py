@@ -194,6 +194,70 @@ def listar_paradas(respuesta: Response):
     respuesta.headers["Cache-Control"] = CACHE_DATOS_ESTATICOS
     return PARADAS
 
+# Cuántas paradas devuelve /paradas/cerca si no se pide otra cosa. Cuarenta
+# cubre de sobra lo que hay alrededor de una parada en Madrid, y pesa unos
+# pocos KB frente a los 254 de la lista completa.
+PARADAS_CERCANAS_POR_DEFECTO = 40
+MAXIMO_PARADAS_CERCANAS = 200
+
+
+def _distancia_aproximada(lat1, lon1, lat2, lon2):
+    """
+    Distancia al cuadrado en un plano, sin raíz ni trigonometría.
+
+    Aquí NO hace falta la distancia real: solo hay que ORDENAR, y la raíz
+    cuadrada es monótona, así que ordenar por el cuadrado da el mismo orden y
+    se ahorra 13.542 raíces por petición.
+
+    El coseno de la latitud corrige que un grado de longitud en Madrid mide
+    unos 0,76 de lo que mide uno de latitud; sin él, "lo más cercano" saldría
+    estirado en sentido este-oeste. Se toma como constante porque la ciudad
+    entera cabe en medio grado y la variación es despreciable.
+    """
+    ESTRECHAMIENTO_EN_MADRID = 0.76
+
+    dlat = lat1 - lat2
+    dlon = (lon1 - lon2) * ESTRECHAMIENTO_EN_MADRID
+
+    return dlat * dlat + dlon * dlon
+
+
+@app.get("/paradas/cerca")
+def paradas_cerca(respuesta: Response, lat: float, lon: float, limite: int = PARADAS_CERCANAS_POR_DEFECTO):
+    """
+    Las paradas más próximas a un punto, ordenadas de más cerca a más lejos.
+
+    Ejemplo de uso: GET /paradas/cerca?lat=40.4168&lon=-3.7038
+
+    Existe por quien abre esto de pie en una parada. /paradas devuelve las
+    13.542 de las tres redes, que son 254 KB comprimidos, y hasta que no
+    llegan no hay ni buscador ni marcadores. Con buena cobertura no se nota;
+    con la de una marquesina bajo un edificio, es la diferencia entre útil e
+    inservible.
+
+    Esto pesa unos pocos KB y permite empezar a usar la aplicación mientras la
+    lista completa sigue viajando por detrás.
+
+    NO sustituye a /paradas: el buscador necesita el callejero entero para
+    encontrar una parada del otro lado de la ciudad.
+    """
+    # Acotado por arriba: sin esto, un limite=999999 recorre y serializa la
+    # lista entera, que es justo lo que este endpoint viene a evitar.
+    limite = max(1, min(limite, MAXIMO_PARADAS_CERCANAS))
+
+    cercanas = sorted(
+        PARADAS,
+        key=lambda parada: _distancia_aproximada(lat, lon, parada["lat"], parada["lon"]),
+    )[:limite]
+
+    # Misma caché que el resto del volcado GTFS: son datos estáticos. Cambia
+    # con las coordenadas, pero la URL las lleva, así que cada punto tiene su
+    # propia entrada de caché.
+    respuesta.headers["Cache-Control"] = CACHE_DATOS_ESTATICOS
+
+    return cercanas
+
+
 @app.get("/lineas")
 def listar_lineas(respuesta: Response):
     """

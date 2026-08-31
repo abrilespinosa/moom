@@ -167,6 +167,10 @@ const OPACIDAD_PARADA_ATENUADA = 0.35;
 // de ubicación, que usa 1000.
 const Z_INDEX_VEHICULOS = 500;
 
+// Si ya llegó el callejero entero. Sirve para que la carga rápida de las
+// paradas cercanas no pise a la completa si esta se adelanta.
+let callejeroCompleto = false;
+
 async function dibujarParadas() {
   let paradas;
 
@@ -183,6 +187,43 @@ async function dibujarParadas() {
     );
     return;
   }
+
+  callejeroCompleto = true;
+  pintarParadas(paradas);
+}
+
+// --- ARRANQUE RÁPIDO ---
+//
+// /paradas son las 13.542 de las tres redes: 254 KB comprimidos, y hasta que
+// no llegan no hay ni marcadores ni buscador. Con buena cobertura no se nota;
+// de pie en una marquesina bajo un edificio, sí.
+//
+// Si ya sabemos dónde está la persona, se piden antes las 40 de alrededor
+// —unos 4 KB— y con eso ya puede tocar su parada. El callejero completo sigue
+// viajando por detrás y lo sustituye al llegar; hace falta igual, porque el
+// buscador tiene que poder encontrar una parada del otro lado de la ciudad.
+async function dibujarParadasCercanas(lat, lon) {
+  try {
+    const cercanas = await pedirJson(
+      `${URL_BACKEND}/paradas/cerca?lat=${lat}&lon=${lon}`
+    );
+
+    // Si el callejero entero se adelantó, esto ya no aporta nada y pintarlo
+    // solo quitaría marcadores buenos para poner un subconjunto.
+    if (!callejeroCompleto) {
+      pintarParadas(cercanas);
+    }
+  } catch (error) {
+    // Sin aviso en pantalla: es un atajo, y si falla queda el camino normal.
+    console.error("No se pudieron cargar las paradas cercanas:", error);
+  }
+}
+
+function pintarParadas(paradas) {
+  // Se rehace desde cero en vez de añadir: así la lista completa sustituye
+  // limpiamente a las cercanas sin dejar marcadores duplicados encima.
+  marcadoresParadas.forEach((marcador) => mapa.removeLayer(marcador));
+  marcadoresParadas = [];
 
   TODAS_LAS_PARADAS = paradas;
   PARADAS_POR_ID = new Map(paradas.map((parada) => [parada.id, parada]));
@@ -1852,6 +1893,12 @@ function usarUbicacion(posicion) {
   // Se guarda para poder calcular distancias a pie. A partir de aquí, las
   // fichas de parada llevan cuánto se tarda en llegar.
   ubicacionUsuario = { lat, lon };
+
+  // Si el callejero completo todavía viene de camino, se piden las de
+  // alrededor para poder empezar ya. Ver dibujarParadasCercanas().
+  if (!callejeroCompleto) {
+    dibujarParadasCercanas(lat, lon);
+  }
 
   // Lo que hubiera en pantalla se pintó sin distancias, así que se rehace.
   // Es también lo que hace aparecer el grupo "Cerca de ti".

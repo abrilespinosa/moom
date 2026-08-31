@@ -167,8 +167,10 @@ suelto.
 
 ### Hierarchy
 
-- **Display** (600, 24px, 1.1): el tiempo de la próxima llegada. Es el número
-  más grande de la interfaz porque es el dato por el que se ha abierto.
+- **Display** (600, 24px, 1.1 · **700, 34px en móvil**): el tiempo de la
+  próxima llegada. Es el número más grande de la interfaz porque es el dato por
+  el que se ha abierto, y crece en la hoja de móvil porque ahí se lee de pie,
+  a un brazo y con sol.
 - **Title** (600, 15px): nombre de parada o de línea en la ficha.
 - **Body** (400, 15px, 1.45): el texto general. En móvil el buscador sube a
   16px obligatoriamente.

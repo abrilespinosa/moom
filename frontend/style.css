@@ -1107,6 +1107,24 @@ body {
   #input-buscar {
     font-size: 16px;
   }
+
+  /* --- EL NÚMERO, EN LA CALLE ---
+     Este es el dato por el que se ha abierto la aplicación, y aquí se lee de
+     pie, a un brazo, con sol de frente y a menudo de reojo mientras se mira
+     si viene el autobús.
+
+     El contraste ya era el máximo posible (tinta sobre blanco, 17:1), así que
+     lo que quedaba era el tamaño. De 24 a 34px, y de 600 a 700: con reflejos,
+     el trazo más grueso se sostiene mejor que el fino. En escritorio se queda
+     como estaba, porque allí se mira de cerca y en interior. */
+  .tiempo-proximo {
+    font-size: 34px;
+    font-weight: 700;
+  }
+
+  .tiempo-proximo .unidad {
+    font-size: 15px;
+  }
 }
 
 /* En una tableta vertical la pantalla es mucho más alta que un móvil, así

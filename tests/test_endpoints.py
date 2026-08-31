@@ -133,3 +133,43 @@ def test_las_coordenadas_no_arrastran_precision_inutil():
     for parada in paradas:
         assert len(str(parada["lat"]).split(".")[-1]) <= 5, parada
         assert len(str(parada["lon"]).split(".")[-1]) <= 5, parada
+
+
+def test_las_paradas_cercanas_llegan_ordenadas_y_son_pocas():
+    """
+    El atajo para quien abre esto de pie en una parada: /paradas son 254 KB y
+    hasta que no llegan no hay ni buscador ni marcadores.
+
+    Las coordenadas son las de Sol, así que la primera tiene que ser de allí.
+    """
+    respuesta = cliente.get("/paradas/cerca?lat=40.4168&lon=-3.7038")
+    cercanas = respuesta.json()
+
+    assert respuesta.status_code == 200
+    assert len(cercanas) == 40
+    assert "Sol" in cercanas[0]["nombre"] or "Sol" in cercanas[0]["id"]
+
+    # Y de verdad ordenadas: cada una, más lejos que la anterior.
+    from backend.main import _distancia_aproximada
+
+    distancias = [
+        _distancia_aproximada(40.4168, -3.7038, p["lat"], p["lon"]) for p in cercanas
+    ]
+    assert distancias == sorted(distancias)
+
+
+def test_las_paradas_cercanas_tienen_tope():
+    """
+    Sin tope, un limite enorme recorre y serializa las 13.542, que es
+    exactamente lo que este endpoint viene a evitar.
+    """
+    cercanas = cliente.get("/paradas/cerca?lat=40.4&lon=-3.7&limite=99999").json()
+
+    assert len(cercanas) == 200
+
+
+def test_las_paradas_cercanas_pesan_una_fracción_de_la_lista_completa():
+    cerca = len(cliente.get("/paradas/cerca?lat=40.4168&lon=-3.7038").content)
+    todas = len(cliente.get("/paradas").content)
+
+    assert cerca < todas / 50, f"cerca={cerca} todas={todas}"
