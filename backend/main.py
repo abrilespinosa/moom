@@ -219,7 +219,7 @@ def listar_lineas(respuesta: Response):
 
 
 @app.get("/linea/{cod_linea}")
-def recorrido_linea(cod_linea: str):
+def recorrido_linea(cod_linea: str, respuesta: Response):
     """
     Devuelve una línea con sus paradas en orden, un bloque por sentido.
 
@@ -233,10 +233,19 @@ def recorrido_linea(cod_linea: str):
     linea = LINEAS_POR_ID.get(cod_linea)
 
     if linea is None:
+        # Sin cabecera de caché a propósito: no tiene sentido guardar durante
+        # un día que una línea no existe. Si aparece en el próximo volcado,
+        # la respuesta buena tiene que llegar ya.
         return {
             "encontrada": False,
             "mensaje": "No se encontró esa línea.",
         }
+
+    # Es un dato del volcado GTFS, igual de estático que /paradas o /lineas, y
+    # se pedía sin cachear: cada vez que alguien abría el recorrido de una
+    # línea se ejecutaba la función y se volvía a bajar la respuesta entera,
+    # con los nombres de parada ya resueltos.
+    respuesta.headers["Cache-Control"] = CACHE_DATOS_ESTATICOS
 
     sentidos = [
         {
