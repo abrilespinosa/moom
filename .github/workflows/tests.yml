@@ -1,7 +1,7 @@
 name: tests
 
-# En cada push y en cada pull request contra main. La suite tarda menos de
-# un segundo, así que no hay motivo para limitarla a ciertas ramas.
+# En cada push y en cada pull request contra main. La suite del backend tarda
+# menos de un segundo, así que no hay motivo para limitarla a ciertas ramas.
 on:
   push:
     branches: [main]
@@ -32,3 +32,52 @@ jobs:
       # limpio y con las conexiones salientes bloqueadas.
       - name: Pasar los tests
         run: pytest
+
+  # Los tests de frontend van en un job APARTE, no como un paso más del
+  # anterior. Dos motivos:
+  #
+  # 1. Corren en paralelo, así que no retrasan el resultado del backend, que
+  #    es el que suele importar y tarda décimas.
+  # 2. Si se cae Chrome o el andamiaje, se ve en rojo qué mitad ha fallado.
+  #    Metidos en el mismo job, un fallo del navegador parecería un fallo del
+  #    backend, que es justo la confusión que hay que evitar.
+  frontend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+          cache: pip
+
+      - name: Instalar dependencias
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      # Se busca el navegador en vez de dar por buena una ruta fija, que es
+      # justo lo que se rompe cuando cambia la imagen del runner.
+      #
+      # Y si no aparece ninguno, este paso FALLA a propósito. Los tests, al no
+      # encontrar Chrome, se saltarían solos: en local eso es cómodo, pero en
+      # CI sería lo peor posible, porque el job saldría verde sin haber
+      # probado absolutamente nada.
+      - name: Localizar Chrome
+        run: |
+          RUTA=$(which google-chrome || which google-chrome-stable || which chromium-browser || true)
+
+          if [ -z "$RUTA" ]; then
+            echo "No se encontró ningún Chrome en esta máquina."
+            exit 1
+          fi
+
+          "$RUTA" --version
+          echo "CHROME_PARA_TESTS=$RUTA" >> "$GITHUB_ENV"
+
+      # Estos SÍ abren un navegador, así que tardan segundos y no décimas.
+      # Siguen sin salir a la red: la página se sirve desde un servidor local
+      # con un backend de mentira, y Leaflet se sustituye por un doble.
+      - name: Pasar los tests de frontend
+        run: pytest -m navegador

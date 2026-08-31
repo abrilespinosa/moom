@@ -127,7 +127,9 @@ pytest -m navegador
 
 Tampoco salen a la red. La página se copia a un directorio temporal y allí se le cambian dos cosas: el backend apunta a uno de mentira que sirve el propio test, y Leaflet (que viene de un CDN) se sustituye por un doble que implementa solo lo que `app.js` usa. Así no se prueba Leaflet, que es código de otros, sino el nuestro.
 
-Necesitan Chrome. Si no está en la ruta habitual de macOS, se indica con `CHROME_PARA_TESTS=/ruta/a/chrome`; si no se encuentra, los tests se saltan en vez de fallar. **No se ejecutan todavía en GitHub Actions**, solo en local.
+Necesitan Chrome. Si no está en la ruta habitual de macOS, se indica con `CHROME_PARA_TESTS=/ruta/a/chrome`; si no se encuentra, los tests se saltan en vez de fallar.
+
+También se ejecutan en GitHub Actions, en un job aparte del backend para que un fallo del navegador no se confunda con un fallo de la API. Ahí el job localiza Chrome y **falla si no hay ninguno**: en CI, unos tests que se saltan solos darían verde sin haber probado nada.
 
 Cubren la lógica pura (agrupación de llegadas, distinción entre tiempo real y horario teórico, filtrado de líneas que no son de Metro, validación de identificadores) y varios invariantes de los datos, que es donde más duelen los fallos de este proyecto: un volcado GTFS nuevo puede romperlos en silencio y no se nota hasta que una estación desaparece del mapa.
 

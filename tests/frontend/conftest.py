@@ -366,7 +366,12 @@ def render(sitio):
                 CHROME,
                 "--headless",
                 "--disable-gpu",
+                # Las dos siguientes son para que esto funcione también en un
+                # servidor de integración continua, no en local: sin sandbox
+                # porque allí se ejecuta como root, y sin /dev/shm porque en
+                # un contenedor suele ser diminuto y Chrome se cae al llenarlo.
                 "--no-sandbox",
+                "--disable-dev-shm-usage",
                 f"--virtual-time-budget={presupuesto_ms}",
                 "--dump-dom",
                 f"{sitio['url']}/{nombre}",
