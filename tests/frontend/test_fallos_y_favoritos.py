@@ -25,7 +25,7 @@ def test_un_fallo_del_backend_se_avisa_en_el_panel(render):
         escribirEnBuscador("atocha");
         await esperarA(() => resultados().length > 0);
 
-        resultados()[0].click();
+        pulsarResultado();
 
         const aviso = document.getElementById("aviso-conexion");
         await esperarA(() => !aviso.hidden);
@@ -47,7 +47,7 @@ def test_sin_fallos_el_aviso_no_aparece(render):
         escribirEnBuscador("cibeles");
         await esperarA(() => resultados().length > 0);
 
-        resultados()[0].click();
+        pulsarResultado();
         await esperarA(() => vistaVisible() === "vista-llegadas");
         await esperarA(() => document.querySelectorAll("#lista-llegadas li").length > 0);
 

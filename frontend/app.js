@@ -541,6 +541,31 @@ function encabezadoDeGrupo(texto) {
   return item;
 }
 
+// Lo pulsable de un resultado es un <button> de verdad, no el <li> con un
+// listener encima.
+//
+// No es purismo: un <li> con addEventListener("click") es INALCANZABLE con
+// teclado. No recibe foco, no responde a Enter y un lector de pantalla no lo
+// anuncia como algo que se pueda activar. Es decir, la función central de la
+// aplicación —elegir una parada— era imposible sin ratón.
+//
+// El botón es hermano de la estrella de favorito, no su padre: un botón
+// dentro de otro botón es HTML inválido y los navegadores lo deshacen.
+function crearBotonDeResultado(alPulsar, etiqueta) {
+  const boton = document.createElement("button");
+  boton.type = "button";
+  boton.className = "resultado-principal";
+
+  // El texto visible ya dice el nombre, pero no siempre dice QUÉ va a pasar
+  // al pulsarlo. Esto lo hace explícito para quien no ve la pantalla.
+  if (etiqueta) {
+    boton.setAttribute("aria-label", etiqueta);
+  }
+
+  boton.addEventListener("click", alPulsar);
+  return boton;
+}
+
 // Nombre legible de cada red, para distinguir en los resultados una línea
 // de otra con el mismo número: la 1 existe en EMT y en Metro a la vez.
 const NOMBRE_DE_FUENTE = {
@@ -560,19 +585,25 @@ function crearResultadoDeLinea(linea) {
       }"`
     : "";
 
-  item.innerHTML = `
+  const fuente = NOMBRE_DE_FUENTE[linea.fuente] ?? linea.fuente;
+
+  const boton = crearBotonDeResultado(
+    () => seleccionarLinea(linea),
+    `Línea ${linea.numero}, ${linea.nombre}, ${fuente}. Ver su recorrido.`
+  );
+  boton.innerHTML = `
     <span class="tarjeta-linea"${estilo}>${linea.numero}</span>
     <span class="texto">
       <span class="titulo">${linea.nombre}</span>
-      <span class="subtitulo">${NOMBRE_DE_FUENTE[linea.fuente] ?? linea.fuente}</span>
+      <span class="subtitulo">${fuente}</span>
     </span>
   `;
+  item.appendChild(boton);
 
   // La estrella va en cada resultado, no solo en la lista de favoritos: así
   // se puede guardar una línea nada más encontrarla, sin tener que abrirla.
   item.appendChild(crearBotonFavorito("lineas", linea.id));
 
-  item.addEventListener("click", () => seleccionarLinea(linea));
   return item;
 }
 
@@ -696,10 +727,15 @@ function crearResultadoDeParada(parada) {
     texto.appendChild(distancia);
   }
 
-  item.appendChild(texto);
+  const boton = crearBotonDeResultado(
+    () => seleccionarParada(parada),
+    `${parada.nombre}, parada ${codigoDeParada(parada)}. Ver próximas llegadas.`
+  );
+  boton.appendChild(texto);
+
+  item.appendChild(boton);
   item.appendChild(crearBotonFavorito("paradas", parada.id));
 
-  item.addEventListener("click", () => seleccionarParada(parada));
   return item;
 }
 
@@ -941,7 +977,8 @@ function pintarSentido(indice) {
   sentido.paradas.forEach((paradaDeLaLinea, posicion) => {
     const item = document.createElement("li");
     item.className = "parada-recorrido";
-    item.innerHTML = `
+
+    const contenido = `
       <span class="orden">${posicion + 1}</span>
       <span class="nombre">${paradaDeLaLinea.nombre}</span>
     `;
@@ -952,8 +989,16 @@ function pintarSentido(indice) {
     const parada = PARADAS_POR_ID.get(paradaDeLaLinea.id);
 
     if (parada) {
-      item.addEventListener("click", () => seleccionarParada(parada, "linea"));
+      // Igual que en los resultados de búsqueda: un botón de verdad, para que
+      // el recorrido se pueda recorrer con el tabulador.
+      const boton = crearBotonDeResultado(
+        () => seleccionarParada(parada, "linea"),
+        `Parada ${posicion + 1}, ${paradaDeLaLinea.nombre}. Ver próximas llegadas.`
+      );
+      boton.innerHTML = contenido;
+      item.appendChild(boton);
     } else {
+      item.innerHTML = contenido;
       // Puede pasar si el volcado de líneas y el de paradas no van a la
       // par. Se muestra igual para no romper el orden del recorrido, pero
       // sin poder abrirla.

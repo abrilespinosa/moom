@@ -18,7 +18,7 @@ def test_elegir_una_linea_abre_su_recorrido_en_orden(render):
         escribirEnBuscador("27");
         await esperarA(() => resultados().length > 0);
 
-        resultados()[0].click();
+        pulsarResultado();
         await esperarA(() => vistaVisible() === "vista-linea");
         await esperarA(() => document.querySelectorAll("#lista-recorrido li").length > 0);
 
@@ -46,10 +46,10 @@ def test_volver_desde_una_parada_de_la_linea_regresa_al_recorrido(render):
         await esperarA(() => TODAS_LAS_LINEAS.length > 0);
         escribirEnBuscador("27");
         await esperarA(() => resultados().length > 0);
-        resultados()[0].click();
+        pulsarResultado();
 
         await esperarA(() => document.querySelectorAll("#lista-recorrido li").length > 0);
-        document.querySelector("#lista-recorrido li").click();
+        document.querySelector("#lista-recorrido .resultado-principal").click();
         await esperarA(() => vistaVisible() === "vista-llegadas");
 
         const antesDeVolver = vistaVisible();
@@ -69,7 +69,7 @@ def test_volver_desde_una_parada_buscada_regresa_al_buscador(render):
         escribirEnBuscador("cibeles");
         await esperarA(() => resultados().length > 0);
 
-        resultados()[0].click();
+        pulsarResultado();
         await esperarA(() => vistaVisible() === "vista-llegadas");
 
         document.getElementById("boton-volver").click();
@@ -84,7 +84,7 @@ def test_solo_hay_una_vista_visible_a_la_vez(render):
         await esperarA(() => TODAS_LAS_PARADAS.length > 0);
         escribirEnBuscador("cibeles");
         await esperarA(() => resultados().length > 0);
-        resultados()[0].click();
+        pulsarResultado();
         await esperarA(() => vistaVisible() === "vista-llegadas");
 
         const visibles = ["vista-busqueda", "vista-linea", "vista-llegadas"].filter(

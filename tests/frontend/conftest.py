@@ -310,6 +310,13 @@ AYUDAS = """
     return [...document.querySelectorAll("#lista-resultados li:not(.grupo-resultados)")];
   }
 
+  // Lo pulsable de un resultado es un <button class="resultado-principal">
+  // dentro del <li>, no el <li>. Pulsar el <li> no hace nada, igual que para
+  // una persona: el cambio se hizo para que el teclado pueda alcanzarlo.
+  function pulsarResultado(n = 0) {
+    resultados()[n].querySelector(".resultado-principal").click();
+  }
+
   function escribirEnBuscador(texto) {
     const campo = document.getElementById("input-buscar");
     campo.value = texto;

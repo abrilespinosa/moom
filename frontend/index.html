@@ -51,15 +51,15 @@
 <body>
 
   <!-- PANEL IZQUIERDO: contiene dos vistas, solo una visible a la vez -->
-  <div id="panel">
+  <main id="panel">
 
     <!-- Banda naranja de marca. El logo es el nombre en blanco sobre fondo
          transparente, así que el color sale del CSS y no del archivo. -->
-    <div id="panel-header">
+    <header id="panel-header">
       <!-- El logo va dentro del h1 y con alt: sigue siendo el título de la
            página para un lector de pantalla, aunque se vea como imagen. -->
       <h1><img id="logo" src="assets/logo.svg" alt="Moom" /></h1>
-    </div>
+    </header>
 
     <!-- Fuera de la banda naranja: es texto que cambia con la vista
          (buscador / recorrido / llegadas), no parte del logotipo. -->
@@ -108,11 +108,15 @@
         </button>
       </div>
       <div style="padding: 12px 16px 0 16px;">
-        <input
-          type="text"
-          id="input-buscar"
-          placeholder="Buscar parada o línea..."
-        />
+          <label class="solo-lector" for="input-buscar">
+            Buscar una parada o una línea
+          </label>
+          <input
+            type="text"
+            id="input-buscar"
+            placeholder="Buscar parada o línea..."
+            autocomplete="off"
+          />
       </div>
       <ul id="lista-resultados"></ul>
     </div>
@@ -172,7 +176,7 @@
       <a href="privacidad.html">Privacidad y condiciones de uso</a>
     </p>
 
-  </div>
+  </main>
 
   <!-- Divisor entre el panel y el mapa. Se arrastra para decidir cuánto
        ocupa cada uno. Con role="separator" y tabindex también se puede

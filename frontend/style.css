@@ -39,6 +39,12 @@
   --azul: #007aff;
   --rojo: #ff3b30;
   --gris-desactivado: #8e8e93;
+
+  /* Dos grises de la interfaz que estaban escritos a pelo en sus reglas.
+     El de la estrella es más cálido que el gris de sistema, para no
+     desentonar con el fondo hueso del panel. */
+  --estrella-apagada: #b8b2a8;
+  --borde-fuerte: #ded8ce;
   --gris-superficie: #f2f2f2;
 
   /* --- PROFUNDIDAD ---
@@ -140,15 +146,21 @@ body {
   width: 4px;
   height: 44px;
   border-radius: 999px;
-  background: #ded8ce;
-  transition: background 0.12s, height 0.12s;
+  background: var(--borde-fuerte);
+  /* scaleY y no height: animar una propiedad de layout obliga al navegador a
+     recalcular la página entera en cada fotograma. Aquí el coste es mínimo
+     porque es un pseudo-elemento de 4px, pero la transformación es gratis. */
+  transform-origin: center;
+  transition: background 0.12s, transform 0.12s;
 }
 
 #divisor:hover::before,
 #divisor:focus-visible::before,
 #divisor.arrastrando::before {
   background: var(--acento);
-  height: 76px;
+  /* 76px sobre los 44px de reposo, expresado como escala para que lo anime
+     el compositor y no el motor de maquetación. */
+  transform: scaleY(1.727);
 }
 
 #divisor:focus {
@@ -894,7 +906,7 @@ body {
   border: none;
   border-radius: 50%;
   background: none;
-  color: #b8b2a8; /* color del contorno cuando NO es favorito */
+  color: var(--estrella-apagada);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -954,7 +966,7 @@ body {
 .punto-ubicacion {
   width: 14px;
   height: 14px;
-  background: #1890ff;
+  background: var(--azul);
   border: 2px solid white;
   border-radius: 50%;
   position: absolute;
@@ -1204,4 +1216,153 @@ body {
 #pie-legal a:hover {
   color: var(--acento-texto);
   text-decoration: underline;
+}
+
+/* ==========================================================================
+   ACCESIBILIDAD
+   ========================================================================== */
+
+/* --- LO PULSABLE DE UN RESULTADO ES UN BOTÓN ---
+   Antes el <li> entero llevaba un listener de click, lo que lo dejaba fuera
+   del alcance del teclado por completo. Ahora dentro hay un <button> real,
+   hermano de la estrella de favorito. Estas reglas le quitan la apariencia
+   de botón del navegador para que la ficha se vea exactamente igual que
+   antes: el cambio es de semántica, no de diseño. */
+.resultado-principal {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: inherit;
+  /* Reset: un <button> trae fuente, fondo, borde, relleno y centrado
+     propios del navegador, y ninguno vale aquí. */
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* En el recorrido de línea el botón ocupa la fila entera, porque ahí no hay
+   estrella al lado con la que repartirse el espacio. */
+.parada-recorrido .resultado-principal {
+  gap: 10px;
+  width: 100%;
+}
+
+/* --- FOCO VISIBLE ---
+   No había ninguno salvo en el divisor. Sin esto, aunque ya se pueda
+   tabular, no se ve dónde estás: navegar así es peor que no poder.
+
+   :focus-visible y no :focus para que el aro salga con el teclado pero no
+   al hacer clic con el ratón, que es cuando molesta y no aporta.
+
+   El aro va en --acento-texto (el naranja oscuro, 5,5:1 sobre blanco) y no
+   en el naranja de marca, que a 2:1 no se distinguiría del fondo. */
+:focus-visible {
+  outline: 2px solid var(--acento-texto);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Dentro de una ficha, el aro se separa un poco más para rodearla entera en
+   vez de cortar el texto por dentro. */
+#lista-resultados .resultado-principal:focus-visible,
+.parada-recorrido .resultado-principal:focus-visible {
+  outline-offset: 4px;
+}
+
+/* --- TEXTO SOLO PARA LECTORES DE PANTALLA ---
+   El buscador solo tenía placeholder, que no es una etiqueta: desaparece al
+   escribir y no da nombre accesible. Esta clase deja la etiqueta en el
+   documento sin ocuparle sitio a nadie.
+
+   No se usa display:none ni visibility:hidden a propósito: las dos ocultan
+   el texto TAMBIÉN para el lector de pantalla, que es justo lo contrario de
+   lo que se busca. */
+.solo-lector {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* --- OBJETIVOS TÁCTILES ---
+   La estrella mide 34px, por debajo de los 44px recomendados. En móvil ya se
+   corregía dentro de su @media, pero una tableta en horizontal NO entra en
+   modo hoja y se toca igual con el dedo.
+
+   Se agranda el área sensible con un pseudo-elemento en vez de agrandar el
+   botón: así el círculo se sigue viendo de 34px y no descoloca la ficha. */
+.boton-favorito {
+  position: relative;
+}
+
+.boton-favorito::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+}
+
+/* --- SUPERFICIES DEL NAVEGADOR ---
+   Selección, cursor de texto y barra de desplazamiento vienen con los
+   colores por defecto del navegador, que no son de ninguna paleta. Son lo
+   último que se mira y lo que delata que una interfaz está montada en vez
+   de construida. */
+::selection {
+  background: var(--acento-suave);
+  color: var(--texto);
+}
+
+#input-buscar {
+  caret-color: var(--acento-texto);
+}
+
+#panel {
+  scrollbar-width: thin;
+  scrollbar-color: var(--borde) transparent;
+}
+
+/* --- MOVIMIENTO REDUCIDO ---
+   La hoja inferior recorre casi toda la altura de la pantalla. Para quien
+   tiene un trastorno vestibular, ese desplazamiento provoca mareo real.
+
+   No se matan las transiciones con 0.01ms: eso destruye la respuesta al
+   tacto y deja la interfaz saltando entre estados sin explicar nada. Se
+   acortan mucho y se conserva el cambio de estado, que es lo que informa. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* El desplazamiento de la hoja es lo que de verdad marea: se reduce a un
+     cambio casi instantáneo, pero sigue habiendo transición para que el
+     cambio de posición no parezca un salto de la pantalla entera. */
+  #panel,
+  #boton-ubicacion {
+    transition-duration: 0.08s !important;
+  }
+
+  /* El resto de efectos son de hover y de pulsación: no desplazan la vista,
+     así que se quedan, pero sin el movimiento. */
+  #lista-resultados li:hover,
+  #lista-resultados li:active {
+    transform: none;
+  }
 }
