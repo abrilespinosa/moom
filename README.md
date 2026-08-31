@@ -71,7 +71,7 @@ frontend/
   assets/              # Logo e iconos de parada y estación
 scripts/
   precalcular_datos.py # Genera backend/data/precalculado/ desde el GTFS crudo
-tests/                 # Suite de pytest (32 tests, sin red)
+tests/                 # Suite de pytest (34 tests, sin red)
 api/index.py           # Punto de entrada del backend en Vercel
 vercel.json            # Reparto de rutas entre frontend estático y API
 ```
@@ -112,7 +112,7 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-32 tests en menos de medio segundo. **Ninguno sale a la red**: solo se prueban rutas que responden desde memoria o que cortan antes de llamar a EMT o al CRTM, comprobado ejecutándolos con las conexiones salientes bloqueadas. Una caída de una API externa no puede poner la suite en rojo.
+34 tests en menos de medio segundo. **Ninguno sale a la red**: solo se prueban rutas que responden desde memoria o que cortan antes de llamar a EMT o al CRTM, comprobado ejecutándolos con las conexiones salientes bloqueadas. Una caída de una API externa no puede poner la suite en rojo.
 
 Cubren la lógica pura (agrupación de llegadas, distinción entre tiempo real y horario teórico, filtrado de líneas que no son de Metro, validación de identificadores) y varios invariantes de los datos, que es donde más duelen los fallos de este proyecto: un volcado GTFS nuevo puede romperlos en silencio y no se nota hasta que una estación desaparece del mapa.
 

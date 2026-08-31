@@ -202,7 +202,7 @@ def listar_lineas(respuesta: Response):
     Ejemplo de uso: GET /lineas
 
     El recorrido se deja fuera a propósito: son casi 30.000 identificadores
-    de parada entre las 582 líneas, y el buscador solo necesita el número,
+    de parada entre las 603 líneas, y el buscador solo necesita el número,
     el nombre y el color para filtrar mientras se escribe. Las paradas se
     piden aparte, ya en /linea/{id}, cuando se elige una concreta.
 
