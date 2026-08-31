@@ -1517,13 +1517,39 @@ function pintarCabeceraParada(parada) {
   prepararBotonFavorito(botonFavoritoParada, "paradas", parada.id);
 }
 
+// --- RESPUESTAS QUE LLEGAN TARDE ---
+//
+// Los tres pollers piden datos y ESPERAN, y el CRTM tarda entre 0,1 y 4,5
+// segundos. En ese hueco la persona puede haber pulsado Volver o haber
+// elegido otra parada.
+//
+// Comprobar la parada solo al ENTRAR en la función no basta: cuando la
+// respuesta llega, ya no vale, y pintarla igualmente produce dos fallos
+// distintos. En el mapa, trenes de una estación de la que ya has salido, que
+// además no se limpian nunca porque el siguiente ciclo sale por el return
+// inicial. Y en el panel, los tiempos de la estación ANTERIOR bajo el nombre
+// de la nueva, que es peor todavía porque parece un dato bueno.
+//
+// Por eso cada poller apunta a qué parada estaba preguntando y lo comprueba
+// DESPUÉS de cada espera, antes de tocar nada.
+function siguesMirando(paradaBus, paradaMetro) {
+  return STOP_ID === paradaBus && STOP_ID_METRO === paradaMetro;
+}
+
 async function actualizarAutobuses() {
   if (STOP_ID === null) {
     return; // todavía no se ha seleccionado ninguna parada
   }
 
+  const paradaPedida = STOP_ID;
+
   try {
-    const datos = await pedirJson(`${URL_BACKEND}/parada/${STOP_ID}`);
+    const datos = await pedirJson(`${URL_BACKEND}/parada/${paradaPedida}`);
+
+    if (!siguesMirando(paradaPedida, null)) {
+      return; // se salió o se cambió de parada mientras esperábamos
+    }
+
     ocultarAvisoConexion();
 
     // Las paradas interurbanas (CRTM) vienen ya agrupadas por línea y
@@ -1656,10 +1682,17 @@ async function actualizarTiemposMetro() {
     return; // todavía no se ha seleccionado ninguna estación de Metro
   }
 
+  const estacionPedida = STOP_ID_METRO;
+
   try {
     const datos = await pedirJson(
-      `${URL_BACKEND}/metro/parada/${STOP_ID_METRO}`
+      `${URL_BACKEND}/metro/parada/${estacionPedida}`
     );
+
+    if (!siguesMirando(null, estacionPedida)) {
+      return;
+    }
+
     ocultarAvisoConexion();
 
     // Igual que en las paradas de bus: si el backend no pudo resolver el
@@ -1709,6 +1742,8 @@ async function actualizarTrenesMetro() {
     return; // todavía no se ha seleccionado ninguna estación de Metro
   }
 
+  const estacionPedida = STOP_ID_METRO;
+
   try {
     // Primero necesitamos saber qué líneas pasan por esta estación. Esta
     // llamada se mantiene aparte de la del panel a propósito: son funciones
@@ -1721,8 +1756,15 @@ async function actualizarTrenesMetro() {
     // en paralelo: los trenes tardaban en salir entre medio segundo y cinco
     // de más, según lo que tardase el CRTM ese día.
     const datosEstacion = await pedirJson(
-      `${URL_BACKEND}/metro/parada/${STOP_ID_METRO}/lineas`
+      `${URL_BACKEND}/metro/parada/${estacionPedida}/lineas`
     );
+
+    // Se comprueba también aquí, entre las dos esperas, y no solo al final:
+    // así se ahorra lanzar una petición por línea para una estación que ya
+    // nadie está mirando.
+    if (!siguesMirando(null, estacionPedida)) {
+      return;
+    }
 
     if (!datosEstacion.codLines) {
       return; // estación sin info de líneas disponible (caso raro)
@@ -1740,10 +1782,17 @@ async function actualizarTrenesMetro() {
     const respuestas = await Promise.all(
       datosEstacion.codLines.map((codLinea) =>
         pedirJson(
-          `${URL_BACKEND}/metro/linea/${codLinea}/vehiculos?cod_stop=${STOP_ID_METRO}`
+          `${URL_BACKEND}/metro/linea/${codLinea}/vehiculos?cod_stop=${estacionPedida}`
         )
       )
     );
+
+    // La comprobación que arregla el fallo visible: sin ella, los trenes se
+    // pintaban en el mapa DESPUÉS de que Volver los hubiera limpiado, y ahí
+    // se quedaban para siempre.
+    if (!siguesMirando(null, estacionPedida)) {
+      return;
+    }
 
     ocultarAvisoConexion();
 

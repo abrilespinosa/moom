@@ -169,8 +169,56 @@ LLEGADAS_EMT = {
     ]
 }
 
+# Una estación de Metro con una línea y un tren, para poder reproducir la
+# carrera entre la respuesta y el botón Volver.
+METRO_ALSACIA = {
+    "estacion": "ALSACIA",
+    "codStop": "est_4_323",
+    "codLines": ["4__2___"],
+    "llegadas": [
+        {
+            "codLine": "4__2___",
+            "linea": "2",
+            "destino": "LAS ROSAS",
+            "tiempos": ["2026-08-31T21:05:00+02:00"],
+            "enVivo": None,
+        }
+    ],
+}
+
+VEHICULOS_L2 = {
+    "linea": "Las Rosas-Cuatro Caminos",
+    "codLine": "4__2___",
+    "color": "ED1C24",
+    "colorTexto": "FFFFFF",
+    # "line" es obligatorio: app.js lee tren.line.shortDescription para el
+    # número del distintivo y tren.line.description para el sentido. Sin él
+    # revienta, el try lo traga y el test miente diciendo que no hay trenes.
+    "vehiculos": [
+        {
+            "codVehicle": "1001",
+            "coordinates": {"latitude": 40.4183, "longitude": -3.6235},
+            "line": {
+                "shortDescription": "2",
+                "description": "2-Las Rosas-Cuatro Caminos",
+            },
+        },
+        {
+            "codVehicle": "1002",
+            "coordinates": {"latitude": 40.4200, "longitude": -3.6300},
+            "line": {
+                "shortDescription": "2",
+                "description": "2-Cuatro Caminos-Las Rosas",
+            },
+        },
+    ],
+}
+
 RESPUESTAS = {
     "/paradas": PARADAS,
+    "/metro/parada/est_4_323": METRO_ALSACIA,
+    "/metro/parada/est_4_323/lineas": {"codStop": "est_4_323", "codLines": ["4__2___"]},
+    "/metro/linea/4__2___/vehiculos": VEHICULOS_L2,
     "/lineas": LINEAS,
     "/metro/lineas/colores": COLORES_METRO,
     "/linea/EMT-027": RECORRIDO_27,
