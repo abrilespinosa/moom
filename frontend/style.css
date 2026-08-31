@@ -1172,10 +1172,28 @@ body {
    --acento-texto y no --acento: el naranja de marca sobre blanco da 2:1 de
    contraste y sería ilegible a este tamaño. */
 #pie-legal {
-  margin: 4px 0 0;
-  padding: 12px 16px 16px;
+  /* Anclado al fondo del panel, no al final del contenido.
+     
+     Estaba puesto detrás de las tres vistas, y medido salía por DEBAJO del
+     borde de la pantalla en cuanto la lista de resultados crecía: en la hoja
+     de móvil no se veía sin desplegarla y bajar del todo. Un enlace que hay
+     que buscar así no cumple su función.
+
+     sticky y no fixed: se queda pegado al fondo del panel mientras este se
+     desplaza, sin salirse de él ni taparle nada al mapa.
+
+     margin-top:auto lo empuja al fondo cuando el contenido es corto (el panel
+     es un flex en columna); sin eso, con la lista vacía quedaría flotando a
+     media altura. */
+  margin: auto 0 0;
+  position: sticky;
+  bottom: 0;
+  padding: 10px 16px 12px;
   font-size: 12px;
   text-align: center;
+  /* Fondo opaco: si no, los resultados se leen por debajo al desplazarse. */
+  background: var(--superficie);
+  border-top: 1px solid var(--separador);
 }
 
 #pie-legal a {
