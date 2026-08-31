@@ -103,9 +103,11 @@ def cargar_paradas_metro():
        estos usamos el campo GTFS "parent_station" de los propios
        andenes, que sí los vincula correctamente. Si una estación así
        tiene varios andenes (ej. Sol tiene 3, uno por línea 1/2/3),
-       usamos el primero de la lista como aproximación razonable para
-       el MVP: pedir tiempos de todas las líneas a la vez es una mejora
-       futura, no bloqueante para que el panel funcione ahora.
+       nos quedamos con el primero, y eso NO pierde información:
+       comprobado contra la API, GetStopsTimes es consciente de la
+       ESTACIÓN y no del andén, así que preguntando por cualquier andén
+       de Sol devuelve las llegadas de sus tres líneas. Guardar un solo
+       codAnden por estación es suficiente.
     """
     paradas = []
 
@@ -516,8 +518,12 @@ def _lineas_desde_gtfs():
         if faltan:
             print(
                 f"[lineas] {fuente}: falta {', '.join(faltan)} en {carpeta}. "
-                f"Se omite esta fuente. Descarga el GTFS completo con "
-                f"'python -m scripts.descargar_gtfs' para habilitarla."
+                f"Se omite esta fuente. Normalmente esto no debería verse: "
+                f"las líneas salen de backend/data/precalculado/lineas.json, "
+                f"que sí va al repositorio. Si necesitas regenerarlo, "
+                f"descarga el GTFS completo a mano de los portales de datos "
+                f"abiertos de EMT y del CRTM y ejecuta "
+                f"'python -m scripts.precalcular_datos'."
             )
             continue
 

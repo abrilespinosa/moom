@@ -10,4 +10,9 @@
 pytest==9.1.1
 
 # Lo necesita el TestClient de FastAPI, que por dentro es un cliente httpx.
-httpx==0.28.1
+#
+# httpx2 y no httpx: con el httpx de toda la vida, Starlette avisa en cada
+# ejecución de la suite ("Using `httpx` with `starlette.testclient` is
+# deprecated; install `httpx2` instead"). Hoy solo es un aviso, pero es de
+# los que un día se convierten en fallo al actualizar Starlette.
+httpx2==2.12.0

@@ -89,6 +89,30 @@ _token_cacheado = None
 _token_obtenido_en = None
 _cache_paradas = {}
 
+# Tope de entradas de _cache_paradas, por el mismo motivo y con la misma
+# política tosca que en metro_client.py: guarda una entrada por parada
+# consultada y no se podaba nunca, así que en un proceso de larga vida crece
+# sin techo (hay 4.894 paradas de EMT que alcanzar). En Vercel da igual
+# porque las instancias se reciclan, pero un uvicorn de días sí lo acumula.
+#
+# Aquí las entradas caducan a los 30s, así que las viejas ya no se devuelven;
+# lo que sobra es la memoria que ocupan, no el riesgo de servir algo rancio.
+MAXIMO_ENTRADAS_CACHE = 500
+
+
+def _guardar_en_cache(cache, clave, valor):
+    """
+    Guarda una entrada sin dejar que el diccionario crezca sin límite.
+
+    Desaloja la más antigua por orden de inserción: los diccionarios de
+    Python lo conservan, y reasignar una clave existente no la mueve al
+    final.
+    """
+    if clave not in cache and len(cache) >= MAXIMO_ENTRADAS_CACHE:
+        del cache[next(iter(cache))]
+
+    cache[clave] = valor
+
 def _token_sigue_siendo_valido():
     """
     Comprueba si el token que tenemos guardado todavía se puede usar,
@@ -191,8 +215,8 @@ def obtener_llegadas_parada(stop_id):
     
     datos = respuesta.json()
     
-    _cache_paradas[stop_id] = (datos, time.time())
-    
+    _guardar_en_cache(_cache_paradas, stop_id, (datos, time.time()))
+
     return datos
 
 if __name__ == "__main__":

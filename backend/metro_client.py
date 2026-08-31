@@ -176,6 +176,35 @@ _cache_info_linea = {}
 # Duración de la validez del caché, en segundos.
 SEGUNDOS_VALIDEZ_CACHE = 20
 
+# Tope de entradas por caché.
+#
+# Los tres diccionarios de arriba no se podaban nunca: guardan una entrada por
+# id distinto consultado, y dos de ellos (info de estación e info de línea) no
+# caducan, así que en un proceso de larga vida crecen sin techo. En el
+# despliegue actual apenas importa —en Vercel las instancias se reciclan
+# solas—, pero un uvicorn levantado durante días sí lo acumula, y hay 13.542
+# paradas que alcanzar.
+#
+# 500 sobra de largo para el uso real: una sesión mira unas pocas paradas, y
+# aun con varias personas a la vez no se acerca. Se desaloja la entrada más
+# ANTIGUA, no la menos usada: los diccionarios de Python conservan el orden de
+# inserción, así que la primera clave es la que lleva más tiempo dentro.
+# Reasignar una clave existente no la mueve al final, o sea que refrescar unos
+# tiempos de espera no la rejuvenece. Es una poda tosca a propósito: aquí lo
+# que importa es que el diccionario no crezca sin fin, no acertar con la
+# política de desalojo.
+MAXIMO_ENTRADAS_CACHE = 500
+
+
+def _guardar_en_cache(cache, clave, valor):
+    """
+    Guarda una entrada sin dejar que el diccionario crezca sin límite.
+    """
+    if clave not in cache and len(cache) >= MAXIMO_ENTRADAS_CACHE:
+        del cache[next(iter(cache))]
+
+    cache[clave] = valor
+
 
 def _cache_sigue_siendo_valido(diccionario_cache, clave):
     """
@@ -245,7 +274,7 @@ def obtener_info_estacion(cod_stop):
     if not isinstance(lineas, list):
         estacion["codLines"]["Line"] = [lineas]
 
-    _cache_info_estacion[cod_stop] = estacion
+    _guardar_en_cache(_cache_info_estacion, cod_stop, estacion)
 
     return estacion
 
@@ -297,7 +326,20 @@ def obtener_info_linea(cod_line):
         print(datos)
         raise
 
-    _cache_info_linea[cod_line] = info
+    # La misma rareza que en las otras tres funciones de este archivo: cuando
+    # solo hay UN elemento, la API lo devuelve suelto en vez de dentro de una
+    # lista de un elemento.
+    #
+    # Hoy no se dispara: comprobadas las 13 líneas de Metro en vivo, todas
+    # devuelven sus dos itinerarios, el Ramal incluido. Se normaliza igual
+    # porque quien lo consume hace "for itinerario in itinerarios": con un
+    # diccionario suelto iteraría sobre sus CLAVES, que son cadenas, y
+    # reventaría con un TypeError difícil de leer al hacer itinerario["stops"].
+    itinerarios = info["itinerary"]["Itinerary"]
+    if not isinstance(itinerarios, list):
+        info["itinerary"]["Itinerary"] = [itinerarios]
+
+    _guardar_en_cache(_cache_info_linea, cod_line, info)
 
     return info
 
@@ -365,7 +407,7 @@ def obtener_tiempos_espera(cod_stop, stop_type=TIPO_PARADA_POR_DEFECTO):
     if isinstance(trenes, dict):
         trenes = [trenes]
 
-    _cache_tiempos_espera[cod_stop] = (trenes, time.time())
+    _guardar_en_cache(_cache_tiempos_espera, cod_stop, (trenes, time.time()))
 
     return trenes
 
