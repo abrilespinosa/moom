@@ -67,11 +67,13 @@ backend/
 frontend/
   index.html           # Estructura de la página
   style.css            # Estilos del mapa y los paneles
+  tipografia.css       # Inter, servida desde el propio dominio
+  privacidad.html      # Privacidad, condiciones de uso y atribuciones
   app.js               # Lógica del mapa, búsqueda, favoritos, llegadas y vehículos
-  assets/              # Logo e iconos de parada y estación
+  assets/              # Logo, iconos de parada y estación, y los archivos de fuente
 scripts/
   precalcular_datos.py # Genera backend/data/precalculado/ desde el GTFS crudo
-tests/                 # Suite de pytest del backend (34 tests, sin red)
+tests/                 # Suite de pytest del backend (37 tests, sin red)
   frontend/            # Tests de navegador, aparte (ver Tests)
 api/index.py           # Punto de entrada del backend en Vercel
 vercel.json            # Reparto de rutas entre frontend estático y API
@@ -113,7 +115,7 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-34 tests en menos de medio segundo. **Ninguno sale a la red**: solo se prueban rutas que responden desde memoria o que cortan antes de llamar a EMT o al CRTM, comprobado ejecutándolos con las conexiones salientes bloqueadas. Una caída de una API externa no puede poner la suite en rojo.
+37 tests en menos de medio segundo. **Ninguno sale a la red**: solo se prueban rutas que responden desde memoria o que cortan antes de llamar a EMT o al CRTM, comprobado ejecutándolos con las conexiones salientes bloqueadas. Una caída de una API externa no puede poner la suite en rojo.
 
 ### Tests de frontend
 
@@ -188,6 +190,16 @@ Abre <http://localhost:5500> en el navegador.
 > **Importante:** el frontend tiene que servirse por HTTP. Abrir `frontend/index.html` directamente con doble clic (`file://`) no funciona: bloquea la geolocalización y cambia el comportamiento de `fetch`.
 >
 > El backend hay que arrancarlo **desde la raíz del proyecto**, no desde dentro de `backend/`: `main.py` importa con rutas tipo `from backend.emt_client import ...` y los archivos GTFS se abren con rutas relativas al directorio de trabajo.
+
+## Privacidad
+
+No hay cuentas, ni base de datos, ni analítica, ni cookies. **Moom no recoge ningún dato personal.**
+
+Al compartir tu ubicación, las coordenadas se usan solo dentro de tu navegador para ordenar las paradas por cercanía: **no se envían al servidor ni a ningún tercero**, y no se guardan. Los favoritos y el ancho del panel viven en `localStorage`, en tu equipo.
+
+La tipografía **se sirve desde el propio dominio** y no desde Google Fonts, para que abrir el mapa no transmita la IP de cada visitante a Google. Los únicos terceros a los que el navegador pide algo son CARTO (las imágenes del mapa) y unpkg (Leaflet); están declarados en [`frontend/privacidad.html`](frontend/privacidad.html), junto con las condiciones de uso y las atribuciones.
+
+Esa lista no se mantiene sola: `tests/test_terceros_del_frontend.py` falla si aparece un servidor ajeno que no esté declarado en esa página, o si alguien vuelve a cargar una fuente desde Google.
 
 ## Atribución
 

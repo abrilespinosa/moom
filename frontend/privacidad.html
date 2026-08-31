@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>Privacidad y condiciones de uso — Moom</title>
+
+  <link rel="stylesheet" href="tipografia.css" />
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="icon" type="image/png" sizes="64x64" href="assets/favicon.png" />
+
+  <!--
+    Esta página no carga style.css a propósito. Ese archivo maqueta el body
+    como un grid de panel + mapa y da por hecho que existe un mapa de Leaflet;
+    aquí no hay ni una cosa ni la otra. Se repiten abajo los pocos colores que
+    hacen falta, tomados de las variables de style.css, para que las dos
+    páginas se parezcan sin que esta arrastre 34 KB que no usa.
+
+    Si algún día cambia la paleta de marca, hay que tocarla en los dos sitios.
+  -->
+  <style>
+    :root {
+      --acento: #f5a623;
+      --acento-texto: #9a5b00;
+      --superficie: #ffffff;
+      --fondo: #faf9f7;
+      --borde: #e6e3de;
+      --texto: #121212;
+      --texto-suave: #767068;
+      --sombra-sutil: 0 1px 2px rgba(18, 18, 18, 0.04),
+        0 4px 12px rgba(18, 18, 18, 0.04);
+    }
+
+    body {
+      margin: 0;
+      padding: 0 20px 80px;
+      background: var(--fondo);
+      color: var(--texto);
+      font-family: "Inter", -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.65;
+      letter-spacing: -0.01em;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Medida de lectura: por encima de unos 70 caracteres por línea el ojo
+       pierde el renglón al volver al margen izquierdo. */
+    main {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    header {
+      background: var(--acento);
+      margin: 0 -20px 40px;
+      padding: 22px 20px;
+      text-align: center;
+    }
+
+    header img {
+      height: 26px;
+      vertical-align: middle;
+    }
+
+    h1 {
+      font-size: 28px;
+      line-height: 1.25;
+      margin: 0 0 8px;
+    }
+
+    h2 {
+      font-size: 20px;
+      margin: 44px 0 12px;
+    }
+
+    h3 {
+      font-size: 16px;
+      margin: 28px 0 8px;
+    }
+
+    .actualizado {
+      color: var(--texto-suave);
+      font-size: 14px;
+      margin: 0 0 36px;
+    }
+
+    /* Lo importante de toda la página, y por eso es lo único destacado. */
+    .destacado {
+      background: var(--superficie);
+      border-radius: 16px;
+      padding: 20px 24px;
+      box-shadow: var(--sombra-sutil);
+      margin: 28px 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 18px 0;
+      font-size: 15px;
+    }
+
+    /* La tabla de terceros no cabe en un móvil estrecho, así que se desplaza
+       ella sola en vez de ensanchar la página entera. */
+    .tabla-scroll {
+      overflow-x: auto;
+    }
+
+    th,
+    td {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--borde);
+      vertical-align: top;
+    }
+
+    th {
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    a {
+      color: var(--acento-texto);
+    }
+
+    footer {
+      margin-top: 56px;
+      padding-top: 24px;
+      border-top: 1px solid var(--borde);
+      color: var(--texto-suave);
+      font-size: 14px;
+    }
+
+    code {
+      background: var(--superficie);
+      border: 1px solid var(--borde);
+      border-radius: 6px;
+      padding: 1px 5px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <a href="index.html"><img src="assets/logo.svg" alt="Moom" /></a>
+  </header>
+
+  <main>
+    <h1>Privacidad y condiciones de uso</h1>
+    <p class="actualizado">Última actualización: 31 de agosto de 2026</p>
+
+    <p>
+      Moom es un proyecto personal sin ánimo de lucro que muestra en un mapa el
+      transporte público de Madrid en tiempo real. No tiene cuentas de usuario,
+      no vende nada y no vive de la publicidad.
+    </p>
+
+    <h2>Privacidad</h2>
+
+    <div class="destacado">
+      <p style="margin: 0">
+        <strong>Moom no recoge, guarda ni envía a ningún sitio datos personales
+        tuyos.</strong> No hay cuentas, no hay base de datos y no hay analítica.
+        Si compartes tu ubicación, esa ubicación
+        <strong>no sale de tu dispositivo</strong>.
+      </p>
+    </div>
+
+    <h3>Tu ubicación</h3>
+    <p>
+      Al pulsar el botón de ubicación, el navegador te pide permiso y le pasa a
+      la página tus coordenadas. Se usan solo dentro de tu propio navegador,
+      para centrar el mapa y calcular a qué distancia tienes cada parada.
+      <strong>No se envían al servidor de Moom ni a ningún tercero</strong>, y
+      no se guardan: al cerrar la pestaña desaparecen. Si no das el permiso,
+      todo lo demás funciona igual.
+    </p>
+
+    <h3>Lo que se guarda en tu navegador</h3>
+    <p>
+      Moom <strong>no usa cookies</strong>. Guarda dos cosas con
+      <code>localStorage</code>, que es almacenamiento del propio navegador y
+      nunca viaja a ningún servidor:
+    </p>
+    <ul>
+      <li>
+        <strong>Tus favoritos</strong> (<code>moom:favoritos</code>): solo los
+        identificadores de las paradas y líneas que marcas con la estrella.
+      </li>
+      <li>
+        <strong>El ancho del panel</strong> (<code>moom:ancho-panel</code>): la
+        anchura que elijes arrastrando el divisor.
+      </li>
+    </ul>
+    <p>
+      No sirven para identificarte ni para seguirte: son ajustes tuyos, en tu
+      equipo. Puedes borrarlos cuando quieras vaciando los datos del sitio
+      desde tu navegador.
+    </p>
+
+    <h3>Terceros a los que tu navegador pide cosas</h3>
+    <p>
+      Aunque Moom no recoja nada, para dibujar el mapa tu navegador tiene que
+      pedir archivos a otros servidores, y en cualquier petición de internet
+      viaja tu dirección IP. Estos son todos, sin excepción:
+    </p>
+
+    <div class="tabla-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Quién</th>
+            <th>Para qué</th>
+            <th>Qué recibe</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>CARTO / OpenStreetMap</td>
+            <td>Las imágenes del mapa</td>
+            <td>Tu IP y qué zona del mapa estás mirando</td>
+          </tr>
+          <tr>
+            <td>unpkg</td>
+            <td>Leaflet, la librería del mapa</td>
+            <td>Tu IP</td>
+          </tr>
+          <tr>
+            <td>Vercel</td>
+            <td>Alojamiento del sitio</td>
+            <td>Tu IP, en sus registros de acceso</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      La tipografía <strong>se sirve desde este mismo dominio</strong> y no
+      desde Google Fonts, precisamente para que abrir el mapa no le mande tu IP
+      a Google. Las APIs de la EMT y del CRTM se consultan
+      <strong>desde el servidor</strong>, no desde tu navegador, así que esas
+      empresas no reciben nada tuyo: ven al servidor de Moom, no a ti.
+    </p>
+
+    <h3>Tus derechos</h3>
+    <p>
+      El Reglamento General de Protección de Datos te reconoce el derecho a
+      acceder a tus datos, rectificarlos y suprimirlos. En la práctica aquí no
+      hay nada que pedir, porque no se conserva ningún dato tuyo. Si tienes
+      cualquier duda, puedes escribir abriendo un asunto en el
+      <a href="https://github.com/abrilespinosa/moom">repositorio del proyecto</a>.
+    </p>
+
+    <h2>Condiciones de uso</h2>
+
+    <h3>Los tiempos son estimaciones</h3>
+    <div class="destacado">
+      <p style="margin: 0">
+        <strong>No te fíes de Moom para no perder tu autobús o tu tren.</strong>
+        Los tiempos vienen de las APIs públicas de la EMT y del CRTM, pueden
+        estar equivocados, llegar tarde o no llegar. En el bus interurbano, las
+        llegadas que solo salen del horario teórico se marcan como tales, pero
+        ni eso es garantía.
+      </p>
+    </div>
+    <p>
+      La distancia y el tiempo andando son una <strong>estimación</strong>: se
+      calculan en línea recta más un margen por el rodeo de las manzanas, no
+      con una ruta a pie real. Ante cualquier duda, la información válida es la
+      de los canales oficiales de
+      <a href="https://www.emtmadrid.es">EMT Madrid</a>,
+      <a href="https://www.metromadrid.es">Metro de Madrid</a> y el
+      <a href="https://www.crtm.es">CRTM</a>.
+    </p>
+
+    <h3>Sin garantía</h3>
+    <p>
+      Moom se ofrece tal cual, gratis y sin ninguna garantía de que funcione,
+      esté disponible o sea exacto. Puede dejar de funcionar en cualquier
+      momento y sin aviso, sobre todo si cambian las APIs de las que depende.
+      Quien lo publica no se hace responsable de los perjuicios derivados de
+      usarlo.
+    </p>
+
+    <h3>Uso razonable</h3>
+    <p>
+      Puedes usar Moom libremente. Lo que se pide es que no se hagan peticiones
+      automatizadas masivas: detrás hay APIs de terceros, una de ellas con
+      cuota diaria, y abusar de aquí perjudica a un servicio público que no es
+      de este proyecto.
+    </p>
+
+    <h2>Propiedad intelectual</h2>
+    <p>
+      El <strong>código</strong> de Moom es libre, bajo licencia
+      <a href="https://github.com/abrilespinosa/moom/blob/main/LICENSE">MIT</a>.
+    </p>
+    <p>
+      Los <strong>datos no lo son</strong>. Los horarios, las paradas y las
+      posiciones pertenecen a la
+      <strong>EMT de Madrid (Mobility Labs)</strong> y al
+      <strong>Consorcio Regional de Transportes de Madrid</strong>, y se rigen
+      por las condiciones de sus portales de datos abiertos. Conforme a las
+      condiciones de uso de la EMT, se cita expresamente a
+      <strong>EMT Madrid MobilityLabs</strong> como fuente de sus datos. La
+      cartografía es de <strong>OpenStreetMap</strong> y
+      <strong>CARTO</strong>. La tipografía es
+      <strong>Inter</strong>, de Rasmus Andersson, bajo SIL Open Font License
+      1.1.
+    </p>
+    <p>
+      Una precisión honesta sobre el CRTM: la API que usa Moom
+      (<code>crtm.es/widgets/api</code>) es la que alimenta los widgets de su
+      propia web. Es pública y no pide autenticación, pero
+      <strong>no está documentada ni tiene condiciones de uso publicadas</strong>.
+      Se consulta con moderación —con cachés y con intervalos ajustados al
+      ritmo real al que cambian los datos— pero conviene saber que no hay
+      ninguna garantía de estabilidad ni un permiso explícito.
+    </p>
+    <p>
+      Moom no está afiliado ni respaldado por la EMT, por Metro de Madrid ni
+      por el CRTM.
+    </p>
+
+    <footer>
+      <p>
+        Moom es un proyecto personal de Abril Espinosa. Código y detalle
+        técnico en
+        <a href="https://github.com/abrilespinosa/moom">github.com/abrilespinosa/moom</a>.
+      </p>
+      <p><a href="index.html">← Volver al mapa</a></p>
+    </footer>
+  </main>
+</body>
+</html>
