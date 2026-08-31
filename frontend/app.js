@@ -59,9 +59,26 @@ const mapa = L.map("mapa").setView([40.4168, -3.7038], 14);
 
 // CartoDB "Voyager": más detalle y calidez que Positron (colores
 // suaves en parques/agua, nombres de barrio) sin llegar a la
-// densidad del OSM estándar. Mismo proveedor, gratuito, sin API key.
+// densidad del OSM estándar.
+//
+// LA CLAVE NO ES UN SECRETO, y por eso está aquí a la vista. Una clave de
+// tiles tiene que llegar al navegador de cada visitante para que el mapa se
+// pinte: esconderla es imposible por definición. Es un identificador público,
+// no una credencial; se protege restringiéndola por dominio en el panel de
+// CARTO, no ocultándola en el código. (El .env es para lo contrario: las
+// credenciales de EMT, que solo ve el servidor.)
+//
+// CARTO empezó a exigirla en agosto de 2026, y la forma de fallar es
+// traicionera: sin clave el servidor NO devuelve un error, devuelve un 200
+// con un PNG que lleva "API KEY REQUIRED" estampado dentro. Nada en el código
+// se entera. Se descubrió mirando una captura de pantalla.
+//
+// El parámetro es "key". Comprobado uno a uno: "api_key" y "apikey" se
+// aceptan sin rechistar y devuelven el tile marcado igual que sin clave.
+const CLAVE_CARTO = "cb1_2nzp_1_af682cf3cc1f5e7888bc6f0c";
+
 L.tileLayer(
-  "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+  `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=${CLAVE_CARTO}`,
   {
     attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
   }
