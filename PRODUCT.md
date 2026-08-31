@@ -81,6 +81,18 @@ paradas cercanas.
 - **21 líneas no tienen recorrido** en los datos abiertos (entre ellas la Línea
   3 de Metro). Se muestran igual, avisando, porque sus paradas y sus tiempos sí
   funcionan.
+- **Los tiles del mapa son de CARTO y desde agosto de 2026 requieren clave.**
+  La capa gratuita da **5 millones de peticiones de tile al mes** (raster y
+  vector juntas) y está pensada para **uso no comercial**; pasarse no corta el
+  servicio, pero abre una conversación con ellos. **La atribución a CARTO y a
+  OpenStreetMap tiene que seguir visible: es literalmente el intercambio por la
+  capa gratuita.** La clave va en el frontend por necesidad técnica —tiene que
+  llegar al navegador— y está vinculada al dominio que se declaró al pedirla;
+  no hay panel donde cambiarla, porque no hay cuenta.
+  **Ojo con la forma de fallar**: sin clave, o con un nombre de parámetro
+  equivocado, el servidor devuelve un 200 con un PNG válido que lleva "API KEY
+  REQUIRED" impreso dentro. Ningún test ni linter lo detecta; solo se ve
+  mirando el mapa.
 
 **Vocabulario del dominio** (importa, porque los tres orígenes no coinciden):
 parada / estación / **andén** (`codAnden`, el único código que entiende la API
