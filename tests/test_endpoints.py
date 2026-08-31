@@ -93,9 +93,34 @@ def test_los_datos_del_gtfs_se_pueden_cachear():
     vivo: serviría llegadas de hace una hora como si fueran de ahora. Por eso
     la lista de aquí es explícita y no un recorrido de todas las rutas.
     """
-    for ruta in ("/paradas", "/lineas", "/metro/lineas/colores"):
+    for ruta in ("/paradas", "/lineas", "/linea/EMT-027", "/metro/lineas/colores"):
         cabecera = cliente.get(ruta).headers.get("cache-control", "")
         assert "max-age=3600" in cabecera, ruta
+
+
+def test_una_linea_que_no_existe_no_se_cachea():
+    """
+    Guardar durante un día que una línea no existe es justo lo que no
+    interesa: si aparece en el próximo volcado, la respuesta buena tiene que
+    llegar ya.
+    """
+    cabecera = cliente.get("/linea/NO-EXISTE").headers.get("cache-control", "")
+
+    assert cabecera == ""
+
+
+def test_una_linea_de_metro_desconocida_da_404_sin_llamar_a_la_api():
+    """
+    Antes esto era un 500. El código llegaba hasta el CRTM, que responde
+    {"lines": {}}, y saltaba un KeyError que NO es RequestException: se
+    escapaba del manejador que convierte los fallos de API externa en 503.
+
+    Si este test empieza a tardar, es que la validación ha dejado de cortar
+    antes de salir a la red.
+    """
+    respuesta = cliente.get("/metro/linea/linea-que-no-existe/vehiculos")
+
+    assert respuesta.status_code == 404
 
 
 def test_las_coordenadas_no_arrastran_precision_inutil():
