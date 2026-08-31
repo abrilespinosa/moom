@@ -71,7 +71,8 @@ frontend/
   assets/              # Logo e iconos de parada y estación
 scripts/
   precalcular_datos.py # Genera backend/data/precalculado/ desde el GTFS crudo
-tests/                 # Suite de pytest (34 tests, sin red)
+tests/                 # Suite de pytest del backend (34 tests, sin red)
+  frontend/            # Tests de navegador, aparte (ver Tests)
 api/index.py           # Punto de entrada del backend en Vercel
 vercel.json            # Reparto de rutas entre frontend estático y API
 ```
@@ -113,6 +114,20 @@ pytest
 ```
 
 34 tests en menos de medio segundo. **Ninguno sale a la red**: solo se prueban rutas que responden desde memoria o que cortan antes de llamar a EMT o al CRTM, comprobado ejecutándolos con las conexiones salientes bloqueadas. Una caída de una API externa no puede poner la suite en rojo.
+
+### Tests de frontend
+
+Hay otros 13 que abren la página en Chrome y comprueban lo que aparece en pantalla: el orden de los resultados del buscador, el cambio entre las tres vistas, el aviso cuando el backend falla y los favoritos.
+
+```bash
+pytest -m navegador
+```
+
+**Van aparte a propósito.** Tardan unos 25 segundos, así que meterlos en `pytest` a secas quitaría lo que hace útil a la suite del backend: que es instantánea y se puede lanzar a cada cambio. Por eso `pytest` sin argumentos sigue ejecutando solo los 32 del backend.
+
+Tampoco salen a la red. La página se copia a un directorio temporal y allí se le cambian dos cosas: el backend apunta a uno de mentira que sirve el propio test, y Leaflet (que viene de un CDN) se sustituye por un doble que implementa solo lo que `app.js` usa. Así no se prueba Leaflet, que es código de otros, sino el nuestro.
+
+Necesitan Chrome. Si no está en la ruta habitual de macOS, se indica con `CHROME_PARA_TESTS=/ruta/a/chrome`; si no se encuentra, los tests se saltan en vez de fallar. **No se ejecutan todavía en GitHub Actions**, solo en local.
 
 Cubren la lógica pura (agrupación de llegadas, distinción entre tiempo real y horario teórico, filtrado de líneas que no son de Metro, validación de identificadores) y varios invariantes de los datos, que es donde más duelen los fallos de este proyecto: un volcado GTFS nuevo puede romperlos en silencio y no se nota hasta que una estación desaparece del mapa.
 
