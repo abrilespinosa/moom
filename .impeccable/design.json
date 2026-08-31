@@ -1,0 +1,260 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-31T18:53:43.339924+00:00",
+  "title": "Design System: Moom",
+  "extensions": {
+    "colorMeta": {
+      "naranja-marquesina": {
+        "role": "primary",
+        "displayName": "Naranja Marquesina",
+        "canonical": "#f5a623",
+        "tonalRamp": [
+          "#2a1a02",
+          "#4d2f05",
+          "#7a4a08",
+          "#a8660b",
+          "#d4820e",
+          "#f5a623",
+          "#f8c163",
+          "#fdf1dd"
+        ]
+      },
+      "ambar-legible": {
+        "role": "primary",
+        "displayName": "Ámbar Legible",
+        "canonical": "#9a5b00",
+        "tonalRamp": [
+          "#1f1200",
+          "#3d2400",
+          "#5c3600",
+          "#7b4800",
+          "#9a5b00",
+          "#c47a10",
+          "#e0a34a",
+          "#f6dcb4"
+        ]
+      },
+      "tinta": {
+        "role": "neutral",
+        "displayName": "Tinta",
+        "canonical": "#121212",
+        "tonalRamp": [
+          "#000000",
+          "#121212",
+          "#2e2e2e",
+          "#4a4a4a",
+          "#767068",
+          "#a8a29a",
+          "#d6d2cb",
+          "#faf9f7"
+        ]
+      },
+      "papel-calido": {
+        "role": "neutral",
+        "displayName": "Papel Cálido",
+        "canonical": "#faf9f7",
+        "tonalRamp": [
+          "#26241f",
+          "#403d36",
+          "#5c584f",
+          "#7a7568",
+          "#a8a29a",
+          "#ded8ce",
+          "#efece7",
+          "#faf9f7"
+        ]
+      },
+      "azul-sistema": {
+        "role": "tertiary",
+        "displayName": "Azul Sistema",
+        "canonical": "#007aff",
+        "tonalRamp": [
+          "#001a33",
+          "#003366",
+          "#004d99",
+          "#0066cc",
+          "#007aff",
+          "#4da3ff",
+          "#99c9ff",
+          "#e5f1ff"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "El tiempo de la próxima llegada. El dato por el que se abre la aplicación."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Nombre de parada o de línea dentro de una ficha."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Texto general. En móvil el buscador sube a 16px obligatoriamente."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Encabezados de grupo y distintivos. Único uso de versalitas."
+      }
+    },
+    "shadows": [
+      {
+        "name": "sutil",
+        "value": "0 1px 2px rgba(18,18,18,0.04), 0 4px 12px rgba(18,18,18,0.04)",
+        "purpose": "Reposo de las fichas. Dos capas: canto corto y despegue largo."
+      },
+      {
+        "name": "media",
+        "value": "0 1px 2px rgba(18,18,18,0.05), 0 8px 24px rgba(18,18,18,0.07)",
+        "purpose": "Ficha señalada y panel sobre el mapa."
+      },
+      {
+        "name": "flotante",
+        "value": "0 2px 6px rgba(18,18,18,0.08), 0 12px 32px rgba(18,18,18,0.1)",
+        "purpose": "Lo que vive por encima del mapa, como el botón de ubicación."
+      },
+      {
+        "name": "hoja",
+        "value": "0 -1px 3px rgba(18,18,18,0.05), 0 -12px 40px rgba(18,18,18,0.12)",
+        "purpose": "La hoja inferior en móvil. Invertida y más difusa: apoyada sobre el mapa, no recortada encima."
+      }
+    ],
+    "motion": [
+      {
+        "name": "estado",
+        "value": "0.14s",
+        "purpose": "Cambios de estado de una ficha: señalado y pulsado."
+      },
+      {
+        "name": "hoja",
+        "value": "0.28s cubic-bezier(0.32, 0.72, 0, 1)",
+        "purpose": "Desplazamiento de la hoja inferior. Salida exponencial: rápida al principio y frenando al final."
+      },
+      {
+        "name": "movimiento-reducido",
+        "value": "0.08s",
+        "purpose": "Sustituye al anterior con prefers-reduced-motion. No se anula la transición: se acorta, para que el cambio de posición no parezca un salto."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "hoja",
+        "value": "768px"
+      },
+      {
+        "name": "hoja-vertical",
+        "value": "1024px (solo en orientation: portrait)"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Ficha de resultado",
+      "kind": "card",
+      "refersTo": "ficha-resultado",
+      "description": "Fila del buscador. El botón y la estrella son hermanos, nunca anidados.",
+      "html": "<li class=\"ds-ficha\"><button class=\"ds-ficha-boton\" type=\"button\"><span class=\"ds-ficha-texto\"><span class=\"ds-ficha-titulo\">Cibeles (parada 72)</span><span class=\"ds-ficha-sub\">240 m · 4 min</span></span></button><button class=\"ds-estrella\" type=\"button\" aria-label=\"Guardar\"><svg viewBox=\"0 0 24 24\" width=\"17\" height=\"17\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\"><path d=\"M12 3.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z\"/></svg></button></li>",
+      "css": ".ds-ficha { display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:16px; background:#fff; box-shadow:0 1px 2px rgba(18,18,18,.04), 0 4px 12px rgba(18,18,18,.04); transition:transform .14s, box-shadow .14s; list-style:none; } .ds-ficha:hover { box-shadow:0 1px 2px rgba(18,18,18,.05), 0 8px 24px rgba(18,18,18,.07); transform:translateY(-1px); } .ds-ficha:active { transform:scale(.985); } .ds-ficha-boton { flex:1; min-width:0; display:flex; align-items:center; margin:0; padding:0; border:0; background:none; font:inherit; color:#121212; text-align:left; cursor:pointer; } .ds-ficha-boton:focus-visible { outline:2px solid #9a5b00; outline-offset:4px; border-radius:4px; } .ds-ficha-texto { display:flex; flex-direction:column; min-width:0; } .ds-ficha-titulo { font-size:15px; font-weight:600; letter-spacing:-.01em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .ds-ficha-sub { font-size:13px; color:#767068; } .ds-estrella { flex-shrink:0; width:34px; height:34px; padding:0; border:0; border-radius:50%; background:none; color:#b8b2a8; cursor:pointer; } .ds-estrella:hover { color:#9a5b00; }"
+    },
+    {
+      "name": "Buscador",
+      "kind": "input",
+      "refersTo": "buscador",
+      "description": "Campo único para paradas y líneas. Nunca por debajo de 16px en móvil.",
+      "html": "<label class=\"ds-oculto\" for=\"ds-buscar\">Buscar una parada o una línea</label><div class=\"ds-buscador\"><svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"#767068\" stroke-width=\"2\"><circle cx=\"11\" cy=\"11\" r=\"7\"/><path d=\"M20 20l-3.5-3.5\"/></svg><input id=\"ds-buscar\" type=\"text\" placeholder=\"Buscar parada o línea...\"></div>",
+      "css": ".ds-buscador { display:flex; align-items:center; gap:8px; min-height:44px; padding:0 14px; border-radius:12px; background:#faf9f7; } .ds-buscador input { flex:1; border:0; background:none; font:inherit; font-size:16px; color:#121212; caret-color:#9a5b00; outline:none; } .ds-buscador input::placeholder { color:#767068; } .ds-oculto { position:absolute; width:1px; height:1px; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }"
+    },
+    {
+      "name": "Filtro de modo",
+      "kind": "chip",
+      "refersTo": "filtro-activo",
+      "description": "Píldoras de fuente. El activo va sobre papel con texto en Ámbar Legible.",
+      "html": "<div class=\"ds-filtros\"><button class=\"ds-filtro ds-activo\" type=\"button\">Todos</button><button class=\"ds-filtro\" type=\"button\">Urbano</button><button class=\"ds-filtro\" type=\"button\">Metro</button></div>",
+      "css": ".ds-filtros { display:flex; gap:4px; padding:4px; border-radius:14px; background:#faf9f7; } .ds-filtro { flex:1; min-height:44px; padding:8px 10px; border:0; border-radius:12px; background:none; font:inherit; font-size:12px; font-weight:500; color:#767068; cursor:pointer; transition:background .14s, color .14s; } .ds-filtro:hover:not(.ds-activo) { color:#121212; } .ds-filtro.ds-activo { background:#fff; color:#9a5b00; font-weight:600; box-shadow:0 1px 2px rgba(18,18,18,.04), 0 4px 12px rgba(18,18,18,.04); } .ds-filtro:focus-visible { outline:2px solid #9a5b00; outline-offset:2px; }"
+    },
+    {
+      "name": "Distintivo de línea",
+      "kind": "chip",
+      "refersTo": null,
+      "description": "Número de línea con su color oficial del GTFS. El color va en línea: son 603 líneas.",
+      "html": "<span class=\"ds-linea\" style=\"background:#ED1C24; color:#FFFFFF\">2</span><span class=\"ds-linea\" style=\"background:#0178BC; color:#FFFFFF\">27</span>",
+      "css": ".ds-linea { display:inline-flex; align-items:center; justify-content:center; min-width:34px; height:26px; padding:0 8px; margin-right:6px; border-radius:999px; font-size:13px; font-weight:600; font-variant-numeric:tabular-nums; }"
+    },
+    {
+      "name": "Cabecera de marca",
+      "kind": "nav",
+      "refersTo": "cabecera-marca",
+      "description": "La única superficie de color pleno. En móvil hace de tirador de la hoja.",
+      "html": "<header class=\"ds-cabecera\"><span class=\"ds-tirador\"></span><span class=\"ds-logo\">moom</span></header>",
+      "css": ".ds-cabecera { position:relative; display:flex; align-items:center; justify-content:center; padding:18px 16px 16px; border-radius:22px 22px 0 0; background:#f5a623; } .ds-tirador { position:absolute; top:7px; left:50%; transform:translateX(-50%); width:40px; height:4px; border-radius:999px; background:rgba(18,18,18,.28); } .ds-logo { font-size:22px; font-weight:600; letter-spacing:-.02em; color:#fff; }"
+    },
+    {
+      "name": "Aviso de conexión",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "Va por encima de las tres vistas y NO borra lo que hay debajo.",
+      "html": "<div class=\"ds-aviso\" role=\"status\">Sin conexión con el servicio. Los tiempos pueden estar desactualizados.</div>",
+      "css": ".ds-aviso { margin:0 16px 8px; padding:10px 12px; border-radius:12px; background:#fdf1dd; color:#9a5b00; font-size:13px; line-height:1.4; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "La marquesina limpia",
+    "overview": "Moom se mira de pie, con prisa, a plena luz y con una mano. El sistema visual está construido para ese momento y no para una captura de pantalla: es mobiliario urbano bien hecho, no una aplicación que quiere que la admires. El color es señalética: casi toda la interfaz es papel, tinta y sombra, y el color aparece únicamente donde significa algo. La profundidad reemplaza a la raya: no hay un solo borde sólido separando bloques, porque una línea gris siempre lee como una división administrativa.",
+    "keyCharacteristics": [
+      "Papel cálido de fondo, fichas blancas que flotan sobre él.",
+      "Esquinas generosas y proporcionales al tamaño: nada tiene pico.",
+      "Un único naranja de marca, y un ámbar oscuro para cuando ese naranja tiene que ser texto.",
+      "Contraste y tamaño antes que refinamiento.",
+      "El movimiento responde al dedo; nunca entretiene."
+    ],
+    "rules": [
+      {
+        "name": "La Regla de los Dos Naranjas",
+        "section": "colors",
+        "body": "El naranja de marca da 2:1 sobre blanco: es un relleno, nunca un color de texto. Sobre él va tinta oscura. Para texto naranja sobre blanco existe el Ámbar Legible."
+      },
+      {
+        "name": "La Regla del Color con Significado",
+        "section": "colors",
+        "body": "Los colores de línea salen del GTFS y los corporativos de cada red no se armonizan con la paleta."
+      },
+      {
+        "name": "La Regla de los 16 Píxeles",
+        "section": "typography",
+        "body": "Ningún campo de formulario baja de 16px: por debajo, Safari en iOS hace zoom al enfocarlo."
+      },
+      {
+        "name": "La Regla del Pulgar",
+        "section": "layout",
+        "body": "Nada que se pulse baja de 44x44px de área sensible."
+      },
+      {
+        "name": "La Regla del Canto Doble",
+        "section": "elevation",
+        "body": "Toda sombra lleva dos capas: canto corto y despegue largo."
+      },
+      {
+        "name": "La Regla de Ningún Pico",
+        "section": "shapes",
+        "body": "Ningún elemento tiene esquina viva."
+      }
+    ],
+    "dos": [
+      "Do usar el par Naranja Marquesina + Tinta cuando el acento sea relleno, y Ámbar Legible cuando sea texto sobre blanco.",
+      "Do separar bloques con hueco y sombra.",
+      "Do dar radio a todo, proporcional a su tamaño.",
+      "Do dejar los colores del GTFS y los corporativos tal como llegan.",
+      "Do mantener 44px de área sensible en cualquier cosa que se pulse.",
+      "Do acompañar cada estado de una alternativa con movimiento reducido."
+    ],
+    "donts": [
+      "Don't poner texto blanco sobre el naranja de marca. Da 2:1 y es ilegible.",
+      "Don't añadir bordes sólidos de 1px para separar.",
+      "Don't usar los colores de sistema para decorar: significan estado.",
+      "Don't teñir de naranja una ficha al señalarla.",
+      "Don't animar width, height, padding ni margin.",
+      "Don't poner un elemento pulsable que no sea <button> o <a>."
+    ]
+  }
+}
