@@ -12,15 +12,23 @@
 
   <title>Moom — Autobuses de Madrid en tiempo real</title>
 
-  <!-- Inter, la tipografía de la identidad de marca. Se piden solo los tres
-       grosores que se usan (400 normal, 500 medio, 600 semibold) en vez de
-       la familia entera. display=swap enseña el texto con la fuente del
-       sistema mientras Inter carga, en lugar de dejar huecos en blanco. -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <!-- Inter, la tipografía de la identidad de marca. Servida desde este mismo
+       dominio y no desde fonts.googleapis.com: así la visita no le manda su
+       dirección IP a Google solo por abrir el mapa. El detalle está en
+       tipografia.css. -->
+  <link rel="stylesheet" href="tipografia.css" />
+
+  <!-- La fuente se precarga porque la usa TODO el texto de la página: sin
+       esto el navegador no se entera de que la necesita hasta haber
+       descargado y leído tipografia.css, y ese retraso se ve como un cambio
+       de letra a media carga. Solo el subconjunto latino, que es el que se
+       usa siempre; el extendido se pide únicamente si hace falta. -->
   <link
-    rel="stylesheet"
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"
+    rel="preload"
+    href="assets/fuentes/inter-latin.woff2"
+    as="font"
+    type="font/woff2"
+    crossorigin
   />
 
   <!-- Icono de la pestaña. El SVG es el que usan Chrome y Firefox: al ser
@@ -155,6 +163,14 @@
       <div id="titulo-seccion"></div>
       <ul id="lista-llegadas"></ul>
     </div>
+
+    <!-- Va fuera de las tres vistas, así que aparece bajo la que esté activa
+         en cada momento sin tener que repetirlo tres veces. Deliberadamente
+         discreto: es un enlace que casi nadie va a pulsar, pero que tiene que
+         estar y ser fácil de encontrar cuando se busca. -->
+    <p id="pie-legal">
+      <a href="privacidad.html">Privacidad y condiciones de uso</a>
+    </p>
 
   </div>
 

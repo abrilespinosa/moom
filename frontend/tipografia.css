@@ -1,0 +1,54 @@
+/* --- INTER, SERVIDA DESDE AQUÍ ---
+
+   Antes se pedía a fonts.googleapis.com. Se trajo al proyecto por privacidad:
+   cada visita enviaba la dirección IP de esa persona a los servidores de
+   Google sin que hubiera forma de evitarlo ni motivo para hacerlo. Hay
+   jurisprudencia europea concreta sobre esto (el tribunal regional de Múnich
+   condenó en 2022 por exactamente este caso), y el arreglo es simplemente
+   servir los archivos uno mismo.
+
+   Inter está publicada bajo la SIL Open Font License 1.1, que permite
+   redistribuirla. La licencia va al lado de los archivos, en
+   assets/fuentes/OFL.txt, porque la propia OFL exige que los acompañe.
+
+   Va en su propio archivo, y no dentro de style.css, para que las páginas que
+   no cargan la interfaz del mapa (privacidad.html) puedan usar la tipografía
+   sin arrastrar 34 KB de maquetación que no les sirve de nada.
+
+   DOS archivos y no seis: Google sirve Inter como fuente VARIABLE, así que el
+   mismo woff2 vale para todos los grosores. Se comprobó bajando los tres pesos
+   por separado y viendo que los tres tenían el mismo MD5. De ahí el
+   "font-weight: 100 900": no es un grosor concreto, es el rango que el archivo
+   sabe generar. Bajarlos por separado eran 391 KB para servir 132. */
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  /* swap: se ve el texto con la fuente del sistema mientras Inter carga, en
+     lugar de dejar huecos en blanco. Es el mismo comportamiento que se pedía
+     antes con &display=swap en la URL de Google. */
+  font-display: swap;
+  src: url("assets/fuentes/inter-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* El segundo subconjunto solo se descarga si aparece algún carácter suyo. Se
+   conserva porque los nombres de parada del GTFS traen alguna rareza, pero la
+   inmensa mayoría de las visitas no llegarán a pedirlo.
+
+   No se bajan los subconjuntos cirílico, griego ni vietnamita: la interfaz
+   está en español y el callejero de Madrid no los usa, así que serían otros
+   250 KB para caracteres que no se van a pintar nunca. */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("assets/fuentes/inter-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7,
+    U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF,
+    U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
