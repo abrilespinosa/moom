@@ -37,8 +37,9 @@ Funciona en móvil, tableta y escritorio, y no necesita instalación ni cuenta.
 - Funciona nada más clonar el repositorio: los recorridos vienen precalculados en `backend/data/precalculado/`, así que no hacen falta los archivos GTFS pesados (ver [Datos precalculados](#datos-precalculados)).
 - Hay 21 líneas que los datos abiertos no detallan (la F y la G de la EMT, la Línea 3 de Metro y varias interurbanas). Se pueden buscar y abrir igual, avisando de que su recorrido no está disponible; sus paradas y sus tiempos en vivo funcionan con normalidad.
 
-**Favoritos y cercanía**
+**Favoritos, recientes y cercanía**
 - Paradas y líneas se pueden marcar como favoritas, y se guardan en el navegador (`localStorage`).
+- Las **tres últimas paradas consultadas** se recuerdan y aparecen con el buscador vacío, porque quien usa esto a diario se mueve entre unas pocas paradas y tenía que buscarlas otra vez en cada visita.
 - Con el buscador vacío, la lista muestra los favoritos, filtrados por el modo de transporte activo igual que una búsqueda.
 - Al compartir tu ubicación aparece un grupo **Cerca de ti** con las paradas más próximas, y cada una indica a qué distancia está y cuánto se tarda andando. Es una estimación: línea recta más un 25% por el rodeo de las manzanas, y tira ligeramente alto a propósito, porque quedarse corto hace perder el autobús.
 
@@ -50,6 +51,16 @@ Funciona en móvil, tableta y escritorio, y no necesita instalación ni cuenta.
 - Panel lateral redimensionable arrastrando el divisor; el ancho elegido se recuerda entre visitas.
 - **En móvil y en tableta vertical** el panel deja de ser una columna y pasa a ser una hoja que sube desde abajo, arrastrable desde la banda naranja, con el mapa a pantalla completa detrás. En tableta horizontal y en escritorio se mantiene la vista de dos paneles, que es donde tiene sentido.
 - Refresco automático: cada 10 s para EMT y cada 20 s para Metro, acompasado con el ritmo al que cada API actualiza sus datos. Si un refresco falla, se avisa en el panel en vez de seguir mostrando los tiempos viejos como si fueran actuales.
+
+**Pensado para usarse de pie en la parada**
+- **Se instala en la pantalla de inicio** y **abre sin conexión**: la interfaz se guarda en el dispositivo, así que aparece al instante incluso bajo tierra. Los tiempos, eso sí, necesitan red: no se enseñan llegadas viejas sin decir de cuándo son.
+- **Los refrescos se paran** cuando la pantalla se apaga o cambias de pestaña, y se reanudan al volver. Antes seguía pidiendo datos con el móvil en el bolsillo.
+- **El tiempo de la próxima llegada se agranda en móvil**, que es donde se lee a un brazo de distancia y con sol de frente.
+- **Si ya diste permiso de ubicación**, la aplicación abre directamente en las paradas que tienes cerca, sin volver a preguntarte.
+
+**Accesibilidad**
+
+Cumplir WCAG 2.1 AA es un requisito del proyecto, no una aspiración. Toda la aplicación se maneja con teclado, hay indicador de foco visible, el buscador tiene etiqueta y se respeta `prefers-reduced-motion`, que en una hoja que recorre toda la pantalla no es un detalle.
 
 ## Estructura del proyecto
 
@@ -70,10 +81,12 @@ frontend/
   tipografia.css       # Inter, servida desde el propio dominio
   privacidad.html      # Privacidad, condiciones de uso y atribuciones
   app.js               # Lógica del mapa, búsqueda, favoritos, llegadas y vehículos
+  sw.js                # Service worker: la interfaz, sin conexión
+  manifest.json        # Para poder instalarla en la pantalla de inicio
   assets/              # Logo, iconos de parada y estación, y los archivos de fuente
 scripts/
   precalcular_datos.py # Genera backend/data/precalculado/ desde el GTFS crudo
-tests/                 # Suite de pytest del backend (37 tests, sin red)
+tests/                 # Suite de pytest del backend (40 tests, sin red)
   frontend/            # Tests de navegador, aparte (ver Tests)
 api/index.py           # Punto de entrada del backend en Vercel
 vercel.json            # Reparto de rutas entre frontend estático y API
@@ -84,6 +97,7 @@ vercel.json            # Reparto de rutas entre frontend estático y API
 | Endpoint | Descripción |
 |---|---|
 | `GET /paradas` | Las 13.542 paradas de las tres redes con id, nombre, coordenadas y fuente |
+| `GET /paradas/cerca` | Las más próximas a un punto (`?lat=&lon=`). Unos 4 KB frente a los 254 de la lista completa, para poder empezar a usar la aplicación antes de que llegue |
 | `GET /parada/{stop_id}` | Próximas llegadas de autobús. Para EMT devuelve el JSON de su API; para ids `par_` (interurbano) devuelve las llegadas agrupadas por línea y destino |
 | `GET /lineas` | Las 603 líneas de las tres redes, sin recorrido, para el buscador |
 | `GET /linea/{id}` | Una línea con sus paradas en orden, separadas por sentido (ej. `EMT-027`) |
@@ -115,11 +129,11 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-37 tests en menos de medio segundo. **Ninguno sale a la red**: solo se prueban rutas que responden desde memoria o que cortan antes de llamar a EMT o al CRTM, comprobado ejecutándolos con las conexiones salientes bloqueadas. Una caída de una API externa no puede poner la suite en rojo.
+40 tests en menos de medio segundo. **Ninguno sale a la red**: solo se prueban rutas que responden desde memoria o que cortan antes de llamar a EMT o al CRTM, comprobado ejecutándolos con las conexiones salientes bloqueadas. Una caída de una API externa no puede poner la suite en rojo.
 
 ### Tests de frontend
 
-Hay otros 13 que abren la página en Chrome y comprueban lo que aparece en pantalla: el orden de los resultados del buscador, el cambio entre las tres vistas, el aviso cuando el backend falla y los favoritos.
+Hay otros 25 que abren la página en Chrome y comprueban lo que aparece en pantalla: el orden de los resultados del buscador, el cambio entre las tres vistas, el aviso cuando el backend falla, los favoritos, las paradas recientes, el camino de teclado y que al salir de una estación no queden trenes en el mapa.
 
 ```bash
 pytest -m navegador
@@ -140,6 +154,8 @@ Se ejecutan también en GitHub Actions en cada push.
 ## Despliegue
 
 Está desplegado en Vercel: el frontend como archivos estáticos y FastAPI como función, montada bajo `/api`. Al compartir dominio, en producción no hace falta CORS.
+
+El repositorio está conectado, así que **cada cambio que entra en `main` se despliega solo**, y cada rama genera un preview con su propia URL. `main` está protegida: no admite pushes directos y exige que los dos jobs de tests estén en verde antes de poder mergear un PR, de modo que a producción no llega nada sin probar.
 
 La pieza que hay que respetar es `.vercelignore`: sin él, el despliegue se lleva los 188 MB de GTFS crudo. Ojo a que se aplica al build estático **pero no al paquete de la función**, que necesita además `excludeFiles` en `vercel.json` para lo mismo.
 
