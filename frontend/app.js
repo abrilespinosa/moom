@@ -404,30 +404,58 @@ botonesFiltro.forEach((boton) => {
 // que el id es lo único estable entre volcados.
 const CLAVE_FAVORITOS = "moom:favoritos";
 
-// La última parada consultada. Se guarda SOLO el id, por el mismo motivo que
-// los favoritos: nombres y coordenadas cambian con cada volcado GTFS.
+// Las últimas paradas consultadas. Se guardan SOLO los ids, por el mismo
+// motivo que los favoritos: nombres y coordenadas cambian con cada volcado
+// GTFS.
 //
-// Existe porque quien usa esto a diario va casi siempre a la misma parada, y
-// hoy tenía que buscarla otra vez en cada visita. Es el atajo con más uso
-// posible de toda la aplicación y cuesta un id en localStorage.
-const CLAVE_ULTIMA_PARADA = "moom:ultima-parada";
+// Existe porque quien usa esto a diario se mueve entre unas pocas paradas
+// —la de casa, la del trabajo, la del cambio— y tenía que buscarlas otra vez
+// en cada visita.
+const CLAVE_RECIENTES = "moom:recientes";
 
-function recordarUltimaParada(id) {
+// Tres. Es el número de paradas entre las que se mueve alguien con una rutina
+// (ida, vuelta y el trasbordo); con más, la lista deja de ser un atajo y pasa
+// a ser otra cosa que hay que leer.
+const MAXIMO_RECIENTES = 3;
+
+// La clave anterior guardaba una sola parada. Se borra al escribir la nueva
+// para no dejar basura en el navegador de quien ya la tuviera.
+const CLAVE_ANTIGUA_ULTIMA_PARADA = "moom:ultima-parada";
+
+function idsRecientes() {
   try {
-    localStorage.setItem(CLAVE_ULTIMA_PARADA, id);
+    const guardado = JSON.parse(localStorage.getItem(CLAVE_RECIENTES));
+    return Array.isArray(guardado) ? guardado : [];
   } catch (error) {
-    // Navegación privada, o almacenamiento lleno. No es motivo para romper
-    // nada: simplemente no habrá atajo la próxima vez.
-    console.error("No se pudo recordar la última parada:", error);
+    // JSON corrupto, o localStorage no disponible (navegación privada).
+    return [];
   }
 }
 
-function ultimaParadaGuardada() {
+function recordarParadaReciente(id) {
   try {
-    return PARADAS_POR_ID.get(localStorage.getItem(CLAVE_ULTIMA_PARADA)) ?? null;
+    // La recién mirada va primero, y si ya estaba en la lista se mueve arriba
+    // en vez de duplicarse.
+    const ids = [id, ...idsRecientes().filter((otro) => otro !== id)].slice(
+      0,
+      MAXIMO_RECIENTES
+    );
+
+    localStorage.setItem(CLAVE_RECIENTES, JSON.stringify(ids));
+    localStorage.removeItem(CLAVE_ANTIGUA_ULTIMA_PARADA);
   } catch (error) {
-    return null;
+    // Almacenamiento lleno o bloqueado. No es motivo para romper nada:
+    // simplemente no habrá atajo la próxima vez.
+    console.error("No se pudieron recordar las paradas recientes:", error);
   }
+}
+
+// Los ids que ya no existen se omiten, igual que en los favoritos: un volcado
+// GTFS nuevo puede renumerar una parada.
+function paradasRecientes() {
+  return idsRecientes()
+    .map((id) => PARADAS_POR_ID.get(id))
+    .filter(Boolean);
 }
 
 // Dos conjuntos separados porque los ids de línea y de parada son de
@@ -875,16 +903,18 @@ function actualizarResultadosBusqueda() {
       }
     }
 
-    // La última consultada va DESPUÉS de lo cercano y no antes, por el mismo
-    // motivo del comentario de arriba: si sabemos dónde estás, lo que tienes
-    // al lado manda. Y se omite si ya ha salido ahí arriba, que es lo que
-    // ocurre justamente en el caso más común —estás en tu parada de siempre—
-    // y repetirla sería ruido.
-    const ultima = ultimaParadaGuardada();
+    // Las recientes van DESPUÉS de lo cercano y no antes, por el mismo motivo
+    // del comentario de arriba: si sabemos dónde estás, lo que tienes al lado
+    // manda. Y se omite la que ya haya salido ahí arriba, que es lo que ocurre
+    // justamente en el caso más común —estás en tu parada de siempre— y
+    // repetirla sería ruido.
+    const recientes = paradasRecientes().filter(
+      (parada) => pasaElFiltroDeModo(parada) && !yaListadas.includes(parada)
+    );
 
-    if (ultima && pasaElFiltroDeModo(ultima) && !yaListadas.includes(ultima)) {
-      listaResultados.appendChild(encabezadoDeGrupo("La última que miraste"));
-      listaResultados.appendChild(crearResultadoDeParada(ultima));
+    if (recientes.length > 0) {
+      listaResultados.appendChild(encabezadoDeGrupo("Recientes"));
+      recientes.forEach((p) => listaResultados.appendChild(crearResultadoDeParada(p)));
     }
 
     pintarFavoritos();
@@ -971,7 +1001,7 @@ function seleccionarParada(parada, origen = "busqueda") {
     parada.circuloEnMapa.setIcon(iconoSeleccionadoPara(parada));
   }
   paradaSeleccionada = parada;
-  recordarUltimaParada(parada.id);
+  recordarParadaReciente(parada.id);
 
   // Centramos el mapa en la parada elegida, con buen zoom
   mapa.setView([parada.lat, parada.lon], 17);

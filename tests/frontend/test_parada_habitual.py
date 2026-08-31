@@ -1,5 +1,5 @@
 """
-Los atajos de quien usa la aplicación a diario en la misma parada.
+Los atajos de quien usa la aplicación a diario entre las mismas paradas.
 
 Todo esto solo se nota en la SEGUNDA visita, así que es exactamente el tipo de
 comportamiento que se rompe sin que nadie se entere.
@@ -10,7 +10,7 @@ import pytest
 pytestmark = pytest.mark.navegador
 
 
-def test_la_ultima_parada_consultada_se_recuerda(render):
+def test_la_parada_consultada_se_guarda_como_reciente(render):
     resultado = render("""
         await esperarA(() => TODAS_LAS_PARADAS.length > 0);
         escribirEnBuscador("cibeles");
@@ -18,20 +18,53 @@ def test_la_ultima_parada_consultada_se_recuerda(render):
         pulsarResultado();
         await esperarA(() => vistaVisible() === "vista-llegadas");
 
-        responder(localStorage.getItem("moom:ultima-parada"));
+        responder(JSON.parse(localStorage.getItem("moom:recientes")));
     """)
 
-    assert resultado == "72"
+    assert resultado == ["72"]
 
 
-def test_al_volver_se_ofrece_la_ultima_parada(render):
+def test_la_mas_reciente_va_primera_y_no_se_duplica(render):
     """
-    Con el buscador vacío tiene que aparecer, sin escribir nada. Es el atajo
+    Volver a una parada que ya estaba en la lista la sube arriba en vez de
+    añadirla otra vez. Sin esto, ir y volver de la misma parada llenaría las
+    tres posiciones con el mismo sitio.
+    """
+    resultado = render("""
+        await esperarA(() => TODAS_LAS_PARADAS.length > 0);
+
+        recordarParadaReciente("72");
+        recordarParadaReciente("270");
+        recordarParadaReciente("72");
+
+        responder(JSON.parse(localStorage.getItem("moom:recientes")));
+    """)
+
+    assert resultado == ["72", "270"]
+
+
+def test_solo_se_guardan_tres(render):
+    """Cuatro paradas distintas: la más antigua se cae."""
+    resultado = render("""
+        await esperarA(() => TODAS_LAS_PARADAS.length > 0);
+
+        ["72", "270", "par_8_06002", "est_4_323"].forEach(recordarParadaReciente);
+
+        responder(JSON.parse(localStorage.getItem("moom:recientes")));
+    """)
+
+    assert resultado == ["est_4_323", "par_8_06002", "270"]
+    assert len(resultado) == 3
+
+
+def test_al_volver_se_ofrecen_las_recientes(render):
+    """
+    Con el buscador vacío tienen que aparecer, sin escribir nada. Es el atajo
     entero: tres gestos menos en cada visita.
     """
     resultado = render("""
         await esperarA(() => TODAS_LAS_PARADAS.length > 0);
-        localStorage.setItem("moom:ultima-parada", "72");
+        localStorage.setItem("moom:recientes", JSON.stringify(["72", "270"]));
         actualizarResultadosBusqueda();
         await esperarA(() => resultados().length > 0);
 
@@ -39,23 +72,48 @@ def test_al_volver_se_ofrece_la_ultima_parada(render):
                     .map((li) => li.textContent.trim()));
     """)
 
-    assert any("última que miraste" in t for t in resultado), resultado
+    assert any("Recientes" in t for t in resultado), resultado
     assert any("Cibeles" in t for t in resultado), resultado
+    assert any("Atocha" in t for t in resultado), resultado
 
 
-def test_una_ultima_parada_que_ya_no_existe_no_rompe_la_lista(render):
+def test_una_reciente_que_ya_no_existe_se_omite(render):
     """Mismo caso que los favoritos: los ids caducan con cada volcado GTFS."""
     resultado = render("""
         await esperarA(() => TODAS_LAS_PARADAS.length > 0);
-        localStorage.setItem("moom:ultima-parada", "parada-que-ya-no-existe");
+        localStorage.setItem(
+          "moom:recientes",
+          JSON.stringify(["72", "parada-que-ya-no-existe"])
+        );
         actualizarResultadosBusqueda();
-        await esperarA(() => document.querySelectorAll("#lista-resultados li").length > 0);
+        await esperarA(() => resultados().length > 0);
 
         responder([...document.querySelectorAll("#lista-resultados li")]
                     .map((li) => li.textContent.trim()));
     """)
 
-    assert not any("última que miraste" in t for t in resultado), resultado
+    assert any("Cibeles" in t for t in resultado), resultado
+    assert not any("ya-no-existe" in t for t in resultado), resultado
+
+
+def test_la_clave_antigua_se_limpia(render):
+    """
+    Antes se guardaba una sola parada en "moom:ultima-parada". Se borra al
+    escribir la nueva para no dejar basura en el navegador de quien la tuviera.
+    """
+    resultado = render("""
+        await esperarA(() => TODAS_LAS_PARADAS.length > 0);
+        localStorage.setItem("moom:ultima-parada", "270");
+        recordarParadaReciente("72");
+
+        responder({
+          antigua: localStorage.getItem("moom:ultima-parada"),
+          nueva: JSON.parse(localStorage.getItem("moom:recientes")),
+        });
+    """)
+
+    assert resultado["antigua"] is None
+    assert resultado["nueva"] == ["72"]
 
 
 def test_el_reloj_se_para_con_la_pestana_oculta(render):
