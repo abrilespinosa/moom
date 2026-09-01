@@ -65,6 +65,11 @@
 
   /* Radios. Generosos y proporcionales al tamaño del elemento, como en
      iOS, donde una tarjeta grande curva más que un chip pequeño. */
+  /* Curva de salida fuerte para la interfaz. Las easings del navegador son
+     demasiado planas para una animación deliberada: esta arranca rápido, que
+     es el momento en el que se está mirando. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+
   --radio-grande: 22px;
   --radio-medio: 16px;
   --radio-pequeno: 12px;
@@ -133,6 +138,8 @@ body {
    entero: el elemento es ancho para que sea fácil de agarrar con el ratón,
    y dentro se dibuja un tirador estrecho y redondeado. */
 #divisor {
+  /* Contexto de posicionamiento para el tirador, que va absoluto. */
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -147,20 +154,26 @@ body {
   height: 44px;
   border-radius: 999px;
   background: var(--borde-fuerte);
-  /* scaleY y no height: animar una propiedad de layout obliga al navegador a
-     recalcular la página entera en cada fotograma. Aquí el coste es mínimo
-     porque es un pseudo-elemento de 4px, pero la transformación es gratis. */
-  transform-origin: center;
-  transition: background 0.12s, transform 0.12s;
+
+  /* Fuera del flujo, y por eso se anima "height" sin culpa: un elemento
+     absolutamente posicionado no reflowa a sus hermanos ni al contenedor, así
+     que el coste queda contenido en él mismo.
+     
+     Se probó antes con scaleY, que es más barato todavía, pero deformaba el
+     radio: escalar una píldora convierte sus tapas semicirculares en elipses.
+     A 4px de ancho apenas se veía, pero esto no cuesta más y no deforma. */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  transition: background 0.12s var(--ease-out), height 0.12s var(--ease-out);
 }
 
 #divisor:hover::before,
 #divisor:focus-visible::before,
 #divisor.arrastrando::before {
   background: var(--acento);
-  /* 76px sobre los 44px de reposo, expresado como escala para que lo anime
-     el compositor y no el motor de maquetación. */
-  transform: scaleY(1.727);
+  height: 76px;
 }
 
 #divisor:focus {
@@ -340,7 +353,10 @@ body {
   font-size: 15px;
   background: var(--superficie);
   box-shadow: var(--sombra-sutil);
-  transition: transform 0.14s, box-shadow 0.14s, background 0.14s;
+  /* Asimétrico a propósito: soltar puede permitirse 0.16s, pero la respuesta
+     al dedo tiene que chasquear (ver :active). */
+  transition: transform 0.16s var(--ease-out), box-shadow 0.16s var(--ease-out),
+    background 0.16s var(--ease-out);
 }
 
 /* Al pasar por encima la ficha se levanta un poco en vez de teñirse: el
@@ -355,6 +371,9 @@ body {
 /* Al pulsar se hunde. Es el gesto táctil de iOS: la respuesta ocurre
    mientras el dedo sigue abajo, no al soltar. */
 #lista-resultados li:active {
+  /* La pulsación va más rápida que el soltado: el dedo espera respuesta
+     inmediata, la vuelta al reposo no. */
+  transition-duration: 0.1s;
   transform: scale(0.985);
   box-shadow: var(--sombra-sutil);
 }
@@ -1091,7 +1110,13 @@ body {
     bottom: calc(var(--hoja-recogida) + 16px);
     right: 16px;
     z-index: 999;
-    transition: bottom 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+
+    /* Sin transición sobre "bottom" a propósito. Es una propiedad de layout,
+       y este botón arrastra un backdrop-filter de 20px: animarla obligaría a
+       recomponer el desenfoque en cada fotograma. Y no se gana nada, porque
+       "bottom" aquí solo cambia al cruzar el punto de ruptura o al girar el
+       teléfono —no sigue a la hoja durante el arrastre—, que es un momento
+       en el que la pantalla entera se recoloca de todas formas. */
   }
 
   /* Objetivos táctiles: en escritorio se pulsan con ratón, aquí con el
@@ -1143,6 +1168,12 @@ body {
    navegador lo declara en (hover: none), así que aquí se devuelven a su
    estado normal los efectos que se notan, que son los de movimiento.
    Los cambios de color se dejan estar: son sutiles y no descolocan nada. */
+/* OJO AL AÑADIR UN :hover NUEVO CON MOVIMIENTO.
+   
+   Este bloque va al revés de lo habitual: en vez de encerrar cada efecto en
+   @media (hover: hover), se deshacen aquí uno a uno. Funciona, pero tiene una
+   consecuencia que hay que conocer: una regla :hover nueva nace SIN proteger
+   hasta que alguien se acuerde de añadirla también aquí abajo. */
 @media (hover: none) {
   #lista-resultados li:hover {
     box-shadow: var(--sombra-sutil);
@@ -1380,7 +1411,9 @@ body {
   /* El resto de efectos son de hover y de pulsación: no desplazan la vista,
      así que se quedan, pero sin el movimiento. */
   #lista-resultados li:hover,
-  #lista-resultados li:active {
+  #lista-resultados li:active,
+  #boton-ubicacion:hover,
+  #boton-ubicacion:active {
     transform: none;
   }
 }
