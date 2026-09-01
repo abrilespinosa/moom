@@ -1417,3 +1417,132 @@ body {
     transform: none;
   }
 }
+
+/* --- HORARIOS DE PASO ---
+   Plegado por defecto con <details>, que trae el comportamiento de abrir y
+   cerrar sin JavaScript y es accesible con teclado de serie. */
+#horarios-linea {
+  margin: 4px 12px 8px;
+  border-radius: var(--radio-medio);
+  background: var(--superficie);
+  box-shadow: var(--sombra-sutil);
+  overflow: hidden;
+}
+
+#horarios-linea summary {
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  /* El triángulo por defecto de Safari se sale del sistema visual; se quita
+     y se dibuja el estado con el propio bloque. */
+  list-style: none;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+#horarios-linea summary::-webkit-details-marker {
+  display: none;
+}
+
+#horarios-linea summary::after {
+  content: "▾";
+  color: var(--texto-suave);
+  transition: transform 0.16s var(--ease-out);
+}
+
+#horarios-linea[open] summary::after {
+  transform: rotate(180deg);
+}
+
+#contenido-horarios {
+  padding: 0 14px 14px;
+}
+
+/* El aviso de que el volcado no distingue tipos de día. Va en ámbar lavado
+   porque informa, no alarma: no es un error, es una limitación del origen. */
+.horarios-aviso {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: var(--radio-pequeno);
+  background: var(--acento-suave);
+  color: var(--acento-texto);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.horarios-vacio {
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: 13px;
+}
+
+.horario-destino {
+  margin: 14px 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.horario-dias {
+  margin: 10px 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--texto-suave);
+}
+
+/* Las salidas en rejilla y no en lista: son decenas de horas y en columna
+   obligarían a desplazarse por toda la tabla para ver la que interesa.
+   auto-fill deja que quepan las que quepan según el ancho del panel. */
+.horario-salidas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.horario-salidas li {
+  padding: 5px 0;
+  border-radius: 8px;
+  background: var(--fondo);
+  text-align: center;
+  font-size: 13px;
+  /* Cifras de ancho fijo: en una rejilla de horas, si no, las columnas
+     bailan y la tabla se lee peor. */
+  font-variant-numeric: tabular-nums;
+}
+
+/* Las frecuencias son pocas filas y llevan dos datos, así que van en lista. */
+.horario-franjas {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.horario-franjas li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--separador);
+  font-size: 13px;
+}
+
+.horario-franjas li:last-child {
+  border-bottom: none;
+}
+
+.franja-horas {
+  font-variant-numeric: tabular-nums;
+}
+
+.franja-cada {
+  color: var(--texto-suave);
+  white-space: nowrap;
+}

@@ -173,3 +173,55 @@ def test_las_paradas_cercanas_pesan_una_fracción_de_la_lista_completa():
     todas = len(cliente.get("/paradas").content)
 
     assert cerca < todas / 50, f"cerca={cerca} todas={todas}"
+
+
+def test_los_horarios_del_interurbano_son_horas_reales():
+    """
+    El CRTM publica horas de paso: 1,24 M de filas en stop_times y CERO en
+    frequencies. Comprobado contra la tabla oficial de la línea 191, cuyas 32
+    horas distintas coinciden una a una con las del volcado.
+    """
+    datos = cliente.get("/linea/CRTM-8__191___/horarios").json()
+
+    assert datos["disponible"] is True
+    assert datos["tipo"] == "horas"
+
+    salidas = datos["sentidos"][0]["dias"][0]["salidas"]
+    assert "06:00" in salidas and "06:40" in salidas and "06:55" in salidas
+    # Los nocturnos de la tabla oficial, normalizados a hora de reloj.
+    assert "00:30" in salidas and "02:30" in salidas
+
+
+def test_los_horarios_de_la_emt_son_frecuencias():
+    """
+    EMT no publica horas de paso, publica intervalos. Enseñar "pasa a las
+    7:03" sería inventarse una precisión que el origen no tiene.
+    """
+    datos = cliente.get("/linea/EMT-027/horarios").json()
+
+    assert datos["tipo"] == "frecuencias"
+
+    franjas = datos["sentidos"][0]["dias"][0]["franjas"]
+    assert franjas
+    assert all({"desde", "hasta", "cada"} <= set(f) for f in franjas)
+    assert all(f["cada"] > 0 for f in franjas)
+
+
+def test_se_avisa_cuando_el_volcado_no_distingue_tipos_de_dia():
+    """
+    101 de las 340 líneas del CRTM traen un único servicio de "todos los días".
+    El panel tiene que poder decirlo en vez de dar a entender que solo hay un
+    horario; la 191 es una de ellas y la 421 no.
+    """
+    sin_tipos = cliente.get("/linea/CRTM-8__191___/horarios").json()
+    con_tipos = cliente.get("/linea/CRTM-8__421___/horarios").json()
+
+    assert sin_tipos["sinTiposDeDia"] is True
+    assert con_tipos["sinTiposDeDia"] is False
+
+    dias = [b["dias"] for b in con_tipos["sentidos"][0]["dias"]]
+    assert "Laborables" in dias and "Sábados" in dias
+
+
+def test_los_horarios_de_una_linea_desconocida_dan_404():
+    assert cliente.get("/linea/NO-EXISTE/horarios").status_code == 404

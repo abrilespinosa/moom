@@ -236,6 +236,20 @@ def cargar_todas_las_paradas():
     return _leer_precalculado("paradas.json") or _paradas_desde_gtfs()
 
 
+def cargar_horarios():
+    """
+    Los horarios de paso por línea, del JSON precalculado.
+
+    Devuelve {} si no está: los horarios son un añadido, no algo sin lo que la
+    aplicación deje de funcionar, así que el endpoint responde "no disponible"
+    en vez de impedir que arranque el servidor.
+
+    Lo genera scripts/precalcular_horarios.py, que es donde está explicado por
+    qué el CRTM da horas y EMT y Metro dan frecuencias.
+    """
+    return _leer_precalculado("horarios.json") or {}
+
+
 # Caché en memoria: igual que las paradas, los colores de las líneas no
 # cambian durante la ejecución del servidor, así que los cargamos una
 # sola vez la primera vez que se pidan y reutilizamos el resultado.

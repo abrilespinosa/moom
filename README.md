@@ -31,6 +31,11 @@ Funciona en móvil, tableta y escritorio, y no necesita instalación ni cuenta.
 - Posición en el mapa de los trenes que se acercan a la estación seleccionada, con el color oficial de cada línea y un tooltip con el sentido.
 - Las 242 estaciones resuelven internamente su código de andén, que es el único que entiende la API del CRTM.
 
+**Horarios de paso**
+- Al abrir una línea se pueden desplegar sus horarios, separados por sentido y por tipo de día.
+- **Cada red publica una cosa distinta y el panel lo respeta.** El interurbano del CRTM da horas de paso reales, así que se muestra la tabla de salidas. La EMT y el Metro solo publican **frecuencias**, así que se muestran las franjas con su intervalo («de 6:00 a 9:00, cada 5 min»): decir «pasa a las 7:03» sería inventarse una precisión que el origen no tiene.
+- En 101 de las 340 líneas interurbanas los datos abiertos **no distinguen** laborables de sábados y domingos. En esas se avisa, en vez de dar a entender que solo hay un horario.
+
 **Búsqueda por línea**
 - Un único buscador para paradas y líneas: al escribir un número, las líneas aparecen primero y se prioriza la coincidencia exacta (quien busca "27" quiere la línea 27, no la 270).
 - Al elegir una línea se ve su recorrido completo, con las paradas en orden y separadas por sentido; desde ahí se salta a las llegadas de cualquiera de ellas.
@@ -86,7 +91,8 @@ frontend/
   assets/              # Logo, iconos de parada y estación, y los archivos de fuente
 scripts/
   precalcular_datos.py # Genera backend/data/precalculado/ desde el GTFS crudo
-tests/                 # Suite de pytest del backend (40 tests, sin red)
+  precalcular_horarios.py # Genera los horarios de paso de cada línea
+tests/                 # Suite de pytest del backend (44 tests, sin red)
   frontend/            # Tests de navegador, aparte (ver Tests)
 api/index.py           # Punto de entrada del backend en Vercel
 vercel.json            # Reparto de rutas entre frontend estático y API
@@ -101,6 +107,7 @@ vercel.json            # Reparto de rutas entre frontend estático y API
 | `GET /parada/{stop_id}` | Próximas llegadas de autobús. Para EMT devuelve el JSON de su API; para ids `par_` (interurbano) devuelve las llegadas agrupadas por línea y destino |
 | `GET /lineas` | Las 603 líneas de las tres redes, sin recorrido, para el buscador |
 | `GET /linea/{id}` | Una línea con sus paradas en orden, separadas por sentido (ej. `EMT-027`) |
+| `GET /linea/{id}/horarios` | Horarios de paso por sentido y tipo de día. Devuelve horas reales en el interurbano y franjas de frecuencia en EMT y Metro |
 | `GET /metro/parada/{cod_stop}` | Próximos trenes en una estación, agrupados por línea y destino |
 | `GET /metro/parada/{cod_stop}/lineas` | Solo las líneas de una estación; la mitad barata del anterior, para el mapa |
 | `GET /metro/linea/{cod_line}/vehiculos` | Posición de los trenes de una línea. Acepta `?cod_stop=est_XXX` para obtener los cercanos a una estación concreta |
@@ -129,7 +136,7 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-40 tests en menos de medio segundo. **Ninguno sale a la red**: solo se prueban rutas que responden desde memoria o que cortan antes de llamar a EMT o al CRTM, comprobado ejecutándolos con las conexiones salientes bloqueadas. Una caída de una API externa no puede poner la suite en rojo.
+44 tests en menos de medio segundo. **Ninguno sale a la red**: solo se prueban rutas que responden desde memoria o que cortan antes de llamar a EMT o al CRTM, comprobado ejecutándolos con las conexiones salientes bloqueadas. Una caída de una API externa no puede poner la suite en rojo.
 
 ### Tests de frontend
 

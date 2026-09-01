@@ -21,6 +21,7 @@ from backend.emt_client import obtener_llegadas_parada
 from backend.gtfs_loader import (
     cargar_todas_las_paradas,
     cargar_colores_lineas_metro,
+    cargar_horarios,
     cargar_lineas,
 )
 from backend.metro_client import (
@@ -67,6 +68,10 @@ PARADAS_POR_ID = {parada["id"]: parada for parada in PARADAS}
 # desactiva sola, sin afectar al resto de la aplicación.
 LINEAS = cargar_lineas()
 LINEAS_POR_ID = {linea["id"]: linea for linea in LINEAS}
+
+# Los horarios de paso, indexados por el mismo id de línea. Se cargan una vez
+# aquí, como todo lo demás del volcado.
+HORARIOS = cargar_horarios()
 
 
 @app.exception_handler(requests.RequestException)
@@ -335,6 +340,46 @@ def recorrido_linea(cod_linea: str, respuesta: Response):
         **{clave: linea[clave] for clave in linea if clave != "sentidos"},
         "sentidos": sentidos,
     }
+
+
+@app.get("/linea/{cod_linea}/horarios")
+def horarios_linea(cod_linea: str, respuesta: Response):
+    """
+    Los horarios de paso de una línea, por sentido y tipo de día.
+
+    Ejemplo de uso: GET /linea/CRTM-8__191___/horarios
+
+    Va aparte de /linea/{id} a propósito: el recorrido se pide siempre al abrir
+    una línea, y los horarios solo si se despliegan. Son datos distintos, de
+    tamaño distinto, y no tiene sentido pagar los dos cuando se quiere uno.
+
+    El campo "tipo" dice qué se está devolviendo, y NO es un detalle de
+    implementación que el frontend pueda ignorar:
+
+    - "horas": salidas reales, como las publica el CRTM para el interurbano.
+    - "frecuencias": franjas con su intervalo ("de 6:00 a 9:00, cada 5 min"),
+      que es lo único que publican EMT y Metro. Enseñarlo como si fueran horas
+      de paso sería inventarse una precisión que el origen no tiene.
+
+    Y "sinTiposDeDia" avisa de que el volcado no distingue laborable de sábado
+    ni de domingo para esa línea. Son 101 de las 340 del CRTM, así que no es un
+    caso raro: el panel tiene que decirlo en vez de dar a entender que solo hay
+    un horario.
+    """
+    if cod_linea not in LINEAS_POR_ID:
+        raise HTTPException(status_code=404, detail="Línea desconocida")
+
+    horarios = HORARIOS.get(cod_linea)
+
+    if horarios is None:
+        # La línea existe pero no tiene horarios en el volcado. Es el mismo
+        # caso que las 21 sin recorrido: se responde con honestidad en vez de
+        # con un 404, que daría a entender que la línea no existe.
+        return {"disponible": False, "sentidos": []}
+
+    respuesta.headers["Cache-Control"] = CACHE_DATOS_ESTATICOS
+
+    return {"disponible": True, **horarios}
 
 
 @app.get("/")
