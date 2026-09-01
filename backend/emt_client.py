@@ -205,7 +205,11 @@ def obtener_llegadas_parada(stop_id):
         "cultureInfo": "ES",
         "Text_StopRequired_YN": "N",
         "Text_EstimationsRequired_YN": "Y",
-        "Text_IncidencesRequired_YN": "N",
+        # Sí, que las manden. Vienen en la MISMA respuesta que las llegadas
+        # (data[0].Incident), así que no cuesta una petición más. Estaban
+        # apagadas desde el principio, y para quien espera en la parada un
+        # desvío de su línea importa más que el minuto que falta.
+        "Text_IncidencesRequired_YN": "Y",
     }
 
     respuesta = _sesion.post(
@@ -218,6 +222,24 @@ def obtener_llegadas_parada(stop_id):
     _guardar_en_cache(_cache_paradas, stop_id, (datos, time.time()))
 
     return datos
+
+def incidencias_de(respuesta_de_llegadas):
+    """
+    Saca las incidencias de una respuesta de llegadas, o [] si no trae.
+
+    OJO, y es lo que decide cómo se pueden enseñar: NO vienen filtradas por
+    parada. Preguntando por la parada 72 devuelve 21 incidencias de TODA la
+    red de EMT, la mayoría ya pasadas. Sin filtrar por fecha, cada parada
+    mostraría dos docenas de avisos que no aplican, que es peor que no tener
+    la función.
+    """
+    try:
+        return respuesta_de_llegadas["data"][0]["Incident"]["ListaIncident"]["data"]
+    except (KeyError, IndexError, TypeError):
+        # Cuando no hay ninguna, la API no devuelve la lista vacía: devuelve
+        # otra forma. Que falte no es un error.
+        return []
+
 
 if __name__ == "__main__":
     STOP_ID = "72"

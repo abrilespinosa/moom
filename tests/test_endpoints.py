@@ -258,3 +258,49 @@ def test_metro_no_tiene_hojas_oficiales():
 
     assert datos["imagenes"] is None
     assert datos["tipo"] == "frecuencias"
+
+
+def test_las_llegadas_no_arrastran_las_incidencias():
+    """
+    EMT las manda dentro de la misma respuesta, y son el 87% de su peso: 19 KB
+    de 22. El poller pide esto CADA 10 SEGUNDOS, así que dejarlas ahí sería
+    servir dos docenas de avisos de toda la red —la mayoría de semanas
+    pasadas— a alguien que solo quiere saber cuándo pasa su autobús, con datos
+    móviles y en la calle.
+    """
+    datos = cliente.get("/parada/72").json()
+
+    assert "Incident" not in datos["data"][0]
+    assert len(cliente.get("/parada/72").content) < 8000
+
+
+def test_quitarlas_de_las_llegadas_no_se_las_quita_a_incidencias():
+    """
+    Las dos rutas leen de la MISMA caché de emt_client, así que quitar el bloque
+    del original se las vaciaba a quien sí las quiere. Pasó al escribirlo, y el
+    síntoma era desconcertante: /incidencias devolvía cero justo después de
+    consultar una parada.
+    """
+    cliente.get("/parada/72")
+    primera = cliente.get("/incidencias").json()
+
+    cliente.get("/parada/72")
+    segunda = cliente.get("/incidencias").json()
+
+    assert primera["incidencias"], "sin avisos no se prueba nada"
+    assert len(segunda["incidencias"]) == len(primera["incidencias"])
+
+
+def test_cada_incidencia_dice_si_sigue_o_ya_terminó():
+    """
+    Es lo único que hace útil la lista: la API devuelve un arrastre de semanas.
+    """
+    datos = cliente.get("/incidencias").json()
+
+    validos = {"en_curso", "programada", "terminada", "desconocida"}
+    assert all(i["estado"] in validos for i in datos["incidencias"])
+
+    # Y el contador solo cuenta lo que está pasando ahora.
+    assert datos["enCurso"] == sum(
+        1 for i in datos["incidencias"] if i["estado"] == "en_curso"
+    )

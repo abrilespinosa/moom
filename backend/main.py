@@ -11,13 +11,15 @@ Luego puedes visitar en el navegador, por ejemplo:
     http://127.0.0.1:8000/parada/72
 """
 
+import datetime
+import time
 from concurrent.futures import ThreadPoolExecutor
 
 import requests
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from backend.emt_client import obtener_llegadas_parada
+from backend.emt_client import incidencias_de, obtener_llegadas_parada
 from backend.gtfs_loader import (
     cargar_accesibilidad,
     cargar_todas_las_paradas,
@@ -462,6 +464,114 @@ def horarios_linea(cod_linea: str, respuesta: Response):
     }
 
 
+# --- INCIDENCIAS DE LA EMT ---
+#
+# Vienen dentro de la respuesta de llegadas de CUALQUIER parada, y son de toda
+# la red: preguntando por la parada 72 devuelve las 21 de la EMT entera, no las
+# de esa parada. Por eso hay un endpoint propio en vez de colgarlas del panel
+# de una parada, y por eso se piden siempre por la misma: da igual cuál.
+#
+# La 72 es Cibeles, una parada céntrica y estable. Si algún día desapareciera,
+# esto devolvería una lista vacía en vez de romperse, que es lo que debe pasar
+# con un aviso: su ausencia no puede tumbar la aplicación.
+PARADA_PARA_INCIDENCIAS = "72"
+
+# Cambian pocas veces al día, así que media hora de caché ahorra una llamada a
+# la cuota de EMT en cada visita sin retrasar nada que importe.
+SEGUNDOS_CACHE_INCIDENCIAS = 1800
+
+_cache_incidencias = None
+_incidencias_pedidas_en = 0.0
+
+
+def _fecha_emt(texto):
+    """'30/08/2026 10:45:00' -> datetime, o None si no viene o no se entiende."""
+    try:
+        return datetime.datetime.strptime(texto, "%d/%m/%Y %H:%M:%S")
+    except (ValueError, TypeError):
+        return None
+
+
+def _estado_de(incidencia, ahora):
+    """
+    En curso, programada o terminada, según su ventana de vigencia.
+
+    Es lo único que hace útil esta lista. La API devuelve un arrastre de
+    semanas —hoy, 20 de las 21 ya habían pasado— así que sin distinguir el
+    estado se estarían enseñando avisos de cosas que ya ocurrieron.
+
+    Cuando faltan las fechas se devuelve "desconocida" en vez de suponer: dar
+    por terminada una incidencia que sigue activa es el error caro.
+    """
+    desde = _fecha_emt(incidencia.get("rssFrom"))
+    hasta = _fecha_emt(incidencia.get("rssTo"))
+
+    if desde is None or hasta is None:
+        return "desconocida"
+
+    if ahora < desde:
+        return "programada"
+
+    if ahora > hasta:
+        return "terminada"
+
+    return "en_curso"
+
+
+@app.get("/incidencias")
+def listar_incidencias(respuesta: Response):
+    """
+    Los avisos de servicio de la EMT, con su estado.
+
+    Ejemplo de uso: GET /incidencias
+
+    Cada una lleva un "estado" calculado aquí a partir de su ventana:
+    "en_curso", "programada", "terminada" o "desconocida". Vienen ordenadas
+    por eso mismo, porque lo que está pasando ahora es lo único que cambia una
+    decisión en la parada.
+
+    Solo hay de EMT: ni el CRTM ni Metro publican incidencias por esta vía.
+    """
+    global _cache_incidencias, _incidencias_pedidas_en
+
+    if (
+        _cache_incidencias is None
+        or time.time() - _incidencias_pedidas_en > SEGUNDOS_CACHE_INCIDENCIAS
+    ):
+        crudas = incidencias_de(obtener_llegadas_parada(PARADA_PARA_INCIDENCIAS))
+        _cache_incidencias = crudas
+        _incidencias_pedidas_en = time.time()
+
+    ahora = datetime.datetime.now()
+    orden = {"en_curso": 0, "programada": 1, "desconocida": 2, "terminada": 3}
+
+    incidencias = [
+        {
+            "titulo": i.get("title", ""),
+            "descripcion": i.get("description", ""),
+            "causa": i.get("cause", ""),
+            "efecto": i.get("effect", ""),
+            "desde": i.get("rssFrom", ""),
+            "hasta": i.get("rssTo", ""),
+            "estado": _estado_de(i, ahora),
+            # El PDF oficial con el detalle y los planos del desvío.
+            "masInfo": (i.get("moreInfo") or {}).get("@url"),
+        }
+        for i in _cache_incidencias
+    ]
+
+    incidencias.sort(key=lambda i: (orden.get(i["estado"], 9), i["desde"]))
+
+    # Nada de CACHE_DATOS_ESTATICOS: un aviso de servicio no es el volcado
+    # GTFS. Cinco minutos en el navegador, que es menos que su propio caché.
+    respuesta.headers["Cache-Control"] = "public, max-age=300"
+
+    return {
+        "incidencias": incidencias,
+        "enCurso": sum(1 for i in incidencias if i["estado"] == "en_curso"),
+    }
+
+
 @app.get("/")
 def inicio():
     """
@@ -529,7 +639,33 @@ def llegadas_parada(stop_id: str):
             "llegadas": agrupar_llegadas(llegadas),
         }
 
-    return obtener_llegadas_parada(stop_id)
+    llegadas = obtener_llegadas_parada(stop_id)
+
+    # Las incidencias se quitan de aquí ANTES de devolverlas, aunque vengan en
+    # la misma respuesta de EMT.
+    #
+    # El motivo, medido: son 19 KB de los 22 que ocupa esta respuesta, o sea el
+    # 87%. Y el poller la pide CADA 10 SEGUNDOS. Serviría dos docenas de avisos
+    # de toda la red —la mayoría de semanas pasadas— a alguien que solo quiere
+    # saber cuándo pasa su autobús, y encima con datos móviles en la calle.
+    #
+    # Para eso está /incidencias, que las sirve una vez y las cachea media
+    # hora. Aquí solo estorban.
+    # OJO: se copia antes de tocar nada. obtener_llegadas_parada() guarda esta
+    # respuesta en su caché de 30s y /incidencias lee de esa MISMA caché, así
+    # que hacer pop sobre el original le vaciaba los avisos a quien sí los
+    # quiere. Pasó al escribir esto, y el síntoma era desconcertante:
+    # /incidencias devolvía cero justo después de pedir una parada.
+    if not (isinstance(llegadas.get("data"), list) and llegadas["data"]):
+        return llegadas
+
+    sin_incidencias = dict(llegadas)
+    sin_incidencias["data"] = [
+        {clave: valor for clave, valor in llegadas["data"][0].items() if clave != "Incident"},
+        *llegadas["data"][1:],
+    ]
+
+    return sin_incidencias
 
 
 def lineas_de_metro_de(info_estacion):

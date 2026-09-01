@@ -355,6 +355,7 @@ const inputBuscar = document.getElementById("input-buscar");
 const listaResultados = document.getElementById("lista-resultados");
 const vistaBusqueda = document.getElementById("vista-busqueda");
 const vistaLlegadas = document.getElementById("vista-llegadas");
+const vistaIncidencias = document.getElementById("vista-incidencias");
 const nombreParadaActual = document.getElementById("nombre-parada-actual");
 const codigoParadaActual = document.getElementById("codigo-parada-actual");
 const iconoParadaActual = document.getElementById("icono-parada-actual");
@@ -952,6 +953,7 @@ function mostrarVista(nombre) {
   vistaBusqueda.style.display = nombre === "busqueda" ? "block" : "none";
   vistaLinea.style.display = nombre === "linea" ? "flex" : "none";
   vistaLlegadas.style.display = nombre === "llegadas" ? "flex" : "none";
+  vistaIncidencias.style.display = nombre === "incidencias" ? "flex" : "none";
 }
 
 // Desde dónde se llegó al panel de llegadas. Sirve para que "Volver"
@@ -2526,3 +2528,136 @@ detallesHorarios.addEventListener("toggle", () => {
     cargarHorarios(lineaActual);
   }
 });
+
+// --- INCIDENCIAS DE LA EMT ---
+//
+// El botón solo aparece si hay algo que contar, y solo cuenta lo que está EN
+// CURSO. La API devuelve un arrastre de semanas —hoy, 20 de 21 ya habían
+// pasado— así que un contador de "21 avisos" sería ruido puro.
+//
+// Aun así, la lista completa se enseña al entrar, con el estado de cada una.
+// Saber que el desvío de tu línea YA TERMINÓ también es información: explica
+// por qué el autobús venía raro esta mañana.
+const botonIncidencias = document.getElementById("boton-incidencias");
+const vistaIncidenciasLista = document.getElementById("lista-incidencias");
+const tituloIncidencias = document.getElementById("titulo-incidencias");
+const botonVolverIncidencias = document.getElementById("boton-volver-incidencias");
+
+const ESTADOS_DE_INCIDENCIA = {
+  en_curso: { texto: "En curso", clase: "en-curso" },
+  programada: { texto: "Programada", clase: "programada" },
+  terminada: { texto: "Ya terminada", clase: "terminada" },
+  desconocida: { texto: "Sin fechas", clase: "desconocida" },
+};
+
+let incidenciasCargadas = null;
+
+// De dónde se venía al entrar en incidencias, para que Volver no mande siempre
+// al buscador. Mismo criterio que vistaDeOrigen en las llegadas.
+let vistaAntesDeIncidencias = "busqueda";
+
+function pintarIncidencias(datos) {
+  const enCurso = datos.enCurso;
+
+  tituloIncidencias.textContent =
+    enCurso > 0
+      ? `${enCurso} ${enCurso === 1 ? "aviso en curso" : "avisos en curso"}`
+      : "Ningún aviso en curso ahora mismo";
+
+  vistaIncidenciasLista.innerHTML = "";
+
+  datos.incidencias.forEach((incidencia) => {
+    const estado = ESTADOS_DE_INCIDENCIA[incidencia.estado] ?? ESTADOS_DE_INCIDENCIA.desconocida;
+
+    const item = document.createElement("li");
+    item.className = `incidencia incidencia-${estado.clase}`;
+
+    const cabecera = document.createElement("div");
+    cabecera.className = "incidencia-cabecera";
+
+    const marca = document.createElement("span");
+    marca.className = "incidencia-estado";
+    marca.textContent = estado.texto;
+    cabecera.appendChild(marca);
+
+    if (incidencia.desde) {
+      const cuando = document.createElement("span");
+      cuando.className = "incidencia-fechas";
+      // Solo día y hora: el año sobra para algo que dura unas horas.
+      cuando.textContent = `${incidencia.desde.slice(0, 5)} · ${incidencia.desde.slice(11, 16)}–${incidencia.hasta.slice(11, 16)}`;
+      cabecera.appendChild(cuando);
+    }
+
+    const titulo = document.createElement("h3");
+    titulo.className = "incidencia-titulo";
+    titulo.textContent = incidencia.titulo;
+
+    const descripcion = document.createElement("p");
+    descripcion.className = "incidencia-descripcion";
+    descripcion.textContent = incidencia.descripcion;
+
+    item.append(cabecera, titulo, descripcion);
+
+    if (incidencia.masInfo) {
+      const enlace = document.createElement("a");
+      enlace.className = "incidencia-enlace";
+      enlace.href = incidencia.masInfo;
+      enlace.target = "_blank";
+      enlace.rel = "noopener";
+      enlace.textContent = "Ver el aviso oficial (PDF) ↗";
+      item.appendChild(enlace);
+    }
+
+    vistaIncidenciasLista.appendChild(item);
+  });
+}
+
+async function cargarIncidencias() {
+  try {
+    const datos = await pedirJson(`${URL_BACKEND}/incidencias`);
+    incidenciasCargadas = datos;
+
+    // El botón solo se enseña si hay algo EN CURSO. Con cero, la aplicación
+    // se calla: un aviso permanente que nunca avisa de nada deja de leerse.
+    if (datos.enCurso > 0) {
+      botonIncidencias.hidden = false;
+      botonIncidencias.textContent =
+        datos.enCurso === 1
+          ? "1 aviso de servicio en curso"
+          : `${datos.enCurso} avisos de servicio en curso`;
+    }
+  } catch (error) {
+    // Sin aviso en pantalla: esto es información añadida, y que falle no debe
+    // ensuciar el panel de quien solo quiere saber cuándo pasa su autobús.
+    console.error("No se pudieron cargar las incidencias:", error);
+  }
+}
+
+botonIncidencias.addEventListener("click", () => {
+  if (!incidenciasCargadas) {
+    return;
+  }
+
+  vistaAntesDeIncidencias = vistaVisibleAhora();
+  pintarIncidencias(incidenciasCargadas);
+  mostrarVista("incidencias");
+  subtituloHeader.textContent = "Avisos de servicio de la EMT";
+});
+
+botonVolverIncidencias.addEventListener("click", () => {
+  mostrarVista(vistaAntesDeIncidencias);
+  subtituloHeader.textContent =
+    vistaAntesDeIncidencias === "linea"
+      ? "Recorrido de la línea"
+      : vistaAntesDeIncidencias === "llegadas"
+      ? "Próximas llegadas"
+      : "Busca una parada o una línea";
+});
+
+function vistaVisibleAhora() {
+  if (vistaLlegadas.style.display !== "none") return "llegadas";
+  if (vistaLinea.style.display !== "none") return "linea";
+  return "busqueda";
+}
+
+cargarIncidencias();
