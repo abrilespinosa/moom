@@ -299,7 +299,13 @@ def _respuesta_de_mentira():
                         "data": [
                             {
                                 "title": "Corte en Gran Vía",
-                                "description": "x" * 4000,  # las de verdad son largas
+                                "description": (
+                                    "Corte de 10:00 a 20:00. " + "x" * 4000
+                                    # EMT cierra cada aviso con su logotipo
+                                    # en HTML, pensado para un lector RSS.
+                                    + "<p><img src='http://feeds.emtmadrid.es"
+                                    ":8082/images/00-Logo-RSS_Corporativo.png'/></p>"
+                                ),
                                 "rssFrom": emt(ahora - datetime.timedelta(days=1)),
                                 "rssTo": emt(ahora + datetime.timedelta(days=1)),
                             },
@@ -395,3 +401,21 @@ def test_cada_incidencia_dice_si_sigue_o_ya_terminó(sin_salir_a_emt):
     # Una de cada, y en este orden: lo que está pasando ahora va primero.
     assert estados == ["en_curso", "programada", "terminada"]
     assert datos["enCurso"] == 1
+
+
+def test_los_avisos_llegan_sin_el_html_de_dentro(sin_salir_a_emt):
+    """
+    EMT manda la descripción en HTML, no en texto: las 21 de hoy terminan con
+    su logotipo corporativo en un <img>. El panel pinta con textContent, así
+    que no se interpretaba —no había inyección posible— pero se leía
+    literalmente, etiquetas incluidas, al final de cada aviso.
+    """
+    datos = cliente.get("/incidencias").json()
+
+    descripciones = [i["descripcion"] for i in datos["incidencias"]]
+
+    assert not any("<" in d for d in descripciones)
+    assert not any("RSS_Corporativo" in d for d in descripciones)
+
+    # Y el texto de verdad sigue estando: quitar el HTML no puede llevárselo.
+    assert any(d.startswith("Corte de 10:00 a 20:00.") for d in descripciones)
