@@ -82,6 +82,10 @@
          anuncie al aparecer sin robar el foco. -->
     <div id="aviso-conexion" role="status" hidden></div>
 
+    <!-- Avisos de servicio de la EMT. Oculto mientras no haya ninguno: un
+         botón permanente que casi siempre no lleva a nada deja de mirarse. -->
+    <button id="boton-incidencias" type="button" hidden></button>
+
     <!-- VISTA 1: buscador -->
     <div id="vista-busqueda">
       <!-- Filtros por modo. Cada uno lleva el mismo icono con el que se
@@ -185,6 +189,13 @@
 
       <div id="titulo-seccion"></div>
       <ul id="lista-llegadas"></ul>
+    </div>
+
+    <!-- VISTA 4: incidencias (oculta al inicio) -->
+    <div id="vista-incidencias">
+      <button id="boton-volver-incidencias" class="boton-volver">← Volver</button>
+      <div id="titulo-incidencias"></div>
+      <ul id="lista-incidencias"></ul>
     </div>
 
     <!-- Va fuera de las tres vistas, así que aparece bajo la que esté activa

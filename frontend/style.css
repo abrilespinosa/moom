@@ -70,6 +70,10 @@
      es el momento en el que se está mirando. */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 
+  /* Triángulo de aviso, incrustado como máscara para que herede el color del
+     elemento en vez de traer el suyo. */
+  --icono-aviso: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z'/%3E%3Cpath d='M12 9v4'/%3E%3Cpath d='M12 17h.01'/%3E%3C/svg%3E");
+
   --radio-grande: 22px;
   --radio-medio: 16px;
   --radio-pequeno: 12px;
@@ -1664,5 +1668,142 @@ body {
    hace de todos los posibles aquí. */
 .accesibilidad-solo_medidas {
   background: var(--acento-suave);
+  color: var(--acento-texto);
+}
+
+/* --- AVISOS DE SERVICIO ---
+   El botón solo existe cuando hay algo en curso, así que puede permitirse
+   llamar la atención: si está, importa. */
+#boton-incidencias {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: calc(100% - 32px);
+  margin: 0 16px 8px;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: var(--radio-pequeno);
+  background: var(--acento-suave);
+  color: var(--acento-texto);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.16s var(--ease-out);
+}
+
+/* El triángulo de aviso, dibujado. A este tamaño un emoji se ve distinto en
+   cada sistema y no hereda el color. */
+#boton-incidencias::before {
+  content: "";
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  background: currentColor;
+  -webkit-mask: var(--icono-aviso) center / contain no-repeat;
+  mask: var(--icono-aviso) center / contain no-repeat;
+}
+
+#boton-incidencias::after {
+  content: "›";
+  margin-left: auto;
+  font-size: 17px;
+  opacity: 0.6;
+}
+
+#boton-incidencias:hover {
+  background: #fbe7c8;
+}
+
+#vista-incidencias {
+  display: none;
+  flex-direction: column;
+  padding: 12px 16px 16px;
+}
+
+#titulo-incidencias {
+  margin: 8px 0 12px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+#lista-incidencias {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.incidencia {
+  padding: 12px 14px;
+  border-radius: var(--radio-medio);
+  background: var(--superficie);
+  box-shadow: var(--sombra-sutil);
+}
+
+/* Las que ya pasaron se atenúan en vez de esconderse: saber que el desvío de
+   tu línea YA TERMINÓ también informa, y explica por qué el autobús venía
+   raro esta mañana. Pero no puede pesar lo mismo que lo que está pasando. */
+.incidencia-terminada {
+  opacity: 0.62;
+}
+
+.incidencia-cabecera {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.incidencia-estado {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  background: var(--gris-superficie);
+  color: var(--texto-suave);
+}
+
+/* Rojo solo para lo que está ocurriendo ahora. Es el único sitio de toda la
+   aplicación donde se usa, y por eso significa algo. */
+.incidencia-en-curso .incidencia-estado {
+  background: rgba(255, 59, 48, 0.12);
+  color: #b3261e; /* el --rojo puro sobre su fondo no llega a 4,5:1 */
+}
+
+.incidencia-programada .incidencia-estado {
+  background: var(--acento-suave);
+  color: var(--acento-texto);
+}
+
+.incidencia-fechas {
+  font-size: 11px;
+  color: var(--texto-suave);
+  font-variant-numeric: tabular-nums;
+}
+
+.incidencia-titulo {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.incidencia-descripcion {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--texto-suave);
+}
+
+.incidencia-enlace {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 12px;
   color: var(--acento-texto);
 }

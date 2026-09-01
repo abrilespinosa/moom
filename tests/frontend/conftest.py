@@ -214,8 +214,48 @@ VEHICULOS_L2 = {
     ],
 }
 
+# Tres avisos, uno de cada estado. Con los tres se puede comprobar que el
+# contador solo cuenta los EN CURSO y que los terminados se enseñan igual,
+# atenuados, porque saber que el desvío ya acabó también informa.
+INCIDENCIAS = {
+    "enCurso": 1,
+    "incidencias": [
+        {
+            "titulo": "Corte en Gran Vía. Afectadas 4 líneas de EMT.",
+            "descripcion": "Hoy, de 10:00 a 20:00, las líneas 1, 2, 44 y 133 circulan desviadas.",
+            "causa": "04 - Manifestación",
+            "efecto": "05 - Desvío programado",
+            "desde": "01/09/2026 10:00:00",
+            "hasta": "01/09/2026 20:00:00",
+            "estado": "en_curso",
+            "masInfo": "https://www.crtm.es/aviso.pdf",
+        },
+        {
+            "titulo": "Carrera popular en Castellana. Afectadas 9 líneas.",
+            "descripcion": "El 3 de septiembre, de 18:30 a 21:00.",
+            "causa": "12 - Evento deportivo",
+            "efecto": "05 - Desvío programado",
+            "desde": "03/09/2026 18:30:00",
+            "hasta": "03/09/2026 21:00:00",
+            "estado": "programada",
+            "masInfo": None,
+        },
+        {
+            "titulo": "Obras en Atocha. Afectada la línea 27.",
+            "descripcion": "El 20 de agosto, de 08:00 a 14:00.",
+            "causa": "02 - Obras",
+            "efecto": "05 - Desvío programado",
+            "desde": "20/08/2026 08:00:00",
+            "hasta": "20/08/2026 14:00:00",
+            "estado": "terminada",
+            "masInfo": None,
+        },
+    ],
+}
+
 RESPUESTAS = {
     "/paradas": PARADAS,
+    "/incidencias": INCIDENCIAS,
     "/metro/parada/est_4_323": METRO_ALSACIA,
     "/metro/parada/est_4_323/lineas": {"codStop": "est_4_323", "codLines": ["4__2___"]},
     "/metro/linea/4__2___/vehiculos": VEHICULOS_L2,
@@ -389,7 +429,7 @@ AYUDAS = """
   }
 
   function vistaVisible() {
-    for (const id of ["vista-busqueda", "vista-linea", "vista-llegadas"]) {
+    for (const id of ["vista-busqueda", "vista-linea", "vista-llegadas", "vista-incidencias"]) {
       const vista = document.getElementById(id);
       if (vista && getComputedStyle(vista).display !== "none") return id;
     }
