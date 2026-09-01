@@ -87,3 +87,46 @@ def test_una_parada_ensena_el_codigo_de_la_marquesina(render):
 
     assert "06002" in resultado
     assert "par_8_" not in resultado
+
+
+def test_cada_parada_dice_de_que_red_es(render):
+    """
+    Con el filtro en "Todos" —el que sale al abrir, y donde viven favoritos,
+    recientes y "Cerca de ti"— no había forma de saber si un resultado era una
+    parada de bus o una estación de Metro. Las líneas sí lo decían.
+
+    Se comprueba el icono Y el nombre accesible: el icono va con alt vacío por
+    decorativo, así que si el nombre no lleva la red, para quien no ve la
+    pantalla el dato sigue sin existir.
+    """
+    resultado = render("""
+        await esperarA(() => TODAS_LAS_PARADAS.length > 0);
+
+        const red = (nombre) => {
+          escribirEnBuscador(nombre);
+          const fila = resultados().find(
+            (li) => (li.textContent || "").includes(nombre)
+          );
+          if (!fila) return null;
+          const icono = fila.querySelector(".resultado-icono");
+          const boton = fila.querySelector(".resultado-principal");
+          return {
+            icono: icono ? icono.getAttribute("src") : null,
+            etiqueta: boton ? boton.getAttribute("aria-label") : null,
+          };
+        };
+
+        responder({
+          emt: red("Cibeles"),
+          crtm: red("Avenida de America"),
+          metro: red("Alsacia"),
+        });
+    """)
+
+    assert resultado["emt"]["icono"] == "assets/bus-urbano.png"
+    assert resultado["crtm"]["icono"] == "assets/bus-interurbano.png"
+    assert resultado["metro"]["icono"] == "assets/metro.png"
+
+    assert "Bus urbano" in resultado["emt"]["etiqueta"]
+    assert "Bus interurbano" in resultado["crtm"]["etiqueta"]
+    assert "Metro" in resultado["metro"]["etiqueta"]

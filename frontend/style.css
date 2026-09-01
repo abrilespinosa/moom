@@ -1671,6 +1671,24 @@ body {
   color: var(--acento-texto);
 }
 
+/* El icono de red de cada resultado de parada. Ocupa el mismo hueco de 34px
+   que el número de las líneas, para que las dos clases de resultado queden
+   alineadas en la misma lista.
+
+   object-fit: contain y no un tamaño fijo porque los tres PNG tienen
+   proporciones muy distintas —el autobús es vertical y el rombo del Metro
+   apaisado— y estirarlos los deforma. Es la misma razón que en los filtros. */
+.resultado-icono {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  object-fit: contain;
+  padding: 5px;
+  background: var(--gris-superficie);
+  border-radius: 10px;
+  box-sizing: border-box;
+}
+
 /* La versión de una pieza, para los resultados del buscador. Va pegada al
    borde derecho con margin-left auto, antes de la estrella: así no compite
    con el nombre por el ancho ni rompe su truncado. */
