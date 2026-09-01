@@ -27,7 +27,7 @@
 // Al subir este número se descarta la caché anterior entera. Hay que subirlo
 // cuando cambie la LISTA de abajo; para los cambios de contenido no hace
 // falta, porque la estrategia de red primero ya los recoge sola.
-const VERSION = "moom-v1";
+const VERSION = "moom-v2";
 
 // Lo mínimo para que la aplicación se dibuje sin red. No se precachea el
 // callejero (254 KB): eso es dato, no concha.
@@ -41,6 +41,8 @@ const CONCHA = [
   "/assets/logo.svg",
   "/assets/favicon.svg",
   "/assets/fuentes/inter-latin.woff2",
+  "/assets/leaflet/leaflet.js",
+  "/assets/leaflet/leaflet.css",
 ];
 
 // Lo que se guarda para siempre porque su contenido no cambia sin cambiar de
@@ -76,8 +78,8 @@ self.addEventListener("fetch", (evento) => {
   const url = new URL(peticion.url);
 
   // Fuera de aquí: cualquier cosa que no sea un GET a nuestro propio dominio.
-  // Eso deja pasar de largo los tiles de CARTO, Leaflet desde unpkg y todo lo
-  // demás, que se sirven como siempre.
+  // Eso deja pasar de largo los tiles de CARTO, que es lo único que sigue
+  // viniendo de fuera.
   if (peticion.method !== "GET" || url.origin !== self.location.origin) {
     return;
   }

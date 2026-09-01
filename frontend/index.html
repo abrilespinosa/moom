@@ -45,11 +45,16 @@
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
   <link rel="icon" type="image/png" sizes="64x64" href="assets/favicon.png" />
 
-  <!-- Hoja de estilos de Leaflet, necesaria para que el mapa se vea bien -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
+  <!-- Leaflet, servido desde aquí y no desde unpkg. Mismo motivo que la
+       tipografía: cada visita le mandaba su IP a un CDN ajeno solo por
+       cargar el mapa. Ahora el único tercero que queda es CARTO, y ese es
+       inevitable porque ES el mapa.
+
+       Los archivos están en assets/leaflet/, con su licencia BSD-2 al lado
+       (la exige al redistribuir, y servirlo desde una web lo es). Las
+       imágenes van en assets/leaflet/images/ porque el CSS las referencia
+       con rutas relativas a sí mismo: si se mueven, salen 404 silenciosos. -->
+  <link rel="stylesheet" href="assets/leaflet/leaflet.css" />
 
   <!-- Nuestros propios estilos, separados en su propio archivo -->
   <link rel="stylesheet" href="style.css" />
@@ -211,7 +216,7 @@
   <button id="boton-ubicacion" title="Mi ubicación">📍</button>
 
   <!-- Librería de Leaflet -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="assets/leaflet/leaflet.js"></script>
 
   <!-- Nuestra propia lógica, separada en su propio archivo.
        Va al final del body para que, cuando se ejecute, los elementos
