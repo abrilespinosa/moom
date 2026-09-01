@@ -759,6 +759,12 @@ body {
   margin-left: 2px;
 }
 
+/* "En camino" en vez de un número. Ver el comentario de app.js: dos palabras
+   al cuerpo de un dígito se comen la tarjeta. */
+.tiempo-proximo.es-texto {
+  font-size: 20px;
+}
+
 /* Avisa de que esa hora sale de la tabla de horarios y no de un seguimiento
    en vivo. Solo aparece en interurbano, que es donde conviven ambas cosas:
    en Metro y EMT todas las llegadas son en tiempo real. Discreta a
@@ -1145,6 +1151,13 @@ body {
   .tiempo-proximo {
     font-size: 34px;
     font-weight: 700;
+  }
+
+  /* En móvil el número sube a 34px, así que el texto tiene que subir también
+     —si no, "En camino" se vería más pequeño que aquí en escritorio— pero sin
+     acercarse al tamaño del dígito. */
+  .tiempo-proximo.es-texto {
+    font-size: 23px;
   }
 
   .tiempo-proximo .unidad {
@@ -1602,5 +1615,41 @@ body {
   display: inline-block;
   margin-top: 10px;
   font-size: 12px;
+  color: var(--acento-texto);
+}
+
+/* --- ACCESIBILIDAD DE LA ESTACIÓN ---
+   Solo se pinta cuando se sabe. Ver el comentario de app.js sobre por qué los
+   tres grados no se pueden fundir en uno. */
+.accesibilidad {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px;
+  padding: 3px 9px 3px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+/* Verde de sistema: aquí el color SÍ significa algo —se puede entrar en
+   silla— que es la única condición bajo la que este proyecto usa color. */
+.accesibilidad-universal {
+  background: rgba(52, 199, 89, 0.14);
+  color: #1c7a35; /* el --verde puro sobre su propio fondo no llega a 4,5:1 */
+}
+
+/* Ascensor sí, medidas complementarias no: se puede entrar, pero no es lo
+   mismo. Neutro a propósito, para no prometer de más. */
+.accesibilidad-solo_ascensor {
+  background: var(--gris-superficie);
+  color: var(--texto-suave);
+}
+
+/* Sin ascensor ni rampa. NO lleva icono de silla: sería el error que más daño
+   hace de todos los posibles aquí. */
+.accesibilidad-solo_medidas {
+  background: var(--acento-suave);
   color: var(--acento-texto);
 }

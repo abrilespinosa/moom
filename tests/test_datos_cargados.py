@@ -133,3 +133,40 @@ def test_las_paradas_de_un_recorrido_existen_como_paradas():
         for sentido in linea["sentidos"]:
             for id_parada in sentido["paradas"]:
                 assert id_parada in ids, f"{linea['id']} apunta a {id_parada}"
+
+
+def test_la_accesibilidad_solo_se_afirma_donde_se_sabe():
+    """
+    La lista oficial de Metro clasifica 166 estaciones. De las demás NO se
+    sabe, y no llevar el campo es distinto de llevarlo a "no accesible":
+    afirmar cualquiera de las dos cosas sin saberlo hace daño, y en un sentido
+    más que en el otro.
+
+    Los datos abiertos no sirven para esto y por eso la lista está a mano; el
+    porqué está en scripts/precalcular_accesibilidad.py.
+    """
+    from backend.main import PARADAS
+
+    por_nombre = {p["nombre"]: p for p in PARADAS if p["fuente"] == "METRO"}
+
+    # Un caso de cada grado, contrastados con metromadrid.es/es/accesibilidad
+    assert por_nombre["Puerta del Sol"]["accesibilidad"] == "universal"
+    assert por_nombre["ALSACIA"]["accesibilidad"] == "solo_ascensor"
+    assert por_nombre["SAN BLAS"]["accesibilidad"] == "solo_medidas"
+
+    # Chueca no está en ninguna de las tres listas: no se sabe, y se calla.
+    assert "accesibilidad" not in por_nombre["CHUECA"]
+
+
+def test_ninguna_parada_de_bus_lleva_accesibilidad():
+    """
+    La lista es de Metro. Marcar una parada de autobús sería inventárselo, y
+    el GTFS de bus tampoco lo dice: no tiene un solo "accesible" en 8.406
+    paradas del interurbano.
+    """
+    from backend.main import PARADAS
+
+    con_dato = [p for p in PARADAS if "accesibilidad" in p]
+
+    assert con_dato
+    assert all(p["fuente"] == "METRO" for p in con_dato)

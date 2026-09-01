@@ -19,6 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from backend.emt_client import obtener_llegadas_parada
 from backend.gtfs_loader import (
+    cargar_accesibilidad,
     cargar_todas_las_paradas,
     cargar_colores_lineas_metro,
     cargar_horarios,
@@ -56,6 +57,30 @@ app.add_middleware(
 )
 
 PARADAS = cargar_todas_las_paradas()
+
+# La accesibilidad se mezcla aquí, al arrancar, en vez de meterla en
+# paradas.json: la generan dos scripts distintos, y así regenerar el callejero
+# tras un volcado GTFS nuevo no borra la lista de accesibilidad, que se
+# mantiene a mano y no viene de ningún GTFS.
+#
+# Solo la llevan las estaciones de Metro que están en la lista oficial. Las
+# demás no llevan el campo, que es distinto de llevarlo a "no": de la mayoría
+# no se sabe, y decir "no accesible" sin saberlo sería tan dañino como decir
+# "accesible" sin saberlo.
+_ACCESIBILIDAD = cargar_accesibilidad()
+
+# Se comprueba la fuente y no solo el id: hay 9 intercambiadores (Moncloa,
+# Plaza de Castilla, Príncipe Pío...) que aparecen DOS veces en el callejero
+# con el MISMO id, una vez desde el volcado del CRTM y otra desde el de Metro,
+# en idénticas coordenadas. Sin este filtro, la copia de autobús también salía
+# marcada como accesible, y la lista es de Metro.
+for _parada in PARADAS:
+    if _parada["fuente"] != "METRO":
+        continue
+
+    _grado = _ACCESIBILIDAD.get(_parada["id"])
+    if _grado is not None:
+        _parada["accesibilidad"] = _grado
 
 # Diccionario id -> parada, para búsquedas rápidas por id en vez de
 # recorrer las 13.542 paradas cada vez que el endpoint de Metro necesita

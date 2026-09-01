@@ -236,6 +236,18 @@ def cargar_todas_las_paradas():
     return _leer_precalculado("paradas.json") or _paradas_desde_gtfs()
 
 
+def cargar_accesibilidad():
+    """
+    Qué estaciones de Metro son accesibles, por id, y en qué grado.
+
+    Devuelve {} si no está. La lista la mantiene a mano
+    scripts/precalcular_accesibilidad.py, y allí está explicado por qué: los
+    datos abiertos no lo dicen, y en accesibilidad un dato inventado es peor
+    que ninguno.
+    """
+    return _leer_precalculado("accesibilidad.json") or {}
+
+
 def cargar_horarios():
     """
     Los horarios de paso por línea, del JSON precalculado.

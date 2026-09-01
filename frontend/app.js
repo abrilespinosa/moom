@@ -104,8 +104,12 @@ let marcadoresParadas = [];
 // normal: ratio 426/512 (0.832) | seleccionado: ratio 506/512 (0.988)
 // — son distintos entre sí porque el borde blanco ensancha más de
 // lo que alarga, así que cada estado necesita su propio tamaño.
-const TAMANO_ICONO_NORMAL = [25, 30];
-const TAMANO_ICONO_SELECCIONADO = [39, 39];
+// Los PNG de bus son de 454x512, o sea una proporción de 0,887. Estaban
+// declarados 25x30 (0,833), así que Leaflet los venía achatando un poco. Al
+// reducirlos se aprovecha para cuadrar la proporción: 23x26 da 0,885.
+const TAMANO_ICONO_NORMAL = [23, 26];
+// El seleccionado sí es cuadrado de verdad (512x512), así que 1:1.
+const TAMANO_ICONO_SELECCIONADO = [35, 35];
 
 // El rombo de Metro tiene una proporción muy distinta a los iconos de
 // bus (es ancho, no vertical): ratio ~1.66:1 en la versión normal y
@@ -1428,11 +1432,17 @@ function crearTarjetaLlegada({
   // vacía, porque el texto ya se explica solo.
   const { valor, unidad } = formatearEspera(tiempos[0]);
 
+  // "En camino" no es un número: son dos palabras, y al tamaño de un dígito
+  // ocupa media tarjeta y grita más que el propio tiempo. El número se lee de
+  // un vistazo porque es corto; un texto largo necesita menos cuerpo para
+  // pesar lo mismo. La unidad vacía es lo que distingue un caso del otro.
+  const esTexto = unidad === "";
+
   item.innerHTML = `
     <div class="tarjeta-linea"${estilo}>${etiqueta}</div>
     <div class="tarjeta-info">
       <div class="tarjeta-destino">${destino}</div>
-      <div class="tiempo-proximo">${valor}<span class="unidad">${unidad}</span>${
+      <div class="tiempo-proximo${esTexto ? " es-texto" : ""}">${valor}<span class="unidad">${unidad}</span>${
     soloHorario ? '<span class="etiqueta-horario">horario</span>' : ""
   }</div>
       ${
@@ -1521,7 +1531,71 @@ function pintarCabeceraParada(parada) {
     codigoParadaActual.appendChild(distancia);
   }
 
+  const accesibilidad = crearDistintivoAccesibilidad(parada);
+  if (accesibilidad) {
+    codigoParadaActual.appendChild(accesibilidad);
+  }
+
   prepararBotonFavorito(botonFavoritoParada, "paradas", parada.id);
+}
+
+// --- ACCESIBILIDAD ---
+//
+// Solo aparece cuando SE SABE. La lista oficial de Metro clasifica sus
+// estaciones en tres grados, y de las que no están en ella no se sabe nada:
+// no llevan distintivo, que es distinto de llevar uno que diga "no accesible".
+//
+// Los dos grados que existen no son lo mismo y no se pueden fundir en un
+// icono único:
+//
+// - "universal": ascensor o rampa MÁS medidas complementarias.
+// - "solo_ascensor": se puede entrar y salir en silla, pero le falta el resto.
+// - "solo_medidas": tiene lo complementario pero NO ascensor, así que para
+//   quien va en silla esto NO es accesible. Por eso no lleva el icono de
+//   silla: sería justo el error que más daño hace.
+const GRADOS_DE_ACCESIBILIDAD = {
+  universal: {
+    texto: "Accesibilidad universal",
+    detalle: "Ascensor o rampa, con medidas complementarias",
+    silla: true,
+  },
+  solo_ascensor: {
+    texto: "Con ascensor o rampa",
+    detalle: "Sin medidas complementarias de accesibilidad",
+    silla: true,
+  },
+  solo_medidas: {
+    texto: "Sin ascensor ni rampa",
+    detalle: "Tiene medidas complementarias, pero no ascensor ni rampa",
+    silla: false,
+  },
+};
+
+// El símbolo internacional de accesibilidad, dibujado. Nada de emoji: a este
+// tamaño se ven distintos en cada sistema y no heredan el color.
+const SVG_SILLA = `
+  <svg viewBox="0 0 24 24" aria-hidden="true" width="13" height="13"
+       fill="none" stroke="currentColor" stroke-width="2"
+       stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="13" cy="4" r="1.6" />
+    <path d="M11.5 8v5h5" />
+    <path d="M16.5 13l2 5" />
+    <path d="M15.5 15.5a5 5 0 1 1-5.5-4" />
+  </svg>`;
+
+function crearDistintivoAccesibilidad(parada) {
+  const grado = GRADOS_DE_ACCESIBILIDAD[parada.accesibilidad];
+
+  if (!grado) {
+    return null;
+  }
+
+  const distintivo = document.createElement("span");
+  distintivo.className = `accesibilidad accesibilidad-${parada.accesibilidad}`;
+  distintivo.title = grado.detalle;
+  distintivo.innerHTML = (grado.silla ? SVG_SILLA : "") + `<span>${grado.texto}</span>`;
+
+  return distintivo;
 }
 
 // --- RESPUESTAS QUE LLEGAN TARDE ---
