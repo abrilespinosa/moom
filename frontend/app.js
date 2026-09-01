@@ -2558,11 +2558,29 @@ let vistaAntesDeIncidencias = "busqueda";
 
 function pintarIncidencias(datos) {
   const enCurso = datos.enCurso;
+  const programadas = datos.programadas ?? 0;
 
-  tituloIncidencias.textContent =
-    enCurso > 0
-      ? `${enCurso} ${enCurso === 1 ? "aviso en curso" : "avisos en curso"}`
-      : "Ningún aviso en curso ahora mismo";
+  // En curso y programados se cuentan aparte porque no significan lo mismo:
+  // uno está pasando y el otro todavía se puede esquivar saliendo antes.
+  const partes = [];
+
+  if (enCurso > 0) {
+    partes.push(`${enCurso} ${enCurso === 1 ? "aviso en curso" : "avisos en curso"}`);
+  }
+
+  if (programadas > 0) {
+    // "1 aviso programado" cuando va solo; si acompaña a los de en curso,
+    // basta "1 programado" para no repetir la palabra.
+    partes.push(
+      partes.length
+        ? `${programadas} ${programadas === 1 ? "programado" : "programados"}`
+        : `${programadas} ${programadas === 1 ? "aviso programado" : "avisos programados"}`
+    );
+  }
+
+  tituloIncidencias.textContent = partes.length
+    ? partes.join(" · ")
+    : "Ningún aviso activo ahora mismo";
 
   vistaIncidenciasLista.innerHTML = "";
 
@@ -2617,14 +2635,21 @@ async function cargarIncidencias() {
     const datos = await pedirJson(`${URL_BACKEND}/incidencias`);
     incidenciasCargadas = datos;
 
-    // El botón solo se enseña si hay algo EN CURSO. Con cero, la aplicación
-    // se calla: un aviso permanente que nunca avisa de nada deja de leerse.
-    if (datos.enCurso > 0) {
+    // El botón cuenta lo que está pasando Y lo que va a pasar; los terminados
+    // se quedan fuera. Con cero, la aplicación se calla: un aviso permanente
+    // que nunca avisa de nada deja de leerse.
+    //
+    // Al principio solo contaba los EN CURSO, y el primer día en producción
+    // eso dejó inalcanzable una manifestación programada que afectaba a 21
+    // líneas: estaba en la lista, pero sin botón no había forma de abrirla.
+    // Un corte que todavía puedes esquivar es justo lo que quieres saber
+    // esperando en la parada.
+    const avisos = datos.enCurso + (datos.programadas ?? 0);
+
+    if (avisos > 0) {
       botonIncidencias.hidden = false;
       botonIncidencias.textContent =
-        datos.enCurso === 1
-          ? "1 aviso de servicio en curso"
-          : `${datos.enCurso} avisos de servicio en curso`;
+        avisos === 1 ? "1 aviso de servicio" : `${avisos} avisos de servicio`;
     }
   } catch (error) {
     // Sin aviso en pantalla: esto es información añadida, y que falle no debe

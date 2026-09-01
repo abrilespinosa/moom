@@ -219,6 +219,7 @@ VEHICULOS_L2 = {
 # atenuados, porque saber que el desvío ya acabó también informa.
 INCIDENCIAS = {
     "enCurso": 1,
+    "programadas": 1,
     "incidencias": [
         {
             "titulo": "Corte en Gran Vía. Afectadas 4 líneas de EMT.",

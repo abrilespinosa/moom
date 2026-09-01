@@ -593,9 +593,14 @@ def listar_incidencias(respuesta: Response):
     # GTFS. Cinco minutos en el navegador, que es menos que su propio caché.
     respuesta.headers["Cache-Control"] = "public, max-age=300"
 
+    # Los dos por separado, no sumados aquí: el panel los cuenta juntos para
+    # decidir si enseña el botón, pero los distingue al escribir el título, y
+    # no significan lo mismo —una está pasando y la otra todavía se puede
+    # esquivar—.
     return {
         "incidencias": incidencias,
         "enCurso": sum(1 for i in incidencias if i["estado"] == "en_curso"),
+        "programadas": sum(1 for i in incidencias if i["estado"] == "programada"),
     }
 
 
