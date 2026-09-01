@@ -730,9 +730,20 @@ body {
   min-width: 0; /* permite que el texto largo trunque en vez de desbordar */
 }
 
+/* --- LA ESCALA DE LA TARJETA DE LLEGADA ---
+   Tres niveles y tres papeles distintos, que antes no se distinguían:
+
+     destino    14px / 600 / tinta        cuál de las tarjetas es la tuya
+     tiempo     26px / 700 / tinta        el dato por el que se abre esto
+     siguiente  12px / 400 / tinta suave  detalle de apoyo
+
+   El fallo anterior era que destino (14) y siguiente (12) se diferenciaban
+   solo en 2px, así que leían como el mismo nivel y la tarjeta parecía tener
+   dos títulos. Ahora se separan por tamaño, peso Y color a la vez. */
 .tarjeta-destino {
   font-size: 14px;
-  color: #444;
+  font-weight: 600;
+  color: var(--texto);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis; /* "Plaza de Castilla..." si no cabe */
@@ -741,8 +752,8 @@ body {
 /* El tiempo más próximo es el dato principal de la tarjeta: va debajo del
    destino y en grande, como en la app oficial. */
 .tiempo-proximo {
-  font-size: 24px;
-  font-weight: 600;
+  font-size: 26px;
+  font-weight: 700;
   color: var(--texto);
   margin-top: 3px;
 
@@ -762,7 +773,7 @@ body {
 /* "En camino" en vez de un número. Ver el comentario de app.js: dos palabras
    al cuerpo de un dígito se comen la tarjeta. */
 .tiempo-proximo.es-texto {
-  font-size: 20px;
+  font-size: 18px;
 }
 
 /* Avisa de que esa hora sale de la tabla de horarios y no de un seguimiento
@@ -1149,15 +1160,17 @@ body {
      el trazo más grueso se sostiene mejor que el fino. En escritorio se queda
      como estaba, porque allí se mira de cerca y en interior. */
   .tiempo-proximo {
-    font-size: 34px;
-    font-weight: 700;
+    /* 30 y no 34. Con 34 el tiempo medía 2,4 veces el destino y la tarjeta se
+       desequilibraba; 30 sigue leyéndose a un brazo y con sol, que era el
+       motivo de agrandarlo, sin comerse el resto. */
+    font-size: 30px;
   }
 
   /* En móvil el número sube a 34px, así que el texto tiene que subir también
      —si no, "En camino" se vería más pequeño que aquí en escritorio— pero sin
      acercarse al tamaño del dígito. */
   .tiempo-proximo.es-texto {
-    font-size: 23px;
+    font-size: 20px;
   }
 
   .tiempo-proximo .unidad {
