@@ -2287,6 +2287,16 @@ const horariosCacheados = new Map();
 function pintarHorarios(datos) {
   contenidoHorarios.innerHTML = "";
 
+  // Si el CRTM publica la hoja oficial de esta línea, es lo que se enseña: la
+  // misma que reparten en papel, con el diagrama del recorrido y las notas al
+  // pie, y con los tipos de día incluso en las líneas cuyo GTFS no los
+  // distingue. La tabla que construimos nosotros solo aparece donde no hay
+  // imagen, que hoy es Metro.
+  if (datos.imagenes) {
+    pintarImagenesDeHorario(datos.imagenes, datos);
+    return;
+  }
+
   if (!datos.disponible || datos.sentidos.length === 0) {
     contenidoHorarios.innerHTML =
       '<p class="horarios-vacio">Los datos abiertos no incluyen horarios para esta línea.</p>';
@@ -2346,6 +2356,72 @@ function pintarHorarios(datos) {
 
     contenidoHorarios.appendChild(bloque);
   });
+}
+
+// Las dos hojas oficiales, con un selector de sentido. Se enseña una sola:
+// verlas a la vez en un panel estrecho no cabe, y el viajero solo va en una
+// dirección.
+function pintarImagenesDeHorario(imagenes, datos) {
+  const selector = document.createElement("div");
+  selector.className = "selector-sentido-horario";
+
+  const marco = document.createElement("div");
+  marco.className = "marco-horario";
+
+  const imagen = document.createElement("img");
+  imagen.className = "imagen-horario";
+  // loading="lazy" no vale aquí: el bloque está plegado, así que cuando se
+  // despliega la imagen ya se necesita. Lo que sí importa es el tamaño: son
+  // entre 300 y 800 KB, y quien mira esto suele estar con datos móviles.
+  imagen.decoding = "async";
+
+  const enlace = document.createElement("a");
+  enlace.className = "enlace-horario";
+  enlace.target = "_blank";
+  enlace.rel = "noopener";
+  enlace.textContent = "Abrir la hoja a tamaño completo ↗";
+
+  function mostrar(indice) {
+    const elegida = imagenes[indice];
+
+    imagen.src = elegida.url;
+    imagen.alt =
+      `Hoja de horarios oficial del Consorcio para el sentido ` +
+      `${elegida.sentido.toLowerCase()} de esta línea.`;
+    enlace.href = elegida.url;
+
+    [...selector.children].forEach((boton, i) =>
+      boton.classList.toggle("activo", i === indice)
+    );
+  }
+
+  imagenes.forEach((im, i) => {
+    const boton = document.createElement("button");
+    boton.type = "button";
+    boton.className = "boton-sentido-horario";
+    boton.textContent = im.sentido;
+    boton.addEventListener("click", () => mostrar(i));
+    selector.appendChild(boton);
+  });
+
+  // Si la imagen no carga, se dice sin afirmar POR QUÉ: desde aquí no se puede
+  // distinguir una hoja que el Consorcio no publica de una caída suya o de un
+  // problema de red de quien mira. Inventar la causa sería peor que no darla.
+  //
+  // El enlace se deja a la vista precisamente para este caso: aunque la imagen
+  // no se pueda incrustar, abrirla en otra pestaña suele funcionar.
+  imagen.addEventListener("error", () => {
+    marco.innerHTML =
+      '<p class="horarios-vacio">No se ha podido cargar la hoja de este ' +
+      "sentido. Prueba a abrirla en una pestaña nueva.</p>";
+  });
+
+  contenidoHorarios.appendChild(selector);
+  marco.appendChild(imagen);
+  contenidoHorarios.appendChild(marco);
+  contenidoHorarios.appendChild(enlace);
+
+  mostrar(0);
 }
 
 async function cargarHorarios(linea) {

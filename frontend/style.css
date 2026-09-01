@@ -1546,3 +1546,61 @@ body {
   color: var(--texto-suave);
   white-space: nowrap;
 }
+
+/* --- HOJA OFICIAL DE HORARIOS ---
+   Las dos imágenes que publica el Consorcio, una por sentido. */
+.selector-sentido-horario {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 10px;
+  border-radius: 14px;
+  background: var(--fondo);
+}
+
+.boton-sentido-horario {
+  flex: 1;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--texto-suave);
+  cursor: pointer;
+  transition: background 0.16s var(--ease-out), color 0.16s var(--ease-out);
+}
+
+.boton-sentido-horario.activo {
+  background: var(--superficie);
+  color: var(--acento-texto);
+  font-weight: 600;
+  box-shadow: var(--sombra-sutil);
+}
+
+/* La hoja es alta y estrecha (1040x2708 en la 103), así que se acota su alto
+   y se desplaza por dentro: si no, empuja el recorrido de la línea tan abajo
+   que hay que hacer scroll durante un rato para volver a encontrarlo. */
+.marco-horario {
+  max-height: 60vh;
+  overflow: auto;
+  border-radius: var(--radio-pequeno);
+  background: var(--fondo);
+  /* Desplazamiento con inercia en iOS dentro del marco. */
+  -webkit-overflow-scrolling: touch;
+}
+
+.imagen-horario {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.enlace-horario {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--acento-texto);
+}

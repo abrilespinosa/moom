@@ -29,7 +29,12 @@ TERCEROS_PERMITIDOS = {
     "carto.com": "atribución de la cartografía",
     "www.emtmadrid.es": "enlace al canal oficial",
     "www.metromadrid.es": "enlace al canal oficial",
-    "www.crtm.es": "enlace al canal oficial",
+    # Dos cosas a la vez: el enlace a su canal oficial y, desde que se
+    # muestran los horarios, las hojas oficiales de cada línea. Es el propio
+    # Consorcio sirviendo la imagen de su propio servicio, pero sigue siendo
+    # una petición del navegador de la visita a un servidor ajeno, así que va
+    # declarada en la tabla de privacidad como todas las demás.
+    "www.crtm.es": "enlace al canal oficial y hojas de horarios de cada línea",
     "github.com": "enlace al repositorio",
 }
 

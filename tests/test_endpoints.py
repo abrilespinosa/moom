@@ -225,3 +225,36 @@ def test_se_avisa_cuando_el_volcado_no_distingue_tipos_de_dia():
 
 def test_los_horarios_de_una_linea_desconocida_dan_404():
     assert cliente.get("/linea/NO-EXISTE/horarios").status_code == 404
+
+
+def test_las_hojas_oficiales_se_construyen_bien_para_cada_red():
+    """
+    El CRTM publica la tabla de horarios de cada línea como imagen, una por
+    sentido: /datos_lineas/horarios/{MODO}{NUMERO}H{1|2}.png
+
+    Las dos redes NO se construyen igual, y es el error fácil: el route_id del
+    CRTM ya lleva su modo delante ("8__191___" -> "8191"), mientras que el de
+    EMT es solo el número y hay que anteponerle el 6. Anteponerlo también al
+    del CRTM daba "88191" y un 404.
+    """
+    interurbano = cliente.get("/linea/CRTM-8__191___/horarios").json()["imagenes"]
+    urbano = cliente.get("/linea/EMT-103/horarios").json()["imagenes"]
+
+    assert [i["sentido"] for i in interurbano] == ["Ida", "Vuelta"]
+    assert interurbano[0]["url"].endswith("/8191H1.png")
+    assert interurbano[1]["url"].endswith("/8191H2.png")
+
+    assert urbano[0]["url"].endswith("/6103H1.png")
+    assert urbano[1]["url"].endswith("/6103H2.png")
+
+
+def test_metro_no_tiene_hojas_oficiales():
+    """
+    Comprobado contra la web del CRTM: Metro devuelve 404 en todas. Es
+    coherente, porque publica frecuencias y no horas de paso, así que ahí se
+    enseña la tabla construida desde el GTFS.
+    """
+    datos = cliente.get("/linea/METRO-4__2___/horarios").json()
+
+    assert datos["imagenes"] is None
+    assert datos["tipo"] == "frecuencias"

@@ -342,6 +342,52 @@ def recorrido_linea(cod_linea: str, respuesta: Response):
     }
 
 
+# El CRTM publica en su web la tabla de horarios de cada línea como imagen,
+# una por sentido, con el diagrama del recorrido y las notas al pie. Es la
+# misma hoja que reparten en papel, y es mejor que cualquier tabla que podamos
+# construir nosotros: trae los tipos de día incluso en las 101 líneas cuyo GTFS
+# no los distingue.
+#
+# El patrón, deducido de la página de la línea 191 y comprobado en 60 líneas de
+# las dos redes (100% de acierto, ambos sentidos):
+#
+#     https://www.crtm.es/datos_lineas/horarios/{MODO}{NUMERO}H{1|2}.png
+#
+# El modo va delante del número: 8 para el interurbano y 6 para la EMT. Metro
+# NO tiene imágenes (404 en todas las probadas), lo cual es coherente: publica
+# frecuencias, no horas de paso.
+URL_HORARIOS_CRTM = "https://www.crtm.es/datos_lineas/horarios"
+
+# OJO, las dos redes no se construyen igual, y es un error fácil:
+#
+# - El route_id del CRTM YA LLEVA el modo delante ("8__191___" -> "8191"), así
+#   que solo hay que quitarle los guiones bajos. Añadirle el 8 otra vez daba
+#   "88191" y un 404.
+# - El de EMT es solo el número ("103"), así que ahí sí hay que anteponer su
+#   modo, que es el 6.
+MODO_QUE_HAY_QUE_ANTEPONER = {"CRTM": "", "EMT": "6"}
+
+
+def _imagenes_de_horario(cod_linea):
+    """
+    Las dos imágenes oficiales de una línea, o None si esa red no las publica.
+
+    No se comprueba que existan: sería una petición a la web del CRTM por cada
+    apertura de línea, y el frontend ya se entera solo si una imagen no carga.
+    """
+    fuente, _, route_id = cod_linea.partition("-")
+
+    if fuente not in MODO_QUE_HAY_QUE_ANTEPONER:
+        return None
+
+    codigo = MODO_QUE_HAY_QUE_ANTEPONER[fuente] + route_id.replace("_", "")
+
+    return [
+        {"sentido": "Ida", "url": f"{URL_HORARIOS_CRTM}/{codigo}H1.png"},
+        {"sentido": "Vuelta", "url": f"{URL_HORARIOS_CRTM}/{codigo}H2.png"},
+    ]
+
+
 @app.get("/linea/{cod_linea}/horarios")
 def horarios_linea(cod_linea: str, respuesta: Response):
     """
@@ -379,7 +425,16 @@ def horarios_linea(cod_linea: str, respuesta: Response):
 
     respuesta.headers["Cache-Control"] = CACHE_DATOS_ESTATICOS
 
-    return {"disponible": True, **horarios}
+    return {
+        "disponible": True,
+        # Las imágenes oficiales van primero cuando existen: traen el diagrama
+        # del recorrido, las notas al pie y los tipos de día incluso en las
+        # líneas cuyo GTFS no los distingue. La tabla de abajo se queda como
+        # alternativa: pesa unos KB frente a 300-800 de la imagen, y un lector
+        # de pantalla no puede leer un PNG.
+        "imagenes": _imagenes_de_horario(cod_linea),
+        **horarios,
+    }
 
 
 @app.get("/")
