@@ -11,8 +11,8 @@ se automatiza. Tres cosas se tocan en la copia, y ninguna en el frontend real:
 1. URL_BACKEND apunta al backend de mentira que sirve este mismo archivo, en
    vez de a 127.0.0.1:8000. Así los tests no necesitan un uvicorn levantado ni
    dependen de que EMT o el CRTM respondan.
-2. Leaflet, que viene de unpkg, se sustituye por leaflet_falso.js. Sin esto la
-   suite se caería cada vez que el CDN tuviera un mal día.
+2. Leaflet se sustituye por leaflet_falso.js. Desde que se autoaloja ya no es
+   por la red, sino porque aquí no se prueba Leaflet: es código de otros.
 3. Se añade al final un guion de prueba, que es lo que cada test quiere probar.
 
 Todo se sirve desde UN solo servidor y, por tanto, desde un solo origen: así
@@ -318,18 +318,26 @@ def _apuntar_al_backend_de_mentira(ruta_app_js):
 
 
 def _sustituir_leaflet(ruta_index):
+    """
+    Cambia Leaflet por el doble.
+
+    Desde que Leaflet se autoaloja, esto ya no es por la red —el archivo está
+    en el propio directorio copiado— sino por lo mismo de siempre: aquí no se
+    prueba Leaflet, que es código de otros, sino el buscador, los paneles y el
+    cambio de vistas. El doble hace que el mapa no reviente al crearse y ya.
+    """
     html = ruta_index.read_text(encoding="utf-8")
 
     html = html.replace(
-        '<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>',
+        '<script src="assets/leaflet/leaflet.js"></script>',
         '<script src="leaflet_falso.js"></script>',
     )
 
-    # La hoja de estilos de Leaflet también sale a unpkg, y sin quitarla la
-    # página se queda esperándola.
-    html = re.sub(r'<link[^>]*unpkg\.com[^>]*>', "", html)
+    # Su hoja de estilos tampoco hace falta y solo mete ruido en las medidas.
+    html = html.replace('<link rel="stylesheet" href="assets/leaflet/leaflet.css" />', "")
 
-    assert "unpkg.com" not in html, "Queda alguna referencia a unpkg en index.html"
+    assert "leaflet_falso.js" in html, "No se sustituyó Leaflet en index.html"
+    assert "leaflet/leaflet.js" not in html, "Queda el Leaflet de verdad en index.html"
 
     ruta_index.write_text(html, encoding="utf-8")
 

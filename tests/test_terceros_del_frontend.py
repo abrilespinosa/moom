@@ -21,7 +21,6 @@ DIRECTORIO_FRONTEND = os.path.join(RAIZ, "frontend")
 # aquí es una decisión con consecuencias de privacidad: hay que reflejarla
 # también en la tabla de frontend/privacidad.html.
 TERCEROS_PERMITIDOS = {
-    "unpkg.com": "Leaflet, la librería del mapa",
     "basemaps.cartocdn.com": "las imágenes del mapa",
     # No es un servidor al que se pida nada: aparece como atribución del mapa
     # y en enlaces de la página de privacidad.
@@ -59,6 +58,10 @@ PROHIBIDOS = {
     "fonts.gstatic.com": "Ídem: los archivos de fuente se sirven desde el propio dominio.",
     "www.google-analytics.com": "No hay analítica, y la página de privacidad lo afirma.",
     "googletagmanager.com": "No hay analítica, y la página de privacidad lo afirma.",
+    "unpkg.com": (
+        "Leaflet se sirve desde assets/leaflet/. Volver al CDN devolvería un "
+        "tercero que ya se quitó, y con él la IP de cada visita."
+    ),
 }
 
 _URL = re.compile(r"https?://([a-zA-Z0-9.-]+)")
