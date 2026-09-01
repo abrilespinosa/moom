@@ -21,6 +21,7 @@ from backend.emt_client import obtener_llegadas_parada
 from backend.gtfs_loader import (
     cargar_todas_las_paradas,
     cargar_colores_lineas_metro,
+    cargar_horarios,
     cargar_lineas,
 )
 from backend.metro_client import (
@@ -67,6 +68,10 @@ PARADAS_POR_ID = {parada["id"]: parada for parada in PARADAS}
 # desactiva sola, sin afectar al resto de la aplicación.
 LINEAS = cargar_lineas()
 LINEAS_POR_ID = {linea["id"]: linea for linea in LINEAS}
+
+# Los horarios de paso, indexados por el mismo id de línea. Se cargan una vez
+# aquí, como todo lo demás del volcado.
+HORARIOS = cargar_horarios()
 
 
 @app.exception_handler(requests.RequestException)
@@ -334,6 +339,101 @@ def recorrido_linea(cod_linea: str, respuesta: Response):
         "encontrada": True,
         **{clave: linea[clave] for clave in linea if clave != "sentidos"},
         "sentidos": sentidos,
+    }
+
+
+# El CRTM publica en su web la tabla de horarios de cada línea como imagen,
+# una por sentido, con el diagrama del recorrido y las notas al pie. Es la
+# misma hoja que reparten en papel, y es mejor que cualquier tabla que podamos
+# construir nosotros: trae los tipos de día incluso en las 101 líneas cuyo GTFS
+# no los distingue.
+#
+# El patrón, deducido de la página de la línea 191 y comprobado en 60 líneas de
+# las dos redes (100% de acierto, ambos sentidos):
+#
+#     https://www.crtm.es/datos_lineas/horarios/{MODO}{NUMERO}H{1|2}.png
+#
+# El modo va delante del número: 8 para el interurbano y 6 para la EMT. Metro
+# NO tiene imágenes (404 en todas las probadas), lo cual es coherente: publica
+# frecuencias, no horas de paso.
+URL_HORARIOS_CRTM = "https://www.crtm.es/datos_lineas/horarios"
+
+# OJO, las dos redes no se construyen igual, y es un error fácil:
+#
+# - El route_id del CRTM YA LLEVA el modo delante ("8__191___" -> "8191"), así
+#   que solo hay que quitarle los guiones bajos. Añadirle el 8 otra vez daba
+#   "88191" y un 404.
+# - El de EMT es solo el número ("103"), así que ahí sí hay que anteponer su
+#   modo, que es el 6.
+MODO_QUE_HAY_QUE_ANTEPONER = {"CRTM": "", "EMT": "6"}
+
+
+def _imagenes_de_horario(cod_linea):
+    """
+    Las dos imágenes oficiales de una línea, o None si esa red no las publica.
+
+    No se comprueba que existan: sería una petición a la web del CRTM por cada
+    apertura de línea, y el frontend ya se entera solo si una imagen no carga.
+    """
+    fuente, _, route_id = cod_linea.partition("-")
+
+    if fuente not in MODO_QUE_HAY_QUE_ANTEPONER:
+        return None
+
+    codigo = MODO_QUE_HAY_QUE_ANTEPONER[fuente] + route_id.replace("_", "")
+
+    return [
+        {"sentido": "Ida", "url": f"{URL_HORARIOS_CRTM}/{codigo}H1.png"},
+        {"sentido": "Vuelta", "url": f"{URL_HORARIOS_CRTM}/{codigo}H2.png"},
+    ]
+
+
+@app.get("/linea/{cod_linea}/horarios")
+def horarios_linea(cod_linea: str, respuesta: Response):
+    """
+    Los horarios de paso de una línea, por sentido y tipo de día.
+
+    Ejemplo de uso: GET /linea/CRTM-8__191___/horarios
+
+    Va aparte de /linea/{id} a propósito: el recorrido se pide siempre al abrir
+    una línea, y los horarios solo si se despliegan. Son datos distintos, de
+    tamaño distinto, y no tiene sentido pagar los dos cuando se quiere uno.
+
+    El campo "tipo" dice qué se está devolviendo, y NO es un detalle de
+    implementación que el frontend pueda ignorar:
+
+    - "horas": salidas reales, como las publica el CRTM para el interurbano.
+    - "frecuencias": franjas con su intervalo ("de 6:00 a 9:00, cada 5 min"),
+      que es lo único que publican EMT y Metro. Enseñarlo como si fueran horas
+      de paso sería inventarse una precisión que el origen no tiene.
+
+    Y "sinTiposDeDia" avisa de que el volcado no distingue laborable de sábado
+    ni de domingo para esa línea. Son 101 de las 340 del CRTM, así que no es un
+    caso raro: el panel tiene que decirlo en vez de dar a entender que solo hay
+    un horario.
+    """
+    if cod_linea not in LINEAS_POR_ID:
+        raise HTTPException(status_code=404, detail="Línea desconocida")
+
+    horarios = HORARIOS.get(cod_linea)
+
+    if horarios is None:
+        # La línea existe pero no tiene horarios en el volcado. Es el mismo
+        # caso que las 21 sin recorrido: se responde con honestidad en vez de
+        # con un 404, que daría a entender que la línea no existe.
+        return {"disponible": False, "sentidos": []}
+
+    respuesta.headers["Cache-Control"] = CACHE_DATOS_ESTATICOS
+
+    return {
+        "disponible": True,
+        # Las imágenes oficiales van primero cuando existen: traen el diagrama
+        # del recorrido, las notas al pie y los tipos de día incluso en las
+        # líneas cuyo GTFS no los distingue. La tabla de abajo se queda como
+        # alternativa: pesa unos KB frente a 300-800 de la imagen, y un lector
+        # de pantalla no puede leer un PNG.
+        "imagenes": _imagenes_de_horario(cod_linea),
+        **horarios,
     }
 
 

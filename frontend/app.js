@@ -1154,6 +1154,13 @@ async function seleccionarLinea(linea) {
 
     lineaActual = datos;
 
+    // Se pliega y se vacía al cambiar de línea. Si no, el bloque se quedaría
+    // abierto enseñando los horarios de la línea ANTERIOR bajo el nombre de
+    // la nueva: es el mismo tipo de fallo que los trenes que se quedaban en
+    // el mapa, y el más dañino, porque parece un dato bueno.
+    detallesHorarios.open = false;
+    contenidoHorarios.innerHTML = "";
+
     const fondo = colorSeguro(datos.color);
     const estilo = fondo
       ? `background-color:#${fondo}; color:#${
@@ -2253,3 +2260,195 @@ if ("serviceWorker" in navigator) {
     });
   });
 }
+
+// --- HORARIOS DE PASO ---
+//
+// Se piden aparte de /linea/{id} y solo al desplegarlos: el recorrido se mira
+// siempre al abrir una línea, la tabla de horarios casi nunca, y en una
+// interurbana son cincuenta filas.
+//
+// LO IMPORTANTE de esta parte es que las tres redes publican cosas DISTINTAS y
+// el panel no puede fingir lo contrario:
+//
+// - El CRTM da horas de paso reales, así que se enseña la tabla de salidas.
+// - EMT y Metro solo publican FRECUENCIAS. Enseñar "pasa a las 7:03" sería
+//   inventárselo, así que se enseñan las franjas con su intervalo.
+//
+// Y hay 101 líneas del CRTM cuyo volcado no distingue laborable de sábado ni
+// de domingo. En esas se avisa, en vez de dar a entender que solo hay un
+// horario.
+const detallesHorarios = document.getElementById("horarios-linea");
+const contenidoHorarios = document.getElementById("contenido-horarios");
+
+// Los horarios ya traídos, por id de línea. Son estáticos, así que una vez
+// pedidos no hace falta volver a pedirlos al plegar y desplegar.
+const horariosCacheados = new Map();
+
+function pintarHorarios(datos) {
+  contenidoHorarios.innerHTML = "";
+
+  // Si el CRTM publica la hoja oficial de esta línea, es lo que se enseña: la
+  // misma que reparten en papel, con el diagrama del recorrido y las notas al
+  // pie, y con los tipos de día incluso en las líneas cuyo GTFS no los
+  // distingue. La tabla que construimos nosotros solo aparece donde no hay
+  // imagen, que hoy es Metro.
+  if (datos.imagenes) {
+    pintarImagenesDeHorario(datos.imagenes, datos);
+    return;
+  }
+
+  if (!datos.disponible || datos.sentidos.length === 0) {
+    contenidoHorarios.innerHTML =
+      '<p class="horarios-vacio">Los datos abiertos no incluyen horarios para esta línea.</p>';
+    return;
+  }
+
+  if (datos.sinTiposDeDia) {
+    const aviso = document.createElement("p");
+    aviso.className = "horarios-aviso";
+    aviso.textContent =
+      "Los datos abiertos de esta línea no distinguen entre días laborables, " +
+      "sábados y domingos, así que estas son todas sus salidas juntas.";
+    contenidoHorarios.appendChild(aviso);
+  }
+
+  datos.sentidos.forEach((sentido) => {
+    const bloque = document.createElement("div");
+    bloque.className = "horario-sentido";
+
+    const destino = document.createElement("h3");
+    destino.className = "horario-destino";
+    destino.textContent = `Hacia ${sentido.destino || "el otro extremo"}`;
+    bloque.appendChild(destino);
+
+    sentido.dias.forEach((dia) => {
+      const titulo = document.createElement("div");
+      titulo.className = "horario-dias";
+      titulo.textContent = dia.dias;
+      bloque.appendChild(titulo);
+
+      if (datos.tipo === "horas") {
+        const lista = document.createElement("ul");
+        lista.className = "horario-salidas";
+
+        dia.salidas.forEach((hora) => {
+          const item = document.createElement("li");
+          item.textContent = hora;
+          lista.appendChild(item);
+        });
+
+        bloque.appendChild(lista);
+      } else {
+        const lista = document.createElement("ul");
+        lista.className = "horario-franjas";
+
+        dia.franjas.forEach((franja) => {
+          const item = document.createElement("li");
+          item.innerHTML =
+            `<span class="franja-horas">${franja.desde}–${franja.hasta}</span>` +
+            `<span class="franja-cada">cada ${franja.cada} min</span>`;
+          lista.appendChild(item);
+        });
+
+        bloque.appendChild(lista);
+      }
+    });
+
+    contenidoHorarios.appendChild(bloque);
+  });
+}
+
+// Las dos hojas oficiales, con un selector de sentido. Se enseña una sola:
+// verlas a la vez en un panel estrecho no cabe, y el viajero solo va en una
+// dirección.
+function pintarImagenesDeHorario(imagenes, datos) {
+  const selector = document.createElement("div");
+  selector.className = "selector-sentido-horario";
+
+  const marco = document.createElement("div");
+  marco.className = "marco-horario";
+
+  const imagen = document.createElement("img");
+  imagen.className = "imagen-horario";
+  // loading="lazy" no vale aquí: el bloque está plegado, así que cuando se
+  // despliega la imagen ya se necesita. Lo que sí importa es el tamaño: son
+  // entre 300 y 800 KB, y quien mira esto suele estar con datos móviles.
+  imagen.decoding = "async";
+
+  const enlace = document.createElement("a");
+  enlace.className = "enlace-horario";
+  enlace.target = "_blank";
+  enlace.rel = "noopener";
+  enlace.textContent = "Abrir la hoja a tamaño completo ↗";
+
+  function mostrar(indice) {
+    const elegida = imagenes[indice];
+
+    imagen.src = elegida.url;
+    imagen.alt =
+      `Hoja de horarios oficial del Consorcio para el sentido ` +
+      `${elegida.sentido.toLowerCase()} de esta línea.`;
+    enlace.href = elegida.url;
+
+    [...selector.children].forEach((boton, i) =>
+      boton.classList.toggle("activo", i === indice)
+    );
+  }
+
+  imagenes.forEach((im, i) => {
+    const boton = document.createElement("button");
+    boton.type = "button";
+    boton.className = "boton-sentido-horario";
+    boton.textContent = im.sentido;
+    boton.addEventListener("click", () => mostrar(i));
+    selector.appendChild(boton);
+  });
+
+  // Si la imagen no carga, se dice sin afirmar POR QUÉ: desde aquí no se puede
+  // distinguir una hoja que el Consorcio no publica de una caída suya o de un
+  // problema de red de quien mira. Inventar la causa sería peor que no darla.
+  //
+  // El enlace se deja a la vista precisamente para este caso: aunque la imagen
+  // no se pueda incrustar, abrirla en otra pestaña suele funcionar.
+  imagen.addEventListener("error", () => {
+    marco.innerHTML =
+      '<p class="horarios-vacio">No se ha podido cargar la hoja de este ' +
+      "sentido. Prueba a abrirla en una pestaña nueva.</p>";
+  });
+
+  contenidoHorarios.appendChild(selector);
+  marco.appendChild(imagen);
+  contenidoHorarios.appendChild(marco);
+  contenidoHorarios.appendChild(enlace);
+
+  mostrar(0);
+}
+
+async function cargarHorarios(linea) {
+  if (horariosCacheados.has(linea.id)) {
+    pintarHorarios(horariosCacheados.get(linea.id));
+    return;
+  }
+
+  contenidoHorarios.innerHTML = '<p class="horarios-vacio">Buscando horarios…</p>';
+
+  try {
+    const datos = await pedirJson(
+      `${URL_BACKEND}/linea/${encodeURIComponent(linea.id)}/horarios`
+    );
+
+    horariosCacheados.set(linea.id, datos);
+    pintarHorarios(datos);
+  } catch (error) {
+    console.error("No se pudieron cargar los horarios:", error);
+    contenidoHorarios.innerHTML =
+      '<p class="horarios-vacio">No se han podido cargar los horarios.</p>';
+  }
+}
+
+// Se piden al desplegar, no al abrir la línea.
+detallesHorarios.addEventListener("toggle", () => {
+  if (detallesHorarios.open && lineaActual) {
+    cargarHorarios(lineaActual);
+  }
+});

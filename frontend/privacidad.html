@@ -149,7 +149,7 @@
 
   <main>
     <h1>Privacidad y condiciones de uso</h1>
-    <p class="actualizado">Última actualización: 31 de agosto de 2026</p>
+    <p class="actualizado">Última actualización: 1 de septiembre de 2026</p>
 
     <p>
       Moom es un proyecto personal sin ánimo de lucro que muestra en un mapa el
@@ -180,7 +180,7 @@
 
     <h3>Lo que se guarda en tu navegador</h3>
     <p>
-      Moom <strong>no usa cookies</strong>. Guarda dos cosas con
+      Moom <strong>no usa cookies</strong>. Guarda tres cosas con
       <code>localStorage</code>, que es almacenamiento del propio navegador y
       nunca viaja a ningún servidor:
     </p>
@@ -188,6 +188,11 @@
       <li>
         <strong>Tus favoritos</strong> (<code>moom:favoritos</code>): solo los
         identificadores de las paradas y líneas que marcas con la estrella.
+      </li>
+      <li>
+        <strong>Las tres últimas paradas que has mirado</strong>
+        (<code>moom:recientes</code>): solo sus identificadores, para poder
+        ofrecértelas al volver.
       </li>
       <li>
         <strong>El ancho del panel</strong> (<code>moom:ancho-panel</code>): la
@@ -228,6 +233,11 @@
             <td>Tu IP</td>
           </tr>
           <tr>
+            <td>Consorcio Regional de Transportes (crtm.es)</td>
+            <td>Las hojas de horarios de una línea, solo si las despliegas</td>
+            <td>Tu IP y qué línea estás consultando</td>
+          </tr>
+          <tr>
             <td>Vercel</td>
             <td>Alojamiento del sitio</td>
             <td>Tu IP, en sus registros de acceso</td>
@@ -239,9 +249,15 @@
     <p>
       La tipografía <strong>se sirve desde este mismo dominio</strong> y no
       desde Google Fonts, precisamente para que abrir el mapa no le mande tu IP
-      a Google. Las APIs de la EMT y del CRTM se consultan
+      a Google.
+    </p>
+    <p>
+      Los <strong>tiempos de llegada</strong> se piden a la EMT y al CRTM
       <strong>desde el servidor</strong>, no desde tu navegador, así que esas
-      empresas no reciben nada tuyo: ven al servidor de Moom, no a ti.
+      empresas no ven tu IP: ven la del servidor de Moom. La excepción son
+      las <strong>hojas de horarios</strong>: son imágenes del propio
+      Consorcio y, como cualquier imagen, las descarga tu navegador
+      directamente. Solo ocurre si despliegas los horarios de una línea.
     </p>
 
     <h3>Tus derechos</h3>
