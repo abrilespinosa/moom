@@ -12,6 +12,8 @@ Luego puedes visitar en el navegador, por ejemplo:
 """
 
 import datetime
+import html
+import re
 import time
 from concurrent.futures import ThreadPoolExecutor
 
@@ -492,6 +494,31 @@ def _fecha_emt(texto):
         return None
 
 
+ETIQUETAS_HTML = re.compile(r"<[^>]+>")
+
+
+def _sin_html(texto):
+    """
+    Quita el HTML que EMT mete dentro del texto del aviso.
+
+    Las 21 incidencias de hoy acaban con
+    "<p><img src='.../00-Logo-RSS_Corporativo.png'/></p>": su logotipo
+    corporativo, pensado para un lector de RSS. El panel pinta con
+    textContent, así que no se interpretaba —no había riesgo de inyección—
+    pero se leía literalmente, con etiquetas y todo, al final de cada aviso.
+
+    Se quitan las etiquetas en vez de solo esa, porque el problema es que el
+    campo viene en HTML y no en texto plano; hoy solo aparecen <p> e <img>, y
+    ninguna en mitad de la frase, pero mañana puede aparecer otra.
+    """
+    if not texto:
+        return ""
+
+    # unescape después de quitar etiquetas: si no, un &lt;b&gt; escapado se
+    # convertiría en etiqueta justo cuando ya no queda nada que la limpie.
+    return html.unescape(ETIQUETAS_HTML.sub("", texto)).strip()
+
+
 def _estado_de(incidencia, ahora):
     """
     En curso, programada o terminada, según su ventana de vigencia.
@@ -548,7 +575,7 @@ def listar_incidencias(respuesta: Response):
     incidencias = [
         {
             "titulo": i.get("title", ""),
-            "descripcion": i.get("description", ""),
+            "descripcion": _sin_html(i.get("description", "")),
             "causa": i.get("cause", ""),
             "efecto": i.get("effect", ""),
             "desde": i.get("rssFrom", ""),
