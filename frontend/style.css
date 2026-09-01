@@ -1671,6 +1671,18 @@ body {
   color: var(--acento-texto);
 }
 
+/* La versión de una pieza, para los resultados del buscador. Va pegada al
+   borde derecho con margin-left auto, antes de la estrella: así no compite
+   con el nombre por el ancho ni rompe su truncado. */
+.accesibilidad-compacta {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 4px;
+  border-radius: 999px;
+}
+
 /* --- AVISOS DE SERVICIO ---
    El botón solo existe cuando hay algo en curso, así que puede permitirse
    llamar la atención: si está, importa. */
