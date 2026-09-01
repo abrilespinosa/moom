@@ -286,8 +286,10 @@ function actualizarVisibilidadParadas() {
     // Cada marcador necesita saber a qué parada pertenece para poder
     // consultar su "fuente". Lo guardamos en el siguiente paso, al
     // crear el marcador en dibujarParadas().
-    const pasaElFiltro =
-      filtroActivo === "todos" || marcador.parada.fuente === filtroActivo;
+    // Se reutiliza la del buscador en vez de repetir la comparación aquí:
+    // eran dos copias de la misma regla y al añadir el filtro de accesibles
+    // habría quedado el mapa enseñando paradas que la lista ya no enseñaba.
+    const pasaElFiltro = pasaElFiltroDeModo(marcador.parada);
 
     const debeVerse = zoomSuficiente && dentroDeVista && pasaElFiltro;
 
@@ -595,6 +597,14 @@ const MAXIMO_LINEAS = 8;
 const MAXIMO_PARADAS = 12;
 
 function pasaElFiltroDeModo(elemento) {
+  // "accesibles" no es un modo de transporte sino una propiedad, y por eso no
+  // se compara con fuente. Las líneas no tienen el campo, así que con este
+  // filtro desaparecen solas de los resultados, que es lo que se quiere:
+  // preguntar por líneas accesibles no significa nada.
+  if (filtroActivo === "accesibles") {
+    return esAccesible(elemento);
+  }
+
   return filtroActivo === "todos" || elemento.fuente === filtroActivo;
 }
 
@@ -849,6 +859,13 @@ function crearResultadoDeParada(parada) {
     `${parada.nombre}, parada ${codigoDeParada(parada)}. Ver próximas llegadas.`
   );
   boton.appendChild(texto);
+
+  // A la derecha del nombre, no debajo: el dato sirve para ELEGIR estación, y
+  // antes solo se veía al abrir el panel, o sea después de haber elegido.
+  const accesibilidad = crearDistintivoAccesibilidadCompacto(parada);
+  if (accesibilidad) {
+    boton.appendChild(accesibilidad);
+  }
 
   item.appendChild(boton);
   item.appendChild(crearBotonFavorito("paradas", parada.id));
@@ -1584,6 +1601,39 @@ const SVG_SILLA = `
     <path d="M16.5 13l2 5" />
     <path d="M15.5 15.5a5 5 0 1 1-5.5-4" />
   </svg>`;
+
+// Los dos grados en los que se puede entrar en silla. "solo_medidas" queda
+// FUERA a propósito: tiene encaminamientos y avisos, pero no ascensor ni
+// rampa, así que contarlo como accesible sería el error que más daño hace de
+// todos los posibles aquí. Son 2 estaciones de 166.
+const GRADOS_CON_SILLA = new Set(["universal", "solo_ascensor"]);
+
+function esAccesible(parada) {
+  return GRADOS_CON_SILLA.has(parada.accesibilidad);
+}
+
+// La versión de una sola pieza para los resultados del buscador, donde no
+// cabe "Accesibilidad universal" al lado del nombre y la distancia.
+//
+// Solo aparece en los dos grados con silla. En "solo_medidas" no se pinta
+// nada, igual que en una estación sin dato: para quien va en silla las dos
+// significan lo mismo, que no puede contar con entrar por ahí.
+function crearDistintivoAccesibilidadCompacto(parada) {
+  if (!esAccesible(parada)) {
+    return null;
+  }
+
+  const grado = GRADOS_DE_ACCESIBILIDAD[parada.accesibilidad];
+
+  const distintivo = document.createElement("span");
+  distintivo.className = `accesibilidad-compacta accesibilidad-${parada.accesibilidad}`;
+  distintivo.title = grado.detalle;
+  // El icono es decorativo (aria-hidden), así que el texto tiene que llegar
+  // por otra vía o para un lector de pantalla no habría distintivo ninguno.
+  distintivo.innerHTML = SVG_SILLA + `<span class="solo-lector">${grado.texto}</span>`;
+
+  return distintivo;
+}
 
 function crearDistintivoAccesibilidad(parada) {
   const grado = GRADOS_DE_ACCESIBILIDAD[parada.accesibilidad];

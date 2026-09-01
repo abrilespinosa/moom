@@ -121,6 +121,25 @@
           <span class="filtro-icono"><img src="assets/metro.png" alt="" /></span>
           <span class="filtro-etiqueta">Metro</span>
         </button>
+
+        <!-- Solo el Metro publica accesibilidad por estación, así que este
+             filtro deja a la vista únicamente estaciones de Metro. No se
+             llama "Metro accesible" porque lo que se busca es la propiedad,
+             no la red. -->
+        <button class="filtro-boton" data-filtro="accesibles"
+                title="Estaciones con ascensor o rampa">
+          <span class="filtro-icono">
+            <svg viewBox="0 0 24 24" aria-hidden="true" width="20" height="20"
+                 fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="13" cy="4" r="1.6" />
+              <path d="M11.5 8v5h5" />
+              <path d="M16.5 13l2 5" />
+              <path d="M15.5 15.5a5 5 0 1 1-5.5-4" />
+            </svg>
+          </span>
+          <span class="filtro-etiqueta">Accesibles</span>
+        </button>
       </div>
       <div style="padding: 12px 16px 0 16px;">
           <label class="solo-lector" for="input-buscar">

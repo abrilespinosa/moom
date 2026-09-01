@@ -79,6 +79,40 @@ PARADAS = [
         "lat": 40.41829,
         "lon": -3.62351,
         "fuente": "METRO",
+        "accesibilidad": "universal",
+    },
+    # Las tres de abajo existen para poder distinguir los cuatro casos de
+    # accesibilidad, que es lo único que hace comprobable esta parte.
+    {
+        "id": "est_4_77",
+        "nombre": "Chueca",
+        "codAnden": "4_77",
+        "lat": 40.42260,
+        "lon": -3.69700,
+        "fuente": "METRO",
+        "accesibilidad": "solo_ascensor",
+    },
+    {
+        # El caso peligroso: tiene medidas complementarias pero NI ascensor NI
+        # rampa, así que NO puede llevar el icono de silla ni contar como
+        # accesible. Es el error que más daño haría de todos los posibles.
+        "id": "est_4_88",
+        "nombre": "Lavapies",
+        "codAnden": "4_88",
+        "lat": 40.40880,
+        "lon": -3.70090,
+        "fuente": "METRO",
+        "accesibilidad": "solo_medidas",
+    },
+    {
+        # Y una sin dato ninguno: no todas las estaciones están en la lista
+        # oficial de Metro (76 de 242 no aparecen).
+        "id": "est_4_99",
+        "nombre": "Tirso de Molina",
+        "codAnden": "4_99",
+        "lat": 40.41190,
+        "lon": -3.70320,
+        "fuente": "METRO",
     },
 ]
 
