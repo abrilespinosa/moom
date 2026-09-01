@@ -2076,7 +2076,20 @@ function topeRecogido() {
 }
 
 function colocarHoja(desplazamiento) {
-  document.body.style.setProperty("--hoja-y", `${desplazamiento}px`);
+  // Se escribe el transform DIRECTAMENTE en el panel, y no una variable CSS
+  // en <body>.
+  //
+  // Antes era `document.body.style.setProperty("--hoja-y", ...)`, y eso
+  // obliga al navegador a reevaluar si CADA descendiente de body usa esa
+  // variable. Debajo de body cuelga el contenedor del mapa con sus
+  // marcadores, así que era un recálculo de estilos del árbol entero... en
+  // cada pointermove del arrastre, que es justo el gesto donde el dedo está
+  // encima y cualquier fotograma perdido se nota.
+  //
+  // La variable --hoja-y sigue en el CSS: da la posición de reposo inicial
+  // antes de que este código llegue a ejecutarse. A partir de ahí manda el
+  // estilo en línea, que es más específico.
+  panel.style.transform = `translateY(${desplazamiento}px)`;
 }
 
 function fijarEstadoHoja(desplegada) {
@@ -2151,10 +2164,10 @@ consultaMovil.addEventListener("change", (evento) => {
   if (evento.matches) {
     fijarEstadoHoja(false);
   } else {
-    // En escritorio la variable no pinta nada, pero se limpia para que al
-    // volver a móvil no quede fijado un desplazamiento medido con la
-    // ventana de otro tamaño.
-    document.body.style.removeProperty("--hoja-y");
+    // En escritorio el panel no se desplaza, así que se quita el transform en
+    // línea: si no, al volver a móvil quedaría fijado un desplazamiento
+    // medido con la ventana de otro tamaño.
+    panel.style.removeProperty("transform");
   }
 
   mapa.invalidateSize();
