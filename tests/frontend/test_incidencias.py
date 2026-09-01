@@ -11,7 +11,14 @@ import pytest
 pytestmark = pytest.mark.navegador
 
 
-def test_el_boton_solo_cuenta_los_avisos_en_curso(render):
+def test_el_boton_no_cuenta_los_avisos_ya_terminados(render):
+    """
+    Cuenta lo que está pasando y lo que va a pasar; lo terminado, no.
+
+    Empezó contando solo los EN CURSO, y el primer día en producción eso dejó
+    inalcanzable una manifestación programada que afectaba a 21 líneas: sin
+    botón no había forma de abrir la lista donde estaba.
+    """
     resultado = render("""
         await esperarA(() => !document.getElementById("boton-incidencias").hidden);
         const b = document.getElementById("boton-incidencias");
@@ -19,8 +26,9 @@ def test_el_boton_solo_cuenta_los_avisos_en_curso(render):
     """)
 
     assert resultado["oculto"] is False
-    # Hay tres avisos de mentira, pero solo UNO está en curso.
-    assert "1 aviso" in resultado["texto"]
+    # De los tres avisos de mentira, uno está en curso y otro programado.
+    assert "2 avisos" in resultado["texto"]
+    # El tercero ya terminó y no se cuenta.
     assert "3" not in resultado["texto"]
 
 
@@ -39,7 +47,7 @@ def test_al_pulsarlo_se_ven_los_tres_estados(render):
     """)
 
     assert resultado["vista"] == "vista-incidencias"
-    assert "1 aviso en curso" in resultado["titulo"]
+    assert resultado["titulo"] == "1 aviso en curso · 1 programado"
     # Los terminados se enseñan igual: saber que ya acabó también informa.
     assert resultado["estados"] == ["En curso", "Programada", "Ya terminada"]
 

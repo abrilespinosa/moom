@@ -400,7 +400,12 @@ def test_cada_incidencia_dice_si_sigue_o_ya_terminó(sin_salir_a_emt):
 
     # Una de cada, y en este orden: lo que está pasando ahora va primero.
     assert estados == ["en_curso", "programada", "terminada"]
+
+    # Los dos contadores van por separado porque el panel los cuenta juntos
+    # para decidir si enseña el botón, pero los distingue al escribir el
+    # título: una está pasando y la otra todavía se puede esquivar.
     assert datos["enCurso"] == 1
+    assert datos["programadas"] == 1
 
 
 def test_los_avisos_llegan_sin_el_html_de_dentro(sin_salir_a_emt):
