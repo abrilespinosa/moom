@@ -854,10 +854,29 @@ function crearResultadoDeParada(parada) {
     texto.appendChild(distancia);
   }
 
+  const fuente = NOMBRE_DE_FUENTE[parada.fuente] ?? parada.fuente;
+
   const boton = crearBotonDeResultado(
     () => seleccionarParada(parada),
-    `${parada.nombre}, parada ${codigoDeParada(parada)}. Ver próximas llegadas.`
+    // La red va también en el nombre accesible: el icono es decorativo, así
+    // que sin esto quien no ve la pantalla no sabría si es bus o Metro.
+    `${parada.nombre}, ${fuente}, parada ${codigoDeParada(parada)}. Ver próximas llegadas.`
   );
+
+  // El icono de la red, en el mismo hueco de 34px donde las líneas llevan su
+  // número. Sin él, con el filtro en "Todos" —que es el que sale al abrir, y
+  // donde viven favoritos, recientes y "Cerca de ti"— no había forma de saber
+  // si "Atocha" era una parada de bus o una estación de Metro.
+  //
+  // Icono y no texto: son los mismos tres del mapa, de la cabecera del panel
+  // y de los filtros, así que ya están aprendidos, y la línea de debajo la
+  // ocupa la distancia andando.
+  const icono = document.createElement("img");
+  icono.className = "resultado-icono";
+  icono.src = `assets/${ICONO_CABECERA_POR_FUENTE[parada.fuente] ?? ICONO_CABECERA_POR_FUENTE.EMT}`;
+  icono.alt = "";
+  boton.appendChild(icono);
+
   boton.appendChild(texto);
 
   // A la derecha del nombre, no debajo: el dato sirve para ELEGIR estación, y
