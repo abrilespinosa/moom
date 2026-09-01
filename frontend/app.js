@@ -29,7 +29,7 @@ let TODAS_LAS_PARADAS = [];
 // Las mismas paradas indexadas por id. El recorrido de una línea llega
 // como lista de ids, y para seleccionar una hace falta su objeto completo
 // (coordenadas y marcador), así que sin este índice habría que recorrer
-// las 13.542 paradas en cada clic.
+// las 13.533 paradas en cada clic.
 let PARADAS_POR_ID = new Map();
 
 // Número y colores oficiales de cada línea de Metro, indexados por su
@@ -198,7 +198,7 @@ async function dibujarParadas() {
 
 // --- ARRANQUE RÁPIDO ---
 //
-// /paradas son las 13.542 de las tres redes: 254 KB comprimidos, y hasta que
+// /paradas son las 13.533 de las tres redes: 254 KB comprimidos, y hasta que
 // no llegan no hay ni marcadores ni buscador. Con buena cobertura no se nota;
 // de pie en una marquesina bajo un edificio, sí.
 //
@@ -250,7 +250,7 @@ function pintarParadas(paradas) {
 
     // Y guardamos la referencia inversa: el marcador necesita saber
     // de qué parada es para poder consultar su "fuente" al filtrar,
-    // sin tener que buscar en el array de 13.542 paradas cada vez.
+    // sin tener que buscar en el array de 13.533 paradas cada vez.
     marcador.parada = parada;
 
     marcadoresParadas.push(marcador);
@@ -267,7 +267,7 @@ function pintarParadas(paradas) {
 
 // Añade o quita los marcadores de parada del mapa según el zoom Y el
 // área visible actual. Antes solo filtrábamos por zoom: al cruzar
-// ZOOM_MINIMO_PARADAS, las ~13.542 paradas se recorrían igual, pero
+// ZOOM_MINIMO_PARADAS, las ~13.533 paradas se recorrían igual, pero
 // con circleMarker (forma vectorial barata) no se notaba el coste.
 // Ahora cada parada es una imagen PNG, más cara de crear/posicionar,
 // así que añadir potencialmente miles de golpe causaba el lag al

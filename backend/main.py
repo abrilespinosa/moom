@@ -83,7 +83,7 @@ for _parada in PARADAS:
         _parada["accesibilidad"] = _grado
 
 # Diccionario id -> parada, para búsquedas rápidas por id en vez de
-# recorrer las 13.542 paradas cada vez que el endpoint de Metro necesita
+# recorrer las 13.533 paradas cada vez que el endpoint de Metro necesita
 # encontrar el codAnden de una estación.
 PARADAS_POR_ID = {parada["id"]: parada for parada in PARADAS}
 
@@ -237,7 +237,7 @@ def _distancia_aproximada(lat1, lon1, lat2, lon2):
 
     Aquí NO hace falta la distancia real: solo hay que ORDENAR, y la raíz
     cuadrada es monótona, así que ordenar por el cuadrado da el mismo orden y
-    se ahorra 13.542 raíces por petición.
+    se ahorra 13.533 raíces por petición.
 
     El coseno de la latitud corrige que un grado de longitud en Madrid mide
     unos 0,76 de lo que mide uno de latitud; sin él, "lo más cercano" saldría
@@ -260,7 +260,7 @@ def paradas_cerca(respuesta: Response, lat: float, lon: float, limite: int = PAR
     Ejemplo de uso: GET /paradas/cerca?lat=40.4168&lon=-3.7038
 
     Existe por quien abre esto de pie en una parada. /paradas devuelve las
-    13.542 de las tres redes, que son 254 KB comprimidos, y hasta que no
+    13.533 de las tres redes, que son 254 KB comprimidos, y hasta que no
     llegan no hay ni buscador ni marcadores. Con buena cobertura no se nota;
     con la de una marquesina bajo un edificio, es la diferencia entre útil e
     inservible.

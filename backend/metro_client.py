@@ -182,7 +182,7 @@ SEGUNDOS_VALIDEZ_CACHE = 20
 # id distinto consultado, y dos de ellos (info de estación e info de línea) no
 # caducan, así que en un proceso de larga vida crecen sin techo. En el
 # despliegue actual apenas importa —en Vercel las instancias se reciclan
-# solas—, pero un uvicorn levantado durante días sí lo acumula, y hay 13.542
+# solas—, pero un uvicorn levantado durante días sí lo acumula, y hay 13.533
 # paradas que alcanzar.
 #
 # 500 sobra de largo para el uso real: una sesión mira unas pocas paradas, y

@@ -10,7 +10,7 @@ sirve.
 1. El campo `wheelchair_boarding` del GTFS **nunca vale "sí"**. Separando
    andenes de estaciones, NINGUNA de las 240 estaciones de Metro figura como
    accesible: 113 salen como "sin información" y 127 como "no accesible". En el
-   GTFS interurbano no hay un solo "1" en 8.406 paradas. Un campo que jamás
+   GTFS interurbano no hay un solo "1" en 8.397 paradas. Un campo que jamás
    afirma nada no está relleno, solo lo parece.
 2. El portal de datos del CRTM no publica ningún conjunto de accesibilidad
    (se buscó "accesibilidad", "ascensores", "movilidad reducida", "accesible").

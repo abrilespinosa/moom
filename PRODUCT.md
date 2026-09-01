@@ -55,9 +55,9 @@ Sin instalar nada y sin cuenta.
   autenticada y con cuota diaria (EMT), otra pública pero sin documentar
   (CRTM). La latencia del CRTM va de 0,1s a 4,5s para la misma consulta, y eso
   no se puede arreglar desde aquí.
-- **Producción**: <https://moom-abril-espinosa.vercel.app>. Hoy el despliegue
-  es **manual** desde la máquina de la autora; el proyecto de Vercel no está
-  conectado al repositorio.
+- **Producción**: <https://moom-abril-espinosa.vercel.app>. El repositorio está
+  conectado a Vercel, así que **cada cambio que entra en `main` se despliega
+  solo**; `main` está protegida y exige PR con los tests en verde.
 
 ## Capabilities and Constraints
 
@@ -129,9 +129,10 @@ lo único que habría que cambiar.
 
 ## Evidence on Hand
 
-**Real y comprobable**: el despliegue en producción; datos GTFS reales (13.542
-paradas, 603 líneas); tres APIs en vivo; 37 tests de backend y 13 de navegador;
-y una auditoría técnica propia con nota 14/20.
+**Real y comprobable**: el despliegue en producción; datos GTFS reales (13.533
+paradas, 603 líneas); tres APIs en vivo; 50 tests de backend y 25 de navegador;
+y una auditoría técnica propia con nota 14/20 (agosto de 2026, antes de
+arreglar la accesibilidad).
 
 **Lo que NO existe, y no se debe inventar**: no hay usuarios reales conocidos,
 ni métricas de uso, ni testimonios, ni casos de estudio, ni prensa, ni precios,

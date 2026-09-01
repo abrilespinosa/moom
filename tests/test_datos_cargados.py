@@ -161,7 +161,7 @@ def test_la_accesibilidad_solo_se_afirma_donde_se_sabe():
 def test_ninguna_parada_de_bus_lleva_accesibilidad():
     """
     La lista es de Metro. Marcar una parada de autobús sería inventárselo, y
-    el GTFS de bus tampoco lo dice: no tiene un solo "accesible" en 8.406
+    el GTFS de bus tampoco lo dice: no tiene un solo "accesible" en 8.397
     paradas del interurbano.
     """
     from backend.main import PARADAS
@@ -170,3 +170,36 @@ def test_ninguna_parada_de_bus_lleva_accesibilidad():
 
     assert con_dato
     assert all(p["fuente"] == "METRO" for p in con_dato)
+
+
+def test_ningun_id_de_parada_se_repite():
+    """
+    Los ids tienen que ser únicos, y no lo eran: 9 intercambiadores venían
+    duplicados, una vez del volcado de Metro y otra del interurbano, con el
+    MISMO id y las mismas coordenadas.
+
+    Las consecuencias eran dos y ninguna se veía en un test: dos marcadores
+    exactamente superpuestos en el mapa, y un PARADAS_POR_ID que —siendo un
+    diccionario— se quedaba solo con el último de los dos. La copia del
+    interurbano no tenía codAnden, así que era la mala.
+    """
+    from backend.main import PARADAS
+
+    ids = [p["id"] for p in PARADAS]
+    repetidos = {i for i in ids if ids.count(i) > 1} if len(ids) != len(set(ids)) else set()
+
+    assert not repetidos, f"ids duplicados: {sorted(repetidos)}"
+
+
+def test_el_interurbano_solo_aporta_paradas_y_no_estaciones():
+    """
+    El volcado del CRTM trae 9 filas con location_type=1, que son los edificios
+    de los intercambiadores y no paradas. Las aporta el volcado de Metro, con
+    su codAnden; las del interurbano no lo tienen y su código no responde en la
+    API. Los autobuses de esos intercambiadores ya están como paradas propias.
+    """
+    from backend.main import PARADAS
+
+    interurbanas = [p for p in PARADAS if p["fuente"] == "CRTM"]
+
+    assert all(p["id"].startswith("par_") for p in interurbanas)

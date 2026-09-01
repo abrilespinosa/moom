@@ -160,7 +160,7 @@ def test_las_paradas_cercanas_llegan_ordenadas_y_son_pocas():
 
 def test_las_paradas_cercanas_tienen_tope():
     """
-    Sin tope, un limite enorme recorre y serializa las 13.542, que es
+    Sin tope, un limite enorme recorre y serializa las 13.533, que es
     exactamente lo que este endpoint viene a evitar.
     """
     cercanas = cliente.get("/paradas/cerca?lat=40.4&lon=-3.7&limite=99999").json()
