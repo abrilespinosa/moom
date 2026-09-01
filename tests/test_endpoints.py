@@ -6,8 +6,13 @@ llamar a EMT o al CRTM. Así los tests no fallan porque una API externa esté
 caída, que es exactamente el tipo de fallo que no debe romper una suite.
 """
 
+import datetime
+import json
+
+import pytest
 from fastapi.testclient import TestClient
 
+from backend import main
 from backend.main import app
 
 cliente = TestClient(app)
@@ -260,26 +265,112 @@ def test_metro_no_tiene_hojas_oficiales():
     assert datos["tipo"] == "frecuencias"
 
 
-def test_las_llegadas_no_arrastran_las_incidencias():
+# --- INCIDENCIAS ---
+#
+# Estas tres NO salen a la red, como el resto del archivo: se sustituye la
+# llamada a EMT por una respuesta de mentira. Antes sí salían, y pasaban en
+# local porque había un .env con credenciales; en CI, que no lo tiene,
+# reventaron. La suite tiene que fallar por el código, no por el entorno.
+
+
+def _respuesta_de_mentira():
     """
-    EMT las manda dentro de la misma respuesta, y son el 87% de su peso: 19 KB
-    de 22. El poller pide esto CADA 10 SEGUNDOS, así que dejarlas ahí sería
-    servir dos docenas de avisos de toda la red —la mayoría de semanas
-    pasadas— a alguien que solo quiere saber cuándo pasa su autobús, con datos
-    móviles y en la calle.
+    Una respuesta de llegadas con la forma exacta que devuelve EMT, con tres
+    incidencias que caen cada una en un estado distinto.
+
+    Las fechas son relativas a ahora a propósito: con fechas fijas, el test
+    empezaría a mentir el día que se pasaran, y no de golpe sino en silencio.
     """
-    datos = cliente.get("/parada/72").json()
+    ahora = datetime.datetime.now()
+
+    def emt(momento):
+        return momento.strftime("%d/%m/%Y %H:%M:%S")
+
+    return {
+        "code": "00",
+        "data": [
+            {
+                "Arrive": [
+                    {"line": "27", "estimateArrive": 120, "stop": "72"},
+                    {"line": "150", "estimateArrive": 480, "stop": "72"},
+                ],
+                "Incident": {
+                    "ListaIncident": {
+                        "data": [
+                            {
+                                "title": "Corte en Gran Vía",
+                                "description": "x" * 4000,  # las de verdad son largas
+                                "rssFrom": emt(ahora - datetime.timedelta(days=1)),
+                                "rssTo": emt(ahora + datetime.timedelta(days=1)),
+                            },
+                            {
+                                "title": "Obras en Atocha",
+                                "description": "y" * 4000,
+                                "rssFrom": emt(ahora + datetime.timedelta(days=3)),
+                                "rssTo": emt(ahora + datetime.timedelta(days=5)),
+                            },
+                            {
+                                "title": "Cabalgata, ya pasada",
+                                "description": "z" * 4000,
+                                "rssFrom": emt(ahora - datetime.timedelta(days=9)),
+                                "rssTo": emt(ahora - datetime.timedelta(days=8)),
+                            },
+                        ]
+                    }
+                },
+            }
+        ],
+    }
+
+
+@pytest.fixture
+def sin_salir_a_emt(monkeypatch):
+    """
+    Sustituye la llamada a EMT y vacía la caché de incidencias.
+
+    Devuelve SIEMPRE EL MISMO objeto, que es lo que hace la caché de
+    emt_client y lo que hace posible que el test de la mutación falle: si
+    /parada le quitara el bloque al original en vez de a una copia, la
+    segunda lectura ya lo encontraría vacío.
+    """
+    compartida = _respuesta_de_mentira()
+
+    monkeypatch.setattr(main, "obtener_llegadas_parada", lambda stop_id: compartida)
+    monkeypatch.setattr(main, "_cache_incidencias", None)
+    monkeypatch.setattr(main, "_incidencias_pedidas_en", 0.0)
+
+    return compartida
+
+
+def test_las_llegadas_no_arrastran_las_incidencias(sin_salir_a_emt):
+    """
+    EMT las manda dentro de la misma respuesta, y medidas contra la API real
+    eran el 87% de su peso: 19 KB de 22. El poller pide esto CADA 10
+    SEGUNDOS, así que dejarlas ahí sería servir dos docenas de avisos de toda
+    la red —la mayoría de semanas pasadas— a alguien que solo quiere saber
+    cuándo pasa su autobús, con datos móviles y en la calle.
+    """
+    devuelto = cliente.get("/parada/72")
+    datos = devuelto.json()
 
     assert "Incident" not in datos["data"][0]
-    assert len(cliente.get("/parada/72").content) < 8000
+
+    # Y las llegadas, que son el motivo de la petición, siguen ahí.
+    assert len(datos["data"][0]["Arrive"]) == 2
+
+    # El peso se compara con el del original en vez de con un número fijo:
+    # así la comprobación sigue significando lo mismo si cambia el tamaño de
+    # los datos de prueba.
+    entero = len(json.dumps(sin_salir_a_emt))
+    assert len(devuelto.content) < entero / 2
 
 
-def test_quitarlas_de_las_llegadas_no_se_las_quita_a_incidencias():
+def test_quitarlas_de_las_llegadas_no_se_las_quita_a_incidencias(sin_salir_a_emt):
     """
-    Las dos rutas leen de la MISMA caché de emt_client, así que quitar el bloque
-    del original se las vaciaba a quien sí las quiere. Pasó al escribirlo, y el
-    síntoma era desconcertante: /incidencias devolvía cero justo después de
-    consultar una parada.
+    Las dos rutas leen de la MISMA caché de emt_client, así que quitar el
+    bloque del original se las vaciaba a quien sí las quiere. Pasó al
+    escribirlo, y el síntoma era desconcertante: /incidencias devolvía cero
+    justo después de consultar una parada.
     """
     cliente.get("/parada/72")
     primera = cliente.get("/incidencias").json()
@@ -291,16 +382,16 @@ def test_quitarlas_de_las_llegadas_no_se_las_quita_a_incidencias():
     assert len(segunda["incidencias"]) == len(primera["incidencias"])
 
 
-def test_cada_incidencia_dice_si_sigue_o_ya_terminó():
+def test_cada_incidencia_dice_si_sigue_o_ya_terminó(sin_salir_a_emt):
     """
-    Es lo único que hace útil la lista: la API devuelve un arrastre de semanas.
+    Es lo único que hace útil la lista: la API devuelve un arrastre de
+    semanas, así que sin el estado se estarían enseñando avisos de cosas que
+    ya ocurrieron.
     """
     datos = cliente.get("/incidencias").json()
 
-    validos = {"en_curso", "programada", "terminada", "desconocida"}
-    assert all(i["estado"] in validos for i in datos["incidencias"])
+    estados = [i["estado"] for i in datos["incidencias"]]
 
-    # Y el contador solo cuenta lo que está pasando ahora.
-    assert datos["enCurso"] == sum(
-        1 for i in datos["incidencias"] if i["estado"] == "en_curso"
-    )
+    # Una de cada, y en este orden: lo que está pasando ahora va primero.
+    assert estados == ["en_curso", "programada", "terminada"]
+    assert datos["enCurso"] == 1
