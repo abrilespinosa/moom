@@ -1696,6 +1696,19 @@ body {
 
 /* El triángulo de aviso, dibujado. A este tamaño un emoji se ve distinto en
    cada sistema y no hereda el color. */
+/* Sin esto el botón se ve SIEMPRE, aunque app.js le ponga hidden.
+   La regla de arriba selecciona por id, y eso pesa más que el
+   [hidden] { display: none } que trae el navegador de fábrica, así que gana
+   display: flex y el atributo no hace nada.
+
+   Llegó a producción: con cero avisos en curso quedaba una caja naranja
+   vacía, con su triángulo y su flecha, que llevaba a una lista de avisos ya
+   terminados. El test que debía cazarlo comprobaba b.hidden, o sea la
+   propiedad que app.js acababa de escribir, y no si el botón se veía. */
+#boton-incidencias[hidden] {
+  display: none;
+}
+
 #boton-incidencias::before {
   content: "";
   flex-shrink: 0;

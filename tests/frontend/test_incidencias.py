@@ -65,3 +65,31 @@ def test_volver_regresa_a_donde_se_estaba(render):
     """)
 
     assert resultado == "vista-llegadas"
+
+
+def test_sin_avisos_en_curso_el_boton_no_se_ve(render):
+    """
+    Que app.js le ponga hidden no basta: la regla de style.css selecciona por
+    id y eso pesa más que el [hidden] del navegador, así que display: flex
+    ganaba y el botón salía igual.
+
+    Llegó a producción tal cual: una caja naranja vacía que llevaba a una
+    lista de avisos ya terminados, que es justo lo que el diseño quería
+    evitar. El test anterior no podía verlo porque leía b.hidden —la
+    propiedad que se acababa de escribir— en vez de mirar si se dibujaba.
+
+    Por eso aquí se mide el elemento, no se le pregunta.
+    """
+    resultado = render(
+        """
+        const b = document.getElementById("boton-incidencias");
+        b.hidden = true;
+        responder({
+          alto: b.getBoundingClientRect().height,
+          display: getComputedStyle(b).display,
+        });
+        """
+    )
+
+    assert resultado["display"] == "none"
+    assert resultado["alto"] == 0
