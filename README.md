@@ -102,7 +102,7 @@ vercel.json            # Reparto de rutas entre frontend estático y API
 
 | Endpoint | Descripción |
 |---|---|
-| `GET /paradas` | Las 13.542 paradas de las tres redes con id, nombre, coordenadas y fuente |
+| `GET /paradas` | Las 13.533 paradas de las tres redes con id, nombre, coordenadas y fuente |
 | `GET /paradas/cerca` | Las más próximas a un punto (`?lat=&lon=`). Unos 4 KB frente a los 254 de la lista completa, para poder empezar a usar la aplicación antes de que llegue |
 | `GET /parada/{stop_id}` | Próximas llegadas de autobús. Para EMT devuelve el JSON de su API; para ids `par_` (interurbano) devuelve las llegadas agrupadas por línea y destino |
 | `GET /lineas` | Las 603 líneas de las tres redes, sin recorrido, para el buscador |

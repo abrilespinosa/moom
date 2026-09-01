@@ -51,12 +51,38 @@ def cargar_paradas_emt():
  
  
 def cargar_paradas_crtm():
+    """
+    Las paradas del interurbano: solo las paradas de verdad.
+
+    El volcado trae 8.397 filas, pero 9 de ellas son location_type=1, es decir
+    ESTACIONES y no paradas: los grandes intercambiadores (Moncloa, Plaza de
+    Castilla, Príncipe Pío, Avenida de América, Méndez Álvaro, Aeropuerto...).
+
+    Se descartan por dos motivos, comprobados:
+
+    1. Están DUPLICADAS. El volcado de Metro trae esas mismas 9 con el mismo
+       id, así que salían dos marcadores exactamente superpuestos, a 0 metros
+       el uno del otro, y PARADAS_POR_ID se quedaba solo con uno de los dos.
+    2. La copia del interurbano no sirve para nada. No tiene codAnden, y su
+       propio código devuelve {"stops": {}} en la API. Al pulsar ese marcador
+       se acababa preguntando a la API de EMT por "est_90_14", que no es una
+       parada suya.
+
+    Y no se pierde nada: los autobuses de un intercambiador ya están, con sus
+    propias paradas. En Moncloa, sin ir más lejos, hay "par_8_06002
+    INTERCAMBIADOR MONCLOA" a 104 m y cinco paradas de EMT llamadas Moncloa.
+    O sea, la estación de Metro por dentro y las de autobús por fuera, que es
+    justo como funciona un intercambiador.
+    """
     paradas = []
  
     with open("backend/data/crtm/stops.txt", encoding="utf-8") as archivo:
         lector = csv.DictReader(archivo)
  
         for fila in lector:
+            if fila.get("location_type") == "1":
+                continue
+
             parada = {
                 "id": fila["stop_id"],
                 "nombre": fila["stop_name"],
@@ -208,7 +234,7 @@ def cargar_paradas_metro():
 # metro de precisión en Madrid, de sobra para clavar una marquesina.
 #
 # Los GTFS traen 13 decimales de mediana, que es precisión de nanómetro y
-# solo sirve para engordar la respuesta: son 13.542 paradas con dos
+# solo sirve para engordar la respuesta: son 13.533 paradas con dos
 # coordenadas cada una, y recortarlas quita el 25% del peso que viaja por la
 # red (330 KB -> 247 KB ya comprimido).
 DECIMALES_COORDENADAS = 5
@@ -234,6 +260,18 @@ def cargar_todas_las_paradas():
     sirven exactamente los mismos datos.
     """
     return _leer_precalculado("paradas.json") or _paradas_desde_gtfs()
+
+
+def cargar_accesibilidad():
+    """
+    Qué estaciones de Metro son accesibles, por id, y en qué grado.
+
+    Devuelve {} si no está. La lista la mantiene a mano
+    scripts/precalcular_accesibilidad.py, y allí está explicado por qué: los
+    datos abiertos no lo dicen, y en accesibilidad un dato inventado es peor
+    que ninguno.
+    """
+    return _leer_precalculado("accesibilidad.json") or {}
 
 
 def cargar_horarios():
