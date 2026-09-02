@@ -82,6 +82,61 @@
          anuncie al aparecer sin robar el foco. -->
     <div id="aviso-conexion" role="status" hidden></div>
 
+    <!-- Los filtros van FUERA de la vista de búsqueda y por encima de los
+         dos botones: son el control principal del panel y antes quedaban
+         empujados hacia abajo por ellos. Al estar fuera hay que ocultarlos
+         cuando no se está buscando, y de eso se encarga mostrarVista(). -->
+    <div id="filtros-fuente">
+      <button class="filtro-boton activo" data-filtro="todos" title="Todos los modos">
+        <span class="filtro-icono">
+          <!-- "Todos" no tiene icono propio de transporte, así que usa una
+               cuadrícula. Va en SVG y no en PNG para que herede el color
+               del botón cuando está activo. -->
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <rect x="3" y="3" width="8" height="8" rx="2" />
+            <rect x="13" y="3" width="8" height="8" rx="2" />
+            <rect x="3" y="13" width="8" height="8" rx="2" />
+            <rect x="13" y="13" width="8" height="8" rx="2" />
+          </svg>
+        </span>
+        <span class="filtro-etiqueta">Todos</span>
+      </button>
+
+      <button class="filtro-boton" data-filtro="EMT" title="Autobús urbano (EMT)">
+        <span class="filtro-icono"><img src="assets/bus-urbano.png" alt="" /></span>
+        <span class="filtro-etiqueta">Urbano</span>
+      </button>
+
+      <button class="filtro-boton" data-filtro="CRTM" title="Autobús interurbano (CRTM)">
+        <span class="filtro-icono"><img src="assets/bus-interurbano.png" alt="" /></span>
+        <span class="filtro-etiqueta">Interurbano</span>
+      </button>
+
+      <button class="filtro-boton" data-filtro="METRO" title="Metro de Madrid">
+        <span class="filtro-icono"><img src="assets/metro.png" alt="" /></span>
+        <span class="filtro-etiqueta">Metro</span>
+      </button>
+
+      <!-- Solo el Metro publica accesibilidad por estación, así que este
+           filtro deja a la vista únicamente estaciones de Metro. No se
+           llama "Metro accesible" porque lo que se busca es la propiedad,
+           no la red. -->
+      <button class="filtro-boton" data-filtro="accesibles"
+              title="Estaciones con ascensor o rampa">
+        <span class="filtro-icono">
+          <svg viewBox="0 0 24 24" aria-hidden="true" width="20" height="20"
+               fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="13" cy="4" r="1.6" />
+            <path d="M11.5 8v5h5" />
+            <path d="M16.5 13l2 5" />
+            <path d="M15.5 15.5a5 5 0 1 1-5.5-4" />
+          </svg>
+        </span>
+        <span class="filtro-etiqueta">Accesibles</span>
+      </button>
+    </div>
+
     <!-- Avisos de servicio de la EMT. Oculto mientras no haya ninguno: un
          botón permanente que casi siempre no lleva a nada deja de mirarse. -->
     <button id="boton-incidencias" type="button" hidden></button>
@@ -96,56 +151,6 @@
       <!-- Filtros por modo. Cada uno lleva el mismo icono con el que se
            dibuja esa fuente en el mapa, para que la correspondencia entre
            botón y marcador se vea sin explicarla. -->
-      <div id="filtros-fuente">
-        <button class="filtro-boton activo" data-filtro="todos" title="Todos los modos">
-          <span class="filtro-icono">
-            <!-- "Todos" no tiene icono propio de transporte, así que usa una
-                 cuadrícula. Va en SVG y no en PNG para que herede el color
-                 del botón cuando está activo. -->
-            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <rect x="3" y="3" width="8" height="8" rx="2" />
-              <rect x="13" y="3" width="8" height="8" rx="2" />
-              <rect x="3" y="13" width="8" height="8" rx="2" />
-              <rect x="13" y="13" width="8" height="8" rx="2" />
-            </svg>
-          </span>
-          <span class="filtro-etiqueta">Todos</span>
-        </button>
-
-        <button class="filtro-boton" data-filtro="EMT" title="Autobús urbano (EMT)">
-          <span class="filtro-icono"><img src="assets/bus-urbano.png" alt="" /></span>
-          <span class="filtro-etiqueta">Urbano</span>
-        </button>
-
-        <button class="filtro-boton" data-filtro="CRTM" title="Autobús interurbano (CRTM)">
-          <span class="filtro-icono"><img src="assets/bus-interurbano.png" alt="" /></span>
-          <span class="filtro-etiqueta">Interurbano</span>
-        </button>
-
-        <button class="filtro-boton" data-filtro="METRO" title="Metro de Madrid">
-          <span class="filtro-icono"><img src="assets/metro.png" alt="" /></span>
-          <span class="filtro-etiqueta">Metro</span>
-        </button>
-
-        <!-- Solo el Metro publica accesibilidad por estación, así que este
-             filtro deja a la vista únicamente estaciones de Metro. No se
-             llama "Metro accesible" porque lo que se busca es la propiedad,
-             no la red. -->
-        <button class="filtro-boton" data-filtro="accesibles"
-                title="Estaciones con ascensor o rampa">
-          <span class="filtro-icono">
-            <svg viewBox="0 0 24 24" aria-hidden="true" width="20" height="20"
-                 fill="none" stroke="currentColor" stroke-width="2"
-                 stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="13" cy="4" r="1.6" />
-              <path d="M11.5 8v5h5" />
-              <path d="M16.5 13l2 5" />
-              <path d="M15.5 15.5a5 5 0 1 1-5.5-4" />
-            </svg>
-          </span>
-          <span class="filtro-etiqueta">Accesibles</span>
-        </button>
-      </div>
       <div style="padding: 12px 16px 0 16px;">
           <label class="solo-lector" for="input-buscar">
             Buscar una parada o una línea

@@ -14,6 +14,7 @@ Luego puedes visitar en el navegador, por ejemplo:
 import datetime
 import html
 import re
+import unicodedata
 import time
 from concurrent.futures import ThreadPoolExecutor
 
@@ -28,6 +29,7 @@ from backend.gtfs_loader import (
     cargar_colores_lineas_metro,
     cargar_horarios,
     cargar_lineas,
+    titular,
 )
 from backend.metro_client import (
     obtener_info_estacion,
@@ -166,6 +168,70 @@ def en_paralelo(*funciones):
         return [futuro.result() for futuro in futuros]
 
 
+# --- NOMBRES QUE LLEGAN DE LAS APIS EN VIVO ---
+#
+# Arreglar el GTFS no bastó, y conviene entender por qué: los destinos y el
+# nombre de la estación del panel NO salen del volcado, salen de la respuesta
+# del CRTM y de la de EMT en cada consulta. Y esas vienen gritando:
+# {"estacion": "ALSACIA", "destino": "CUATRO CAMINOS"} y "ARTURO SORIA".
+#
+# Se arregla aquí y no en los clientes porque esto es presentación, que es lo
+# que le toca a main.py.
+#
+# Además de bajar las mayúsculas se intenta recuperar la ortografía buena
+# buscando el nombre entre las paradas que ya tenemos, donde las tildes de
+# Metro están repuestas. Así "PINAR DE CHAMARTIN" sale "Pinar de Chamartín" y
+# no "Pinar de Chamartin", que es lo máximo que puede dar titular() sola.
+def _indice_de_nombres():
+    """
+    Forma normalizada -> la grafía buena.
+
+    Cuando hay varias candidatas gana la de METRO, y no es arbitrario: las de
+    Metro pasaron por scripts/precalcular_nombres_metro.py y tienen las tildes
+    repuestas y verificadas, mientras que una parada de bus puede llamarse
+    igual y venir sin ellas. Pasaba de verdad con Pinar de Chamartín, que sin
+    esta preferencia salía "Pinar de Chamartin".
+
+    Si sigue habiendo empate después de eso, se descarta la entrada: elegir
+    sería adivinar, y el nombre se queda con lo que dé titular().
+    """
+    candidatas = {}
+
+    for parada in PARADAS:
+        clave = _sin_tildes(parada["nombre"])
+        candidatas.setdefault(clave, {"METRO": set(), "otras": set()})
+        grupo = "METRO" if parada["fuente"] == "METRO" else "otras"
+        candidatas[clave][grupo].add(parada["nombre"])
+
+    indice = {}
+
+    for clave, grupos in candidatas.items():
+        preferidas = grupos["METRO"] or grupos["otras"]
+
+        if len(preferidas) == 1:
+            indice[clave] = next(iter(preferidas))
+
+    return indice
+
+
+def _sin_tildes(texto):
+    descompuesto = unicodedata.normalize("NFD", texto.lower())
+    sin_marcas = "".join(c for c in descompuesto if not unicodedata.combining(c))
+    return re.sub(r"[^a-z0-9]+", " ", sin_marcas).strip()
+
+
+# Se construye una sola vez, en el import, como el resto de los datos.
+NOMBRES_CONOCIDOS = _indice_de_nombres()
+
+
+def presentar_nombre(texto):
+    """"CUATRO CAMINOS" -> "Cuatro Caminos"; "PINAR DE CHAMARTIN" -> con tilde."""
+    if not texto:
+        return texto
+
+    return NOMBRES_CONOCIDOS.get(_sin_tildes(texto)) or titular(texto)
+
+
 def agrupar_llegadas(llegadas):
     """
     Agrupa las llegadas que devuelve la API del CRTM por LÍNEA + destino, que
@@ -195,7 +261,7 @@ def agrupar_llegadas(llegadas):
             grupos[clave] = {
                 "codLine": cod_line,
                 "linea": llegada["line"]["shortDescription"],
-                "destino": destino,
+                "destino": presentar_nombre(destino),
                 "tiempos": [],
                 "enVivo": llegada_en_vivo(llegada),
             }
@@ -666,7 +732,7 @@ def llegadas_parada(stop_id: str):
         )
 
         return {
-            "parada": info_parada["name"],
+            "parada": presentar_nombre(info_parada["name"]),
             "codStop": stop_id,
             "llegadas": agrupar_llegadas(llegadas),
         }
@@ -692,10 +758,23 @@ def llegadas_parada(stop_id: str):
         return llegadas
 
     sin_incidencias = dict(llegadas)
-    sin_incidencias["data"] = [
-        {clave: valor for clave, valor in llegadas["data"][0].items() if clave != "Incident"},
-        *llegadas["data"][1:],
-    ]
+    primero = {
+        clave: valor for clave, valor in llegadas["data"][0].items() if clave != "Incident"
+    }
+
+    # Los destinos de EMT también vienen gritando ("ARTURO SORIA", "PIO XII").
+    # Se rehace la lista en vez de tocar cada llegada porque estos objetos son
+    # los de la caché de 30s de emt_client, por el mismo motivo que las
+    # incidencias: escribir sobre ellos se lo lleva a quien lea después.
+    if isinstance(primero.get("Arrive"), list):
+        primero["Arrive"] = [
+            {**llegada, "destination": presentar_nombre(llegada.get("destination"))}
+            if isinstance(llegada, dict)
+            else llegada
+            for llegada in primero["Arrive"]
+        ]
+
+    sin_incidencias["data"] = [primero, *llegadas["data"][1:]]
 
     return sin_incidencias
 
@@ -813,7 +892,7 @@ def tiempos_estacion_metro(cod_stop: str):
     grupos_llegadas = agrupar_llegadas(trenes)
 
     return {
-        "estacion": info_estacion["name"],
+        "estacion": presentar_nombre(info_estacion["name"]),
         "codStop": cod_stop,
         # El filtrado de líneas que no son de Metro vive en
         # lineas_de_metro_de(), que comparte con /metro/parada/{id}/lineas.

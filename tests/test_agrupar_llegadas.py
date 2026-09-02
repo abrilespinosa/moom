@@ -54,7 +54,9 @@ def test_los_dos_sentidos_de_una_linea_son_grupos_distintos():
         ]
     )
 
-    assert {g["destino"] for g in grupos} == {"LAS ROSAS", "CUATRO CAMINOS"}
+    # Salen ya escritos para pantalla: la API del CRTM los manda gritando
+    # ("LAS ROSAS") y agrupar_llegadas los pasa por presentar_nombre.
+    assert {g["destino"] for g in grupos} == {"Las Rosas", "Cuatro Caminos"}
 
 
 def test_acumula_los_tiempos_del_mismo_grupo_en_orden():
