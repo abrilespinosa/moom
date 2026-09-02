@@ -16,6 +16,7 @@ colors:
   azul-sistema: "#007aff"
   rojo-sistema: "#ff3b30"
   gris-desactivado: "#8e8e93"
+  papel-tibio: "#f8f6f3"
 typography:
   display:
     fontFamily: "Inter, -apple-system, Segoe UI, Roboto, Arial, sans-serif"
@@ -35,6 +36,12 @@ typography:
     fontWeight: 400
     lineHeight: 1.45
     letterSpacing: "-0.01em"
+  caption:
+    fontFamily: "Inter, -apple-system, Segoe UI, Roboto, Arial, sans-serif"
+    fontSize: "12px"
+    fontWeight: 400
+    lineHeight: 1.35
+    letterSpacing: "0em"
   label:
     fontFamily: "Inter, -apple-system, Segoe UI, Roboto, Arial, sans-serif"
     fontSize: "11px"
@@ -42,9 +49,11 @@ typography:
     lineHeight: 1.2
     letterSpacing: "0.06em"
 rounded:
+  xs: "11px"
   sm: "12px"
   md: "16px"
   lg: "22px"
+  xl: "26px"
   full: "999px"
 spacing:
   xs: "4px"
@@ -131,6 +140,12 @@ puñado de colores de sistema que solo aparecen cuando informan de algo.
 - **Papel Cálido** (`#faf9f7`): el fondo del panel. Un blanco apenas tostado,
   cuyo único trabajo es que las fichas blancas se despeguen sin necesitar un
   borde.
+- **Papel Tibio** (`#f8f6f3`): el relleno de los controles que no son fichas
+  —el campo de búsqueda, la bandeja de filtros, el hueco del icono de red—.
+  Fue `#f2f2f2` y se cambió por dos motivos a la vez: era un gris **frío** en
+  un sistema de papel cálido, y encima **Tinta Suave sobre él daba 4,37**, por
+  debajo del 4,5 de AA, en las etiquetas de los filtros inactivos. Sobre este
+  valor da 4,54. Es el techo: cualquier valor más oscuro vuelve a incumplir.
 - **Línea Tenue** (`#e6e3de`) y **Línea Marcada** (`#ded8ce`): separadores y
   tiradores. Se usan con cuentagotas.
 - **Estrella Apagada** (`#b8b2a8`): el contorno de un favorito sin marcar.
@@ -178,6 +193,13 @@ suelto.
   distintivos. El único sitio donde se usa mayúscula.
 
 ### Named Rules
+
+**La página legal tiene su propia escala, y es correcto.**
+`privacidad.html` no carga `style.css` a propósito —ese maqueta el body como
+rejilla de panel + mapa— y repite a mano los pocos tokens que necesita. Es un
+documento de lectura larga, no una pantalla de decisión, así que usa 16px de
+cuerpo y 28/20px de encabezado en vez de la rampa de la aplicación. Un
+detector que compare contra la rampa la marcará; no es deriva.
 
 **La Regla de los 16 Píxeles.** Ningún campo de formulario baja de 16px. Por
 debajo, Safari en iOS hace zoom automático al enfocarlo y descuadra la página
@@ -235,10 +257,14 @@ de una sola capa se ve como un halo pegado y delata el sistema.
 
 ## Shapes
 
-Todo lleva radio, y **el radio es proporcional al tamaño del elemento**: 22px
-para el panel y los contenedores grandes, 16px para las fichas, 12px para
-controles y campos, y `999px` para lo que debe leerse como píldora
-—distintivos de línea, tiradores, el botón de ubicación—.
+Todo lleva radio, y **el radio es proporcional al tamaño del elemento**: 26px
+para la hoja de móvil, que es la superficie más grande y necesita más que el
+panel de escritorio para no parecer un rectángulo pegado al borde; 22px para
+el panel y los contenedores grandes; 16px para las fichas; 14px para la
+bandeja de filtros, con **11px para el segmento activo de dentro** —los 14
+menos los 3 de relleno, para que los dos radios queden concéntricos—; 12px
+para controles y campos; y `999px` para lo que debe leerse como píldora
+—distintivos de línea, tiradores, el interruptor de accesibilidad—.
 
 Los resultados de búsqueda son **fichas separadas**, no filas con raya
 divisoria. Es la consecuencia visible de no tener bordes: la separación la hace
@@ -289,6 +315,29 @@ no con una clase por línea**: son 603 líneas.
 La única superficie de color pleno de la interfaz: banda naranja con el
 logotipo en blanco centrado. En móvil hace además de **tirador** de la hoja, con
 una barrita de 40×4px encima.
+
+### Interruptor de accesibilidad
+
+Un botón circular de 44px con el símbolo internacional de accesibilidad, en la
+misma fila que la bandeja de filtros y a su derecha. **No forma parte del grupo
+excluyente**, y esa es toda su razón de ser: como quinta píldora, activarlo
+hacía desaparecer la EMT y el CRTM enteros, y quien iba en silla buscando una
+parada de bus accesible leía «no hay ninguna» cuando lo cierto es que ese dato
+solo lo publica el Metro. Se cruza con el modo, no lo sustituye.
+
+Encendido va en el verde del distintivo de accesibilidad, no en el naranja de
+marca: aquí el color significa «estás viendo esas», que es la única condición
+bajo la que este sistema usa color.
+
+### Botón de avisos
+
+Ámbar lavado con el triángulo de aviso, **dentro de la vista de búsqueda** y
+solo cuando hay algo en curso o programado. Estuvo por encima de las cinco
+vistas y en la de llegadas se colaba entre el nombre de la parada y su tiempo,
+que es el dato por el que se abre la aplicación.
+
+Puede permitirse llamar la atención justamente porque no siempre está: un
+aviso permanente que nunca avisa de nada deja de leerse.
 
 ### Aviso de conexión
 

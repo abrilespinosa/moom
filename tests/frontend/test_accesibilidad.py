@@ -113,7 +113,7 @@ def test_el_distintivo_sale_en_los_resultados_y_solo_donde_toca(render):
 def test_el_filtro_de_accesibles_deja_solo_las_que_lo_son(render):
     resultado = render("""
         await esperarA(() => TODAS_LAS_PARADAS.length > 0);
-        document.querySelector('[data-filtro="accesibles"]').click();
+        document.getElementById("filtro-accesibles").click();
         escribirEnBuscador("a");
         await esperarA(() => resultados().length > 0);
 
@@ -150,7 +150,7 @@ def test_el_mapa_y_la_lista_filtran_con_el_mismo_criterio(render):
     """
     resultado = render("""
         await esperarA(() => TODAS_LAS_PARADAS.length > 0);
-        document.querySelector('[data-filtro="accesibles"]').click();
+        document.getElementById("filtro-accesibles").click();
 
         responder({
           pasanEnElMapa: TODAS_LAS_PARADAS.filter((p) => pasaElFiltroDeModo(p))
@@ -160,3 +160,81 @@ def test_el_mapa_y_la_lista_filtran_con_el_mismo_criterio(render):
     """)
 
     assert resultado["pasanEnElMapa"] == ["Alsacia", "Chueca"]
+
+
+def test_accesibles_se_cruza_con_el_modo_en_vez_de_sustituirlo(render):
+    """
+    Era una quinta píldora del grupo excluyente, así que activarla hacía
+    desaparecer la EMT y el CRTM enteros. Quien iba en silla buscando una
+    parada de BUS accesible leía eso como "no hay ninguna", cuando lo cierto
+    es que ese dato no existe: solo el Metro lo publica.
+
+    Ahora son dos ejes independientes y se cruzan.
+    """
+    resultado = render("""
+        await esperarA(() => TODAS_LAS_PARADAS.length > 0);
+        const nombres = () => TODAS_LAS_PARADAS.filter((p) => pasaElFiltroDeModo(p))
+                                .map((p) => p.nombre).sort();
+
+        document.getElementById("filtro-accesibles").click();
+        const soloAcc = nombres();
+
+        // Cruzado con Metro: las accesibles que además son de Metro.
+        document.querySelector('[data-filtro="METRO"]').click();
+        const metroAcc = nombres();
+
+        // Cruzado con urbano: no hay ninguna, porque la EMT no publica el dato.
+        document.querySelector('[data-filtro="EMT"]').click();
+        const emtAcc = nombres();
+
+        // Y al apagarlo vuelven todas las de la EMT.
+        document.getElementById("filtro-accesibles").click();
+        const emtTodas = nombres();
+
+        responder({ soloAcc, metroAcc, emtAcc, emtTodas,
+                    pulsado: document.getElementById("filtro-accesibles")
+                               .getAttribute("aria-pressed") });
+    """)
+
+    assert resultado["soloAcc"] == ["Alsacia", "Chueca"]
+    assert resultado["metroAcc"] == ["Alsacia", "Chueca"]
+    assert resultado["emtAcc"] == [], "la EMT no publica accesibilidad"
+    assert "Cibeles" in resultado["emtTodas"], "al apagarlo vuelven todas"
+
+    # El estado tiene que llegar a un lector de pantalla, no solo verse.
+    assert resultado["pulsado"] == "false"
+
+
+def test_el_nombre_accesible_lleva_todo_lo_que_lleva_la_ficha(render):
+    """
+    Un aria-label explícito SUSTITUYE al contenido del botón, no lo acompaña.
+    Como la ficha lleva dentro el icono, el nombre, la distancia y el
+    distintivo de accesibilidad con su .solo-lector, poner solo el nombre en
+    la etiqueta silenciaba los otros tres: la píldora de silla de ruedas
+    —hecha justo para quien depende de ella— era inaudible.
+    """
+    resultado = render("""
+        await esperarA(() => TODAS_LAS_PARADAS.length > 0);
+
+        // Se finge que hay ubicación para que aparezca la distancia.
+        ubicacionUsuario = { lat: 40.4183, lon: -3.6240 };
+
+        escribirEnBuscador("alsacia");
+        await esperarA(() => resultados().length > 0);
+        const fila = resultados().find((li) => li.textContent.includes("Alsacia"));
+
+        responder({
+          etiqueta: fila.querySelector(".resultado-principal")
+                      .getAttribute("aria-label"),
+          hayDistintivo: !!fila.querySelector(".accesibilidad-compacta"),
+        });
+    """)
+
+    assert resultado["hayDistintivo"] is True
+    etiqueta = resultado["etiqueta"]
+
+    assert "Alsacia" in etiqueta
+    assert "Metro" in etiqueta
+    # Lo que antes se perdía:
+    assert "accesibilidad" in etiqueta.lower(), etiqueta
+    assert "min" in etiqueta or "metro" in etiqueta.lower(), etiqueta

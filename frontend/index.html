@@ -82,49 +82,73 @@
          anuncie al aparecer sin robar el foco. -->
     <div id="aviso-conexion" role="status" hidden></div>
 
-    <!-- Los filtros van FUERA de la vista de búsqueda y por encima de los
-         dos botones: son el control principal del panel y antes quedaban
-         empujados hacia abajo por ellos. Al estar fuera hay que ocultarlos
-         cuando no se está buscando, y de eso se encarga mostrarVista(). -->
-    <div id="filtros-fuente">
-      <button class="filtro-boton activo" data-filtro="todos" title="Todos los modos">
-        <span class="filtro-icono">
-          <!-- "Todos" no tiene icono propio de transporte, así que usa una
-               cuadrícula. Va en SVG y no en PNG para que herede el color
-               del botón cuando está activo. -->
-          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <rect x="3" y="3" width="8" height="8" rx="2" />
-            <rect x="13" y="3" width="8" height="8" rx="2" />
-            <rect x="3" y="13" width="8" height="8" rx="2" />
-            <rect x="13" y="13" width="8" height="8" rx="2" />
-          </svg>
-        </span>
-        <span class="filtro-etiqueta">Todos</span>
-      </button>
+    <!-- VISTA 1: buscador -->
+    <div id="vista-busqueda">
+      <div class="fila-buscador">
+        <label class="solo-lector" for="input-buscar">
+          Buscar una parada o una línea
+        </label>
+        <input
+          type="text"
+          id="input-buscar"
+          placeholder="Buscar parada o línea..."
+          autocomplete="off"
+        />
+      </div>
 
-      <button class="filtro-boton" data-filtro="EMT" title="Autobús urbano (EMT)">
-        <span class="filtro-icono"><img src="assets/bus-urbano.png" alt="" /></span>
-        <span class="filtro-etiqueta">Urbano</span>
-      </button>
+      <!-- Los filtros van DEBAJO del buscador: se acota lo que ya hay en
+           pantalla, no lo que todavía no se ha buscado. Y dentro de la vista,
+           para que se oculten solos en las otras cuatro sin que nadie tenga
+           que acordarse de hacerlo.
 
-      <button class="filtro-boton" data-filtro="CRTM" title="Autobús interurbano (CRTM)">
-        <span class="filtro-icono"><img src="assets/bus-interurbano.png" alt="" /></span>
-        <span class="filtro-etiqueta">Interurbano</span>
-      </button>
+           Cada uno lleva el mismo icono con el que se dibuja esa fuente en el
+           mapa, para que la correspondencia se vea sin explicarla. -->
+      <div class="fila-filtros">
+        <div id="filtros-fuente" role="group" aria-label="Filtrar por red">
+          <button class="filtro-boton activo" aria-pressed="true" data-filtro="todos" title="Todos los modos">
+            <span class="filtro-icono">
+              <!-- "Todos" no tiene icono propio de transporte, así que usa una
+                   cuadrícula. Va en SVG y no en PNG para que herede el color
+                   del botón cuando está activo. -->
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <rect x="3" y="3" width="8" height="8" rx="2" />
+                <rect x="13" y="3" width="8" height="8" rx="2" />
+                <rect x="3" y="13" width="8" height="8" rx="2" />
+                <rect x="13" y="13" width="8" height="8" rx="2" />
+              </svg>
+            </span>
+            <span class="filtro-etiqueta">Todos</span>
+          </button>
 
-      <button class="filtro-boton" data-filtro="METRO" title="Metro de Madrid">
-        <span class="filtro-icono"><img src="assets/metro.png" alt="" /></span>
-        <span class="filtro-etiqueta">Metro</span>
-      </button>
+          <button class="filtro-boton" aria-pressed="false" data-filtro="EMT" title="Autobús urbano (EMT)">
+            <span class="filtro-icono"><img src="assets/bus-urbano.png" alt="" /></span>
+            <span class="filtro-etiqueta">Urbano</span>
+          </button>
 
-      <!-- Solo el Metro publica accesibilidad por estación, así que este
-           filtro deja a la vista únicamente estaciones de Metro. No se
-           llama "Metro accesible" porque lo que se busca es la propiedad,
-           no la red. -->
-      <button class="filtro-boton" data-filtro="accesibles"
-              title="Estaciones con ascensor o rampa">
-        <span class="filtro-icono">
-          <svg viewBox="0 0 24 24" aria-hidden="true" width="20" height="20"
+          <button class="filtro-boton" aria-pressed="false" data-filtro="CRTM" title="Autobús interurbano (CRTM)">
+            <span class="filtro-icono"><img src="assets/bus-interurbano.png" alt="" /></span>
+            <span class="filtro-etiqueta">Interurbano</span>
+          </button>
+
+          <button class="filtro-boton" aria-pressed="false" data-filtro="METRO" title="Metro de Madrid">
+            <span class="filtro-icono"><img src="assets/metro.png" alt="" /></span>
+            <span class="filtro-etiqueta">Metro</span>
+          </button>
+        </div>
+
+        <!-- La accesibilidad NO es un modo de transporte, así que salió del
+           grupo excluyente: era un quinto botón que, al pulsarlo, hacía
+           desaparecer las tres redes de superficie. Alguien en silla buscando
+           una parada de bus accesible leía eso como "no hay ninguna", cuando
+           lo cierto es que el dato no existe: solo el Metro lo publica.
+
+           Como interruptor aparte compone con los cuatro modos, y de paso el
+           grupo vuelve a tener cuatro opciones, que es el límite de lo que
+           cabe en la memoria de trabajo. -->
+        <button id="filtro-accesibles" type="button" aria-pressed="false"
+                aria-label="Ver solo estaciones accesibles"
+                title="Solo estaciones con ascensor o rampa">
+          <svg viewBox="0 0 24 24" aria-hidden="true" width="19" height="19"
                fill="none" stroke="currentColor" stroke-width="2"
                stroke-linecap="round" stroke-linejoin="round">
             <circle cx="13" cy="4" r="1.6" />
@@ -132,36 +156,14 @@
             <path d="M16.5 13l2 5" />
             <path d="M15.5 15.5a5 5 0 1 1-5.5-4" />
           </svg>
-        </span>
-        <span class="filtro-etiqueta">Accesibles</span>
-      </button>
-    </div>
-
-    <!-- Avisos de servicio de la EMT. Oculto mientras no haya ninguno: un
-         botón permanente que casi siempre no lleva a nada deja de mirarse. -->
-    <button id="boton-incidencias" type="button" hidden></button>
-
-    <!-- Planos y tarifas. A diferencia del de avisos, este SIEMPRE está: no
-         depende de que haya pasado nada, y es lo que se busca justo cuando no
-         te sabes la red o no sabes qué billete comprar. -->
-    <button id="boton-informacion" type="button">Planos y tarifas</button>
-
-    <!-- VISTA 1: buscador -->
-    <div id="vista-busqueda">
-      <!-- Filtros por modo. Cada uno lleva el mismo icono con el que se
-           dibuja esa fuente en el mapa, para que la correspondencia entre
-           botón y marcador se vea sin explicarla. -->
-      <div style="padding: 12px 16px 0 16px;">
-          <label class="solo-lector" for="input-buscar">
-            Buscar una parada o una línea
-          </label>
-          <input
-            type="text"
-            id="input-buscar"
-            placeholder="Buscar parada o línea..."
-            autocomplete="off"
-          />
+        </button>
       </div>
+
+      <!-- Avisos, después de los filtros y solo aquí. Estaba por encima de
+           las cinco vistas, así que en la de llegadas se colaba entre tu
+           parada y su tiempo, que es el dato por el que abriste esto. -->
+      <button id="boton-incidencias" type="button" hidden></button>
+
       <ul id="lista-resultados"></ul>
     </div>
 
@@ -236,7 +238,14 @@
          en cada momento sin tener que repetirlo tres veces. Deliberadamente
          discreto: es un enlace que casi nadie va a pulsar, pero que tiene que
          estar y ser fácil de encontrar cuando se busca. -->
+    <!-- Planos y tarifas vive en el pie, no en la pila del panel.
+         Es lo único de la aplicación que se consulta ANTES de salir de casa
+         —planos en papel y precios de billete—, y estaba cobrándoselo en cada
+         apertura a quien solo quiere saber cuánto falta para su autobús.
+         Medido: los dos botones ocupaban 104px de los 333 que había por
+         delante del primer resultado. -->
     <p id="pie-legal">
+      <button id="boton-informacion" type="button">Planos y tarifas</button>
       <a href="privacidad.html">Privacidad y condiciones de uso</a>
     </p>
 

@@ -63,8 +63,18 @@ Sin instalar nada y sin cuenta.
 
 **Funciona hoy**: llegadas por parada en las tres redes; posición de autobuses
 EMT y de trenes de Metro en el mapa; buscador único de paradas y líneas;
-recorrido de línea por sentido; favoritos; distancia y tiempo andando a las
-paradas cercanas.
+recorrido de línea por sentido; horarios de paso; favoritos, recientes y
+cercanía con distancia y tiempo andando; **avisos de servicio de la EMT con su
+estado**; **planos oficiales y tarifas**; y **accesibilidad por estación de
+Metro**, con un interruptor que se cruza con el filtro de red.
+
+**Restricción de datos que atraviesa todo lo anterior**: los volcados del CRTM
+y de Metro escriben los nombres en mayúsculas, y el de Metro ha perdido las
+tildes agudas. Ni la API en vivo del CRTM las tiene: para el andén 4_11
+devuelve `"GRAN VIA"`. La ortografía correcta de las 234 estaciones se repone
+desde una lista verificada contra el anexo de Wikipedia, aceptando un nombre
+**solo** si coincide letra por letra ignorando tildes. Un volcado GTFS nuevo
+obliga a regenerarla.
 
 **Restricciones que el trabajo futuro debe respetar**:
 
@@ -130,9 +140,11 @@ lo único que habría que cambiar.
 ## Evidence on Hand
 
 **Real y comprobable**: el despliegue en producción; datos GTFS reales (13.533
-paradas, 603 líneas); tres APIs en vivo; 50 tests de backend y 25 de navegador;
-y una auditoría técnica propia con nota 14/20 (agosto de 2026, antes de
-arreglar la accesibilidad).
+paradas, 603 líneas); tres APIs en vivo; **58 tests de backend y 43 de
+navegador**; una auditoría técnica propia con nota 14/20 (agosto de 2026,
+antes de arreglar la accesibilidad); y una crítica de diseño del 2026-09-02
+con **22/40** en las heurísticas de Nielsen, archivada en
+`.impeccable/critique/`.
 
 **Lo que NO existe, y no se debe inventar**: no hay usuarios reales conocidos,
 ni métricas de uso, ni testimonios, ni casos de estudio, ni prensa, ni precios,
@@ -150,16 +162,38 @@ ni acuerdos con la EMT o el CRTM. El proyecto nunca se ha promocionado.
    contrario.
 5. **No aparentar más precisión de la que da el origen.** Si las posiciones
    están congeladas, no se pintan; si una llegada es horario teórico, se dice.
+6. **Nada se pone por delante del dato.** Cada función nueva es correcta por
+   separado y aun así empuja hacia abajo el número por el que se abrió la
+   aplicación. Medido el 2026-09-02: cinco funciones desplegadas en un día
+   dejaron 333 px de cromo antes del primer resultado y la primera llegada al
+   62% de la pantalla. Lo que se consulta de vez en cuando va al pie; lo que se
+   consulta siempre, arriba.
 
 ## Accessibility & Inclusion
 
 **WCAG 2.1 nivel AA es un requisito del producto**, confirmado por la autora.
 
-**Hoy no se cumple.** La auditoría del 2026-08-31 dejó esta dimensión en 1/4:
-con teclado no se puede seleccionar una parada (los resultados son `<li>` con
-`click`), no hay indicador de foco visible, el buscador no tiene etiqueta, no
-hay soporte de `prefers-reduced-motion` y no hay landmarks. Cerrar esa brecha
-es trabajo comprometido, no opcional.
+**Estado real, medido el 2026-09-02.** La brecha que dejó la auditoría del
+31 de agosto en 1/4 está cerrada: los resultados son botones de verdad, hay
+indicador de foco visible, el buscador tiene etiqueta, hay landmarks y se
+respeta `prefers-reduced-motion`. Comprobado recorriendo la página con el
+teclado: **15 paradas, ciclo cerrado, foco visible en las 15**.
+
+**Lo que sigue abierto**, de la crítica del 2026-09-02:
+
+- Un `aria-label` explícito **sustituye** al contenido del botón, no lo
+  acompaña. Se arregló componiendo la etiqueta a mano, pero el patrón es fácil
+  de repetir: cualquier botón nuevo que lleve hijos con información tiene que
+  llevarla también en su nombre accesible.
+- Los cambios de vista no mueven el foco ni se anuncian.
+- Los títulos de vista siguen siendo `<div>` en vez de encabezados reales, así
+  que navegar por encabezados no funciona.
+- La estrella de favorito sin marcar da **2,11:1**, por debajo del 3:1 que
+  WCAG 1.4.11 exige a un gráfico con significado.
+
+**Y una regla de contraste que costó descubrir**: Tinta Suave sobre el papel
+tibio de los controles se queda en 4,54. Cualquier superficie de control más
+oscura que `#f8f6f3` vuelve a incumplir AA en las etiquetas de filtro.
 
 Además, propias de la escena de uso: **legibilidad con sol directo** y
 **alcance a una mano** en móvil.

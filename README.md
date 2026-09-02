@@ -42,6 +42,30 @@ Funciona en móvil, tableta y escritorio, y no necesita instalación ni cuenta.
 - Funciona nada más clonar el repositorio: los recorridos vienen precalculados en `backend/data/precalculado/`, así que no hacen falta los archivos GTFS pesados (ver [Datos precalculados](#datos-precalculados)).
 - Hay 21 líneas que los datos abiertos no detallan (la F y la G de la EMT, la Línea 3 de Metro y varias interurbanas). Se pueden buscar y abrir igual, avisando de que su recorrido no está disponible; sus paradas y sus tiempos en vivo funcionan con normalidad.
 
+**Avisos de servicio**
+
+- Un botón aparece **solo cuando hay algo**, y lleva a la lista de avisos de la EMT con el estado de cada uno: en curso, programado o ya terminado.
+- Los terminados se enseñan igual, atenuados: saber que el desvío de tu línea ya acabó explica por qué el autobús venía raro esta mañana.
+- **El contador excluye los terminados.** El día que se construyó esto, 20 de los 21 que devolvía la API ya habían pasado: un contador de «21 avisos» habría sido ruido puro.
+- Los avisos llegaban dentro de la misma respuesta que las llegadas y eran **19 KB de sus 22**, pedidos cada diez segundos. Ahora se sirven aparte y la respuesta de una parada baja a 4 KB.
+
+**Planos y tarifas**
+
+- Los planos oficiales de Metro, EMT, interurbano y Cercanías, **enlazados y no copiados**: pertenecen a Metro y al CRTM.
+- **Cada uno dice lo que pesa** antes de que lo toques. El esquemático de Metro son 6,2 MB, y con datos móviles en la calle eso es la diferencia entre abrirlo y arrepentirse. Los pesos están medidos, no estimados.
+- Las tarifas de un viaje, diez viajes y abonos, **con la fecha desde la que valen**. Cambian al menos una vez al año y desde aquí no hay forma de enterarse: un precio viejo sin fecha es una mentira, con la fecha delante sigue informando.
+
+**Accesibilidad de las estaciones**
+
+- Las estaciones de Metro con ascensor o rampa llevan un distintivo, y hay un interruptor para ver **solo** esas.
+- **No es un modo de transporte, así que no está en el grupo de filtros**: se cruza con ellos. Como quinta píldora excluyente, activarlo hacía desaparecer la EMT y el CRTM enteros, y quien buscaba una parada de bus accesible leía «no hay ninguna» cuando lo cierto es que ese dato no existe fuera del Metro.
+- Los datos salen de la [lista oficial de Metro de Madrid](https://www.metromadrid.es/es/accesibilidad). **Las estaciones con medidas complementarias pero sin ascensor ni rampa no llevan el símbolo de silla**: para quien va en silla, marcarlas sería el error que más daño hace.
+
+**Nombres escritos como se escriben**
+
+- Los volcados del CRTM y de Metro guardan los nombres EN MAYÚSCULAS: 8.397 paradas interurbanas y 229 de las 242 estaciones. Se corrigen al cargar.
+- El de Metro además ha perdido las tildes agudas, y **ninguna fuente de datos las tiene**: la API en vivo del CRTM devuelve `"GRAN VIA"` igual que el GTFS. La ortografía de las 234 estaciones se repone desde una lista verificada, aceptando un nombre solo si coincide letra por letra ignorando tildes.
+
 **Favoritos, recientes y cercanía**
 - Paradas y líneas se pueden marcar como favoritas, y se guardan en el navegador (`localStorage`).
 - Las **tres últimas paradas consultadas** se recuerdan y aparecen con el buscador vacío, porque quien usa esto a diario se mueve entre unas pocas paradas y tenía que buscarlas otra vez en cada visita.
@@ -49,9 +73,9 @@ Funciona en móvil, tableta y escritorio, y no necesita instalación ni cuenta.
 - Al compartir tu ubicación aparece un grupo **Cerca de ti** con las paradas más próximas, y cada una indica a qué distancia está y cuánto se tarda andando. Es una estimación: línea recta más un 25% por el rodeo de las manzanas, y tira ligeramente alto a propósito, porque quedarse corto hace perder el autobús.
 
 **Mapa e interfaz**
-- Leaflet con tiles de CartoDB Voyager.
+- Leaflet **autoalojado** (no desde un CDN, por privacidad) con tiles de CartoDB Voyager, que desde agosto de 2026 requieren clave.
 - Paradas visibles a partir de zoom 15 y solo dentro del área en pantalla, para no dibujar miles de marcadores a la vez.
-- Filtros por fuente: Todos / Urbano / Interurbano / Metro.
+- Filtros por red: Todos / Urbano / Interurbano / Metro, y un interruptor aparte de **solo estaciones accesibles** que se cruza con ellos.
 - Botón de geolocalización para centrar el mapa en tu posición.
 - Panel lateral redimensionable arrastrando el divisor; el ancho elegido se recuerda entre visitas.
 - **En móvil y en tableta vertical** el panel deja de ser una columna y pasa a ser una hoja que sube desde abajo, arrastrable desde la banda naranja, con el mapa a pantalla completa detrás. En tableta horizontal y en escritorio se mantiene la vista de dos paneles, que es donde tiene sentido.
@@ -108,6 +132,7 @@ vercel.json            # Reparto de rutas entre frontend estático y API
 | `GET /lineas` | Las 603 líneas de las tres redes, sin recorrido, para el buscador |
 | `GET /linea/{id}` | Una línea con sus paradas en orden, separadas por sentido (ej. `EMT-027`) |
 | `GET /linea/{id}/horarios` | Horarios de paso por sentido y tipo de día. Devuelve horas reales en el interurbano y franjas de frecuencia en EMT y Metro |
+| `GET /incidencias` | Los avisos de servicio de la EMT, cada uno con su estado calculado a partir de su ventana de vigencia |
 | `GET /metro/parada/{cod_stop}` | Próximos trenes en una estación, agrupados por línea y destino |
 | `GET /metro/parada/{cod_stop}/lineas` | Solo las líneas de una estación; la mitad barata del anterior, para el mapa |
 | `GET /metro/linea/{cod_line}/vehiculos` | Posición de los trenes de una línea. Acepta `?cod_stop=est_XXX` para obtener los cercanos a una estación concreta |
@@ -119,7 +144,7 @@ Cuando una API externa no responde, los endpoints que dependen de ella devuelven
 
 `backend/data/` ocupa 188 MB en disco, pero al repositorio solo van `stops.txt` y `routes.txt` de cada fuente. Los archivos pesados —`stop_times.txt` son 1,9 millones de filas— están excluidos.
 
-Eso dejaba un problema: la búsqueda por línea los necesitaba, así que un clon limpio se quedaba sin ella. La clave es que esos 188 MB se leen al arrancar y se tiran: de todos esos viajes solo sobrevive **uno representativo por línea y sentido**. El resultado son 2 MB, que sí caben en el repositorio.
+Eso dejaba un problema: la búsqueda por línea los necesitaba, así que un clon limpio se quedaba sin ella. La clave es que esos 188 MB se leen al arrancar y se tiran: de todos esos viajes solo sobrevive **uno representativo por línea y sentido**. El resultado son 2,7 MB, que sí caben en el repositorio.
 
 Por eso `backend/data/precalculado/` va versionado. Se regenera con:
 
@@ -129,6 +154,16 @@ python -m scripts.precalcular_datos
 
 **Hay que volver a ejecutarlo cada vez que se descargue un volcado GTFS nuevo**, o la aplicación seguirá sirviendo los datos del anterior. De paso, el arranque baja de 2,77 s a 0,03 s.
 
+Junto a los tres archivos que salen del GTFS hay otros tres que se generan aparte, cada uno con su script, porque los datos abiertos no los traen:
+
+| Archivo | Qué es | Cómo se regenera |
+|---|---|---|
+| `horarios.json` | Horas de paso del interurbano y franjas de frecuencia de EMT y Metro | `python -m scripts.precalcular_horarios` |
+| `accesibilidad.json` | Las 166 estaciones de la lista oficial de Metro, con su grado | `python -m scripts.precalcular_accesibilidad` |
+| `nombres_metro.json` | La ortografía correcta de 234 estaciones, con sus tildes | `python -m scripts.precalcular_nombres_metro` |
+
+Los dos últimos van **por id de estación**, así que un volcado que renumere los ids los deja sin casar. Hay tests que lo detectan.
+
 ## Tests
 
 ```bash
@@ -136,19 +171,19 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-44 tests en menos de medio segundo. **Ninguno sale a la red**: solo se prueban rutas que responden desde memoria o que cortan antes de llamar a EMT o al CRTM, comprobado ejecutándolos con las conexiones salientes bloqueadas. Una caída de una API externa no puede poner la suite en rojo.
+58 tests en menos de un segundo. **Ninguno sale a la red**: solo se prueban rutas que responden desde memoria o que cortan antes de llamar a EMT o al CRTM, comprobado ejecutándolos con las conexiones salientes bloqueadas. Una caída de una API externa no puede poner la suite en rojo.
 
 ### Tests de frontend
 
-Hay otros 25 que abren la página en Chrome y comprueban lo que aparece en pantalla: el orden de los resultados del buscador, el cambio entre las tres vistas, el aviso cuando el backend falla, los favoritos, las paradas recientes, el camino de teclado y que al salir de una estación no queden trenes en el mapa.
+Hay otros 43 que abren la página en Chrome y comprueban lo que aparece en pantalla: el orden de los resultados del buscador, el cambio entre las tres vistas, el aviso cuando el backend falla, los favoritos, las paradas recientes, el camino de teclado y que al salir de una estación no queden trenes en el mapa.
 
 ```bash
 pytest -m navegador
 ```
 
-**Van aparte a propósito.** Tardan unos 25 segundos, así que meterlos en `pytest` a secas quitaría lo que hace útil a la suite del backend: que es instantánea y se puede lanzar a cada cambio. Por eso `pytest` sin argumentos sigue ejecutando solo los 32 del backend.
+**Van aparte a propósito.** Tardan unos 25 segundos, así que meterlos en `pytest` a secas quitaría lo que hace útil a la suite del backend: que es instantánea y se puede lanzar a cada cambio. Por eso `pytest` sin argumentos sigue ejecutando solo los 58 del backend.
 
-Tampoco salen a la red. La página se copia a un directorio temporal y allí se le cambian dos cosas: el backend apunta a uno de mentira que sirve el propio test, y Leaflet (que viene de un CDN) se sustituye por un doble que implementa solo lo que `app.js` usa. Así no se prueba Leaflet, que es código de otros, sino el nuestro.
+Tampoco salen a la red. La página se copia a un directorio temporal y allí se le cambian dos cosas: el backend apunta a uno de mentira que sirve el propio test, y Leaflet se sustituye por un doble que implementa solo lo que `app.js` usa. Así no se prueba Leaflet, que es código de otros, sino el nuestro.
 
 Necesitan Chrome. Si no está en la ruta habitual de macOS, se indica con `CHROME_PARA_TESTS=/ruta/a/chrome`; si no se encuentra, los tests se saltan en vez de fallar.
 

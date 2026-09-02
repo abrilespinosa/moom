@@ -97,44 +97,60 @@ def test_solo_hay_una_vista_visible_a_la_vez(render):
     assert resultado == ["vista-llegadas"]
 
 
-def test_los_filtros_van_encima_de_los_botones_y_solo_al_buscar(render):
+def test_el_buscador_va_antes_que_los_filtros_y_que_los_avisos(render):
     """
-    Los filtros son el control principal del panel y los dos botones los
-    empujaban hacia abajo. Al sacarlos de la vista de búsqueda para poder
-    subirlos, dejan de ocultarse solos: si mostrarVista() se olvidara de
-    ellos, se quedarían puestos mirando unas llegadas, donde filtrar por modo
-    no significa nada.
+    El orden del panel es el arreglo del P0 de la crítica: había 333,5 px de
+    cromo antes del primer resultado en escritorio, y en la hoja de móvil
+    recogida quedaban 58,4 px, así que la primera ficha salía cortada.
+
+    Ahora manda el buscador. Los filtros van detrás porque acotan lo que ya
+    hay en pantalla, no lo que todavía no se ha buscado, y los avisos detrás
+    de ellos. "Planos y tarifas" se fue al pie: es lo único que se consulta
+    antes de salir de casa, y se lo estaba cobrando a cada apertura.
     """
     resultado = render("""
         await esperarA(() => TODAS_LAS_PARADAS.length > 0);
+        await esperarA(() => !document.getElementById("boton-incidencias").hidden);
 
-        const arriba = (id) => document.getElementById(id).getBoundingClientRect().top;
-        const orden = {
-          filtros: arriba("filtros-fuente"),
-          informacion: arriba("boton-informacion"),
-        };
+        const arriba = (sel) =>
+          document.querySelector(sel).getBoundingClientRect().top;
 
+        responder({
+          buscador: arriba("#input-buscar"),
+          filtros: arriba("#filtros-fuente"),
+          avisos: arriba("#boton-incidencias"),
+          planosEnElPie: !!document.querySelector("#pie-legal #boton-informacion"),
+        });
+    """)
+
+    assert resultado["buscador"] < resultado["filtros"]
+    assert resultado["filtros"] < resultado["avisos"]
+    assert resultado["planosEnElPie"] is True
+
+
+def test_los_avisos_no_se_meten_entre_la_parada_y_su_tiempo(render):
+    """
+    El botón vivía por encima de las cinco vistas, así que en la de llegadas
+    se colaba entre el nombre de tu parada y su tiempo, que es el dato por el
+    que se abre la aplicación. Ahora vive dentro de la vista de búsqueda.
+    """
+    resultado = render("""
+        await esperarA(() => TODAS_LAS_PARADAS.length > 0);
         escribirEnBuscador("cibeles");
         await esperarA(() => resultados().length > 0);
         pulsarResultado();
         await esperarA(() => vistaVisible() === "vista-llegadas");
 
-        const enLlegadas = getComputedStyle(
-          document.getElementById("filtros-fuente")
-        ).display;
-
-        document.getElementById("boton-volver").click();
-        await esperarA(() => vistaVisible() === "vista-busqueda");
+        const visible = (id) => {
+          const e = document.getElementById(id);
+          return e.getBoundingClientRect().height > 0;
+        };
 
         responder({
-          filtrosArriba: orden.filtros < orden.informacion,
-          enLlegadas,
-          alVolver: getComputedStyle(
-            document.getElementById("filtros-fuente")
-          ).display,
+          avisos: visible("boton-incidencias"),
+          filtros: visible("filtros-fuente"),
         });
     """)
 
-    assert resultado["filtrosArriba"] is True
-    assert resultado["enLlegadas"] == "none"
-    assert resultado["alVolver"] != "none"
+    assert resultado["avisos"] is False
+    assert resultado["filtros"] is False

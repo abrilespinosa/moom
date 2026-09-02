@@ -52,6 +52,9 @@ let LINEAS_POR_ID = new Map();
 // dibujar, junto con el zoom y el área visible.
 let filtroActivo = "todos";
 
+// Interruptor independiente del modo: se cruzan, no se sustituyen.
+let soloAccesibles = false;
+
 // Creamos el mapa centrado en Madrid. Zoom 14 muestra ya el detalle
 // de la ciudad (barrios, calles principales) en vez de toda la
 // Comunidad de Madrid, que se veía vacía con el estilo minimalista.
@@ -378,8 +381,18 @@ const tituloRecorrido = document.getElementById("titulo-recorrido");
 const listaRecorrido = document.getElementById("lista-recorrido");
 const subtituloHeader = document.getElementById("subtitulo-header");
 const avisoConexion = document.getElementById("aviso-conexion");
-const filtrosFuente = document.getElementById("filtros-fuente");
 const botonesFiltro = document.querySelectorAll(".filtro-boton");
+const botonAccesibles = document.getElementById("filtro-accesibles");
+
+botonAccesibles.addEventListener("click", () => {
+  soloAccesibles = !soloAccesibles;
+
+  botonAccesibles.classList.toggle("activo", soloAccesibles);
+  botonAccesibles.setAttribute("aria-pressed", String(soloAccesibles));
+
+  actualizarVisibilidadParadas();
+  actualizarResultadosBusqueda();
+});
 
 // Un solo listener sirve para los tres botones: leemos data-filtro
 // del botón pulsado en vez de tener una función distinta por botón.
@@ -388,8 +401,16 @@ botonesFiltro.forEach((boton) => {
     filtroActivo = boton.dataset.filtro;
 
     // Solo un botón puede estar "activo" (resaltado) a la vez.
-    botonesFiltro.forEach((b) => b.classList.remove("activo"));
+    //
+    // aria-pressed además del resaltado: sin él, un lector de pantalla
+    // anuncia los cuatro igual y el estado activo, que aquí se comunica solo
+    // con elevación y color, no llega de ninguna forma.
+    botonesFiltro.forEach((b) => {
+      b.classList.remove("activo");
+      b.setAttribute("aria-pressed", "false");
+    });
     boton.classList.add("activo");
+    boton.setAttribute("aria-pressed", "true");
 
     actualizarVisibilidadParadas();
 
@@ -599,15 +620,22 @@ const MAXIMO_LINEAS = 8;
 const MAXIMO_PARADAS = 12;
 
 function pasaElFiltroDeModo(elemento) {
-  // "accesibles" no es un modo de transporte sino una propiedad, y por eso no
-  // se compara con fuente. Las líneas no tienen el campo, así que con este
-  // filtro desaparecen solas de los resultados, que es lo que se quiere:
-  // preguntar por líneas accesibles no significa nada.
-  if (filtroActivo === "accesibles") {
+  if (filtroActivo !== "todos" && elemento.fuente !== filtroActivo) {
+    return false;
+  }
+
+  // La accesibilidad se COMPONE con el modo en vez de sustituirlo. Cuando era
+  // un quinto botón excluyente, activarlo hacía desaparecer EMT y CRTM
+  // enteros, y quien buscaba una parada de bus accesible leía "no hay
+  // ninguna" en lugar de "ese dato no existe fuera del Metro".
+  //
+  // Las líneas no llevan el campo, así que con el interruptor puesto salen
+  // solo paradas. Es lo correcto: una línea accesible no significa nada.
+  if (soloAccesibles) {
     return esAccesible(elemento);
   }
 
-  return filtroActivo === "todos" || elemento.fuente === filtroActivo;
+  return true;
 }
 
 function buscarLineas(texto) {
@@ -858,11 +886,28 @@ function crearResultadoDeParada(parada) {
 
   const fuente = NOMBRE_DE_FUENTE[parada.fuente] ?? parada.fuente;
 
+  // El nombre accesible se compone A MANO con todo lo que lleva la ficha, y
+  // esa es la parte importante: un aria-label explícito SUSTITUYE al
+  // contenido, no lo acompaña. Como el botón lleva dentro el icono, el
+  // nombre, la distancia andando y el distintivo de accesibilidad con su
+  // .solo-lector, poner solo el nombre en la etiqueta silenciaba los otros
+  // tres. La píldora de silla de ruedas —hecha justo para quien depende de
+  // ella— era inaudible con lector de pantalla.
+  const partes = [parada.nombre, fuente, `parada ${codigoDeParada(parada)}`];
+
+  const grado = GRADOS_DE_ACCESIBILIDAD[parada.accesibilidad];
+  if (grado && esAccesible(parada)) {
+    partes.push(grado.texto.toLowerCase());
+  }
+
+  const metros = distanciaAndando(parada);
+  if (metros !== null) {
+    partes.push(`a ${describirDistancia(metros)}`);
+  }
+
   const boton = crearBotonDeResultado(
     () => seleccionarParada(parada),
-    // La red va también en el nombre accesible: el icono es decorativo, así
-    // que sin esto quien no ve la pantalla no sabría si es bus o Metro.
-    `${parada.nombre}, ${fuente}, parada ${codigoDeParada(parada)}. Ver próximas llegadas.`
+    `${partes.join(", ")}. Ver próximas llegadas.`
   );
 
   // El icono de la red, en el mismo hueco de 34px donde las líneas llevan su
@@ -990,10 +1035,11 @@ inputBuscar.addEventListener("input", actualizarResultadosBusqueda);
 function mostrarVista(nombre) {
   vistaBusqueda.style.display = nombre === "busqueda" ? "block" : "none";
 
-  // Los filtros están fuera de las vistas para poder ir por encima de los
-  // botones de avisos y planos, así que hay que ocultarlos a mano: filtrar
-  // por modo no significa nada mirando unas llegadas o un plano.
-  filtrosFuente.style.display = nombre === "busqueda" ? "flex" : "none";
+  // En la vista de búsqueda el subtítulo sobra: dice "Busca una parada o una
+  // línea" justo encima de un campo cuyo placeholder dice "Buscar parada o
+  // línea...". Eran 39px con su margen, gastados en repetir. En las otras
+  // cuatro vistas sí hace de título y se queda.
+  subtituloHeader.hidden = nombre === "busqueda";
   vistaLinea.style.display = nombre === "linea" ? "flex" : "none";
   vistaLlegadas.style.display = nombre === "llegadas" ? "flex" : "none";
   vistaIncidencias.style.display = nombre === "incidencias" ? "flex" : "none";
@@ -2740,7 +2786,14 @@ botonIncidencias.addEventListener("click", () => {
     return;
   }
 
-  vistaAntesDeIncidencias = vistaVisibleAhora();
+  const actual = vistaVisibleAhora();
+
+  // Misma guarda que en planos, por si el botón vuelve a salir de la vista de
+  // búsqueda algún día.
+  if (actual !== "incidencias") {
+    vistaAntesDeIncidencias = actual;
+  }
+
   pintarIncidencias(incidenciasCargadas);
   mostrarVista("incidencias");
   subtituloHeader.textContent = "Avisos de servicio de la EMT";
@@ -2773,6 +2826,16 @@ function vistaVisibleAhora() {
   if (getComputedStyle(vistaInformacion).display !== "none") return "informacion";
   return "busqueda";
 }
+
+// El estado inicial se declara aquí, no se deja implícito en el CSS.
+//
+// Hasta ahora la vista de arranque la decidía style.css (las otras cuatro
+// nacen con display:none) y mostrarVista() no llegaba a ejecutarse nunca,
+// así que todo lo que esa función ajusta —el subtítulo, y antes los
+// filtros— se quedaba como estuviera en el HTML. Es la misma raíz que el
+// "Volver" que se quedaba muerto la primera vez: preguntarle al DOM por un
+// estado que nadie había escrito todavía.
+mostrarVista("busqueda");
 
 cargarIncidencias();
 
@@ -3029,7 +3092,16 @@ function pintarInformacion() {
 }
 
 botonInformacion.addEventListener("click", () => {
-  vistaAntesDeInformacion = vistaVisibleAhora();
+  const actual = vistaVisibleAhora();
+
+  // Nunca apuntar el "Volver" a la vista de la que no se ha salido. El botón
+  // vive en el pie, así que se puede pulsar estando ya en planos; sin esta
+  // guarda, vistaAntesDeInformacion pasaba a valer "informacion" y Volver
+  // dejaba de hacer nada. Sin historial de navegador, la única salida era
+  // recargar.
+  if (actual !== "informacion") {
+    vistaAntesDeInformacion = actual;
+  }
   pintarInformacion();
   mostrarVista("informacion");
   subtituloHeader.textContent = "Planos y tarifas";
