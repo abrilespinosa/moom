@@ -167,25 +167,30 @@ body {
   border-radius: 999px;
   background: var(--borde-fuerte);
 
-  /* Fuera del flujo, y por eso se anima "height" sin culpa: un elemento
-     absolutamente posicionado no reflowa a sus hermanos ni al contenedor, así
-     que el coste queda contenido en él mismo.
-     
-     Se probó antes con scaleY, que es más barato todavía, pero deformaba el
-     radio: escalar una píldora convierte sus tapas semicirculares en elipses.
-     A 4px de ancho apenas se veía, pero esto no cuesta más y no deforma. */
+  /* Crece con scaleY y no con height: animar height dispara maquetación y
+     pintado en cada pointermove sobre el divisor, mientras que el transform
+     lo mueve el compositor.
+
+     El primer intento con scaleY se descartó porque escalar una píldora
+     convierte sus tapas semicirculares en elipses. La solución está en el
+     SENTIDO: el reposo se queda en su altura real, con las tapas redondas, y
+     el 1,727 se aplica solo al señalarlo. Así lo exacto es lo que se ve el
+     99% del tiempo, y la deformación vive en un estado momentáneo de 120 ms.
+     Escalando al revés —desde la altura grande hacia abajo— la tapa deformada
+     habría sido justo la del reposo. */
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  transition: background 0.12s var(--ease-out), height 0.12s var(--ease-out);
+  transition: background 0.12s var(--ease-out), transform 0.12s var(--ease-out);
 }
 
 #divisor:hover::before,
 #divisor:focus-visible::before,
 #divisor.arrastrando::before {
   background: var(--acento);
-  height: 76px;
+  /* 76/44, la misma altura de antes pero por escala. */
+  transform: translate(-50%, -50%) scaleY(1.727);
 }
 
 #divisor:focus {
@@ -255,7 +260,8 @@ body {
   background-position: 12px center;
   background-size: 16px 16px;
   color: var(--texto);
-  transition: background-color 0.15s, box-shadow 0.15s;
+  transition: background-color 0.15s var(--ease-out),
+    box-shadow 0.15s var(--ease-out);
 }
 
 #input-buscar::placeholder {
@@ -306,7 +312,8 @@ body {
   font-size: 11px;
   font-family: inherit;
   cursor: pointer;
-  transition: background 0.18s, box-shadow 0.18s, color 0.18s;
+  transition: background 0.18s var(--ease-out), box-shadow 0.18s var(--ease-out),
+    color 0.18s var(--ease-out);
 }
 
 /* El icono ya no necesita su propio cuadro de color: dentro de la bandeja
@@ -547,7 +554,8 @@ body {
   background: var(--gris-superficie);
   color: var(--texto-suave);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+  transition: background 0.15s var(--ease-out), color 0.15s var(--ease-out),
+    box-shadow 0.15s var(--ease-out);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -932,7 +940,7 @@ body {
   box-shadow: var(--sombra-flotante), inset 0 0 0 0.5px rgba(255, 255, 255, 0.6);
   font-size: 19px;
   cursor: pointer;
-  transition: transform 0.14s, box-shadow 0.14s;
+  transition: transform 0.14s var(--ease-out), box-shadow 0.14s var(--ease-out);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2074,7 +2082,7 @@ body {
   background: none;
   color: var(--texto-suave);
   cursor: pointer;
-  transition: background 0.18s, color 0.18s;
+  transition: background 0.18s var(--ease-out), color 0.18s var(--ease-out);
 }
 
 #filtro-accesibles:hover {
