@@ -73,6 +73,7 @@
   /* Triángulo de aviso, incrustado como máscara para que herede el color del
      elemento en vez de traer el suyo. */
   --icono-aviso: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z'/%3E%3Cpath d='M12 9v4'/%3E%3Cpath d='M12 17h.01'/%3E%3C/svg%3E");
+  --icono-plano: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 3.5L3 6v14.5l6-2.5 6 2.5 6-2.5V3.5l-6 2.5-6-2.5z'/%3E%3Cpath d='M9 3.5v14.5'/%3E%3Cpath d='M15 6v14.5'/%3E%3C/svg%3E");
 
   --radio-grande: 22px;
   --radio-medio: 16px;
@@ -1849,4 +1850,183 @@ body {
   margin-top: 8px;
   font-size: 12px;
   color: var(--acento-texto);
+}
+
+/* --- PLANOS Y TARIFAS ---
+   El botón es neutro a propósito, al revés que el de avisos: ese llama la
+   atención porque solo aparece cuando pasa algo, y este está siempre. Si los
+   dos gritaran, dejarían de gritar los dos. */
+#boton-informacion {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: calc(100% - 32px);
+  margin: 0 16px 8px;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: var(--radio-pequeno);
+  background: var(--gris-superficie);
+  color: var(--texto);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.18s;
+}
+
+#boton-informacion::before {
+  content: "";
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  background: currentColor;
+  -webkit-mask: var(--icono-plano) center / contain no-repeat;
+  mask: var(--icono-plano) center / contain no-repeat;
+}
+
+#boton-informacion::after {
+  content: "›";
+  margin-left: auto;
+  font-size: 17px;
+  opacity: 0.6;
+}
+
+#boton-informacion:hover {
+  background: #e8e8ea;
+}
+
+#vista-informacion {
+  display: none;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 16px 16px;
+}
+
+.informacion-titulo {
+  margin: 14px 0 2px;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--texto);
+}
+
+/* La fecha va pegada al título y no al pie: un precio de hace dos años sin
+   fecha delante es una mentira, y al pie no lo lee nadie. */
+.informacion-vigencia {
+  margin: 2px 0 10px;
+  font-size: 12px;
+  color: var(--texto-suave);
+}
+
+.lista-fichas {
+  list-style: none;
+  margin: 10px 0 4px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ficha-enlace a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 11px 14px;
+  border-radius: var(--radio-pequeno);
+  background: var(--superficie);
+  box-shadow: var(--sombra-sutil);
+  color: inherit;
+  text-decoration: none;
+}
+
+.ficha-enlace a:hover {
+  background: #fafafa;
+}
+
+.ficha-texto {
+  flex: 1;
+  min-width: 0;
+}
+
+.ficha-titulo {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--texto);
+}
+
+.ficha-detalle {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--texto-suave);
+}
+
+/* El peso, bien visible: seis megas con datos móviles en la calle es la
+   diferencia entre abrirlo y arrepentirse. */
+.ficha-peso {
+  flex-shrink: 0;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--gris-superficie);
+  color: var(--texto-suave);
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.tarifa-grupo {
+  margin: 16px 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--texto-suave);
+}
+
+.lista-tarifas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-radius: var(--radio-pequeno);
+  background: var(--superficie);
+  box-shadow: var(--sombra-sutil);
+  overflow: hidden;
+}
+
+.tarifa {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 14px;
+}
+
+.tarifa + .tarifa {
+  border-top: 1px solid var(--gris-superficie);
+}
+
+.tarifa-que {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  color: var(--texto);
+}
+
+.tarifa-nota {
+  display: block;
+  margin-top: 1px;
+  font-size: 12px;
+  color: var(--texto-suave);
+}
+
+/* Tabular para que las comas de los precios queden en columna. */
+.tarifa-precio {
+  flex-shrink: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--texto);
+  font-variant-numeric: tabular-nums;
 }

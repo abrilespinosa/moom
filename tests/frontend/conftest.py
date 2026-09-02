@@ -464,7 +464,7 @@ AYUDAS = """
   }
 
   function vistaVisible() {
-    for (const id of ["vista-busqueda", "vista-linea", "vista-llegadas", "vista-incidencias"]) {
+    for (const id of ["vista-busqueda", "vista-linea", "vista-llegadas", "vista-incidencias", "vista-informacion"]) {
       const vista = document.getElementById(id);
       if (vista && getComputedStyle(vista).display !== "none") return id;
     }
