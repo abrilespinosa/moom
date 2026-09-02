@@ -151,11 +151,11 @@ def test_la_accesibilidad_solo_se_afirma_donde_se_sabe():
 
     # Un caso de cada grado, contrastados con metromadrid.es/es/accesibilidad
     assert por_nombre["Puerta del Sol"]["accesibilidad"] == "universal"
-    assert por_nombre["ALSACIA"]["accesibilidad"] == "solo_ascensor"
-    assert por_nombre["SAN BLAS"]["accesibilidad"] == "solo_medidas"
+    assert por_nombre["Alsacia"]["accesibilidad"] == "solo_ascensor"
+    assert por_nombre["San Blas"]["accesibilidad"] == "solo_medidas"
 
     # Chueca no está en ninguna de las tres listas: no se sabe, y se calla.
-    assert "accesibilidad" not in por_nombre["CHUECA"]
+    assert "accesibilidad" not in por_nombre["Chueca"]
 
 
 def test_ninguna_parada_de_bus_lleva_accesibilidad():
@@ -203,3 +203,108 @@ def test_el_interurbano_solo_aporta_paradas_y_no_estaciones():
     interurbanas = [p for p in PARADAS if p["fuente"] == "CRTM"]
 
     assert all(p["id"].startswith("par_") for p in interurbanas)
+
+
+# --- NOMBRES QUE VENÍAN GRITANDO ---
+#
+# El GTFS del CRTM y el de Metro escriben en mayúsculas: 8.397 paradas
+# interurbanas y 229 de las 242 estaciones de Metro. Los de la EMT no.
+
+
+def test_titular_respeta_las_particulas_del_castellano():
+    from backend.gtfs_loader import titular
+
+    assert titular("PLAZA DE CASTILLA") == "Plaza de Castilla"
+    assert titular("AV DE LA ILUSTRACIÓN") == "Av de la Ilustración"
+
+    # Un artículo que NO va detrás de un nexo abre nombre propio y se queda en
+    # mayúscula. Bajarlo siempre daba "Urb. la Marazuela".
+    assert titular("URB.LA MARAZUELA") == "Urb.La Marazuela"
+    assert titular("LA LATINA") == "La Latina"
+
+    # "san" y "el" nunca se bajan: 351 y 287 nombres los llevan en medio, y en
+    # todos forman parte de un nombre propio.
+    assert titular("VALERAS-SAN ANTONIO") == "Valeras-San Antonio"
+    assert titular("CTRA.M204-EL BACHE") == "Ctra.M204-El Bache"
+    assert titular("SAN LORENZO DE EL ESCORIAL") == "San Lorenzo de El Escorial"
+
+
+def test_titular_no_estropea_los_casos_raros():
+    from backend.gtfs_loader import titular
+
+    # Romanos: "Alfonso Xiii" sería el resultado de capitalizar sin más.
+    assert titular("ALFONSO XIII") == "Alfonso XIII"
+    assert titular("FELIPE II") == "Felipe II"
+    # Pero CIVIL también casa con [IVXLC]+ y es una palabra.
+    assert titular("GUARDIA CIVIL") == "Guardia Civil"
+
+    # La ª del CRTM es marca de abreviatura pegada a la palabra siguiente.
+    assert titular("AV.GABRIEL GªMÁRQUEZ") == "Av.Gabriel GªMárquez"
+
+    # Y lo que ya está bien escrito no se toca: las 4.894 paradas de la EMT y
+    # los 13 intercambiadores de Metro vienen correctos desde el origen.
+    assert titular("Intercambiador de Plaza de Castilla") == "Intercambiador de Plaza de Castilla"
+    assert titular("Cibeles") == "Cibeles"
+
+
+def test_ninguna_parada_ni_linea_se_queda_gritando():
+    """
+    La comprobación que de verdad protege: se hace sobre los datos cargados,
+    no sobre ejemplos escogidos.
+    """
+    import re
+
+    from backend.gtfs_loader import cargar_lineas, cargar_todas_las_paradas
+
+    from backend.gtfs_loader import NUMEROS_ROMANOS, SIGLAS
+
+    def grita(nombre):
+        # Palabras de tres letras o más, para no señalar códigos como
+        # "C7-C19", y saltándose los romanos: "Alfonso XIII" va en mayúsculas
+        # y está bien escrito.
+        return any(
+            palabra.isupper()
+            and palabra not in NUMEROS_ROMANOS
+            and palabra not in SIGLAS
+            for palabra in re.findall(r"[^\W\d_ªº]{3,}", nombre, re.UNICODE)
+        )
+
+    gritando = [p["nombre"] for p in cargar_todas_las_paradas() if grita(p["nombre"])]
+    assert not gritando, f"{len(gritando)} paradas en mayúsculas: {gritando[:5]}"
+
+    gritando = [l["nombre"] for l in cargar_lineas() if grita(l["nombre"])]
+    assert not gritando, f"{len(gritando)} líneas en mayúsculas: {gritando[:5]}"
+
+
+def test_las_estaciones_de_metro_llevan_sus_tildes():
+    """
+    El volcado de Metro conserva la ñ y la ü pero ha perdido las tildes
+    agudas, y no hay fuente de datos que las tenga: la API del CRTM en vivo
+    devuelve "GRAN VIA" igual que el GTFS. Las repone
+    scripts/precalcular_nombres_metro.py contra el anexo de Wikipedia,
+    exigiendo que el nombre coincida letra por letra ignorando tildes.
+
+    Sin esto lo mejor que se podía hacer era "Gran Via", mal escrito.
+    """
+    from backend.gtfs_loader import cargar_nombres_metro
+
+    por_nombre = {p["nombre"] for p in PARADAS if p["fuente"] == "METRO"}
+
+    for esperado in (
+        "Gran Vía",
+        "Antón Martín",
+        "Menéndez Pelayo",
+        "Núñez de Balboa",
+        "Gregorio Marañón",
+        "Estación del Arte",
+    ):
+        assert esperado in por_nombre, f"falta {esperado}"
+
+    # Y las que el GTFS ya escribía bien siguen igual: son los 8
+    # intercambiadores, que no casan con el anexo y no lo necesitan.
+    assert "Puerta del Sol" in por_nombre
+    assert "Intercambiador de Plaza de Castilla" in por_nombre
+
+    # La lista cubre casi todas; si un volcado nuevo renumera los ids, esto
+    # cae en picado y hay que volver a generarla.
+    assert len(cargar_nombres_metro()) > 200

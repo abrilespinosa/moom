@@ -101,3 +101,32 @@ def test_sin_avisos_en_curso_el_boton_no_se_ve(render):
 
     assert resultado["display"] == "none"
     assert resultado["alto"] == 0
+
+
+def test_volver_la_primera_vez_no_deja_una_ficha_vacia(render):
+    """
+    Reportado en uso real: pulsar Avisos y luego Volver, RECIÉN CARGADA la
+    página, dejaba una ficha de llegadas vacía. La segunda vez ya funcionaba.
+
+    La causa era que vistaVisibleAhora() leía elemento.style.display, o sea el
+    atributo EN LÍNEA, que está vacío hasta que mostrarVista() lo escribe por
+    primera vez. Las vistas arrancan ocultas desde style.css, así que
+    "" !== "none" daba verdadero y contestaba "llegadas" sin que hubiera
+    ninguna parada abierta.
+
+    Por eso el test NO navega antes: en cuanto se abre cualquier vista, el
+    fallo desaparece. Ir directo desde la carga es la única forma de verlo.
+    """
+    resultado = render("""
+        await esperarA(() => TODAS_LAS_PARADAS.length > 0);
+        await esperarA(() => !document.getElementById("boton-incidencias").hidden);
+
+        // Sin pasar por ninguna otra vista, que es cuando fallaba.
+        document.getElementById("boton-incidencias").click();
+        await esperarA(() => vistaVisible() === "vista-incidencias");
+
+        document.getElementById("boton-volver-incidencias").click();
+        responder(vistaVisible());
+    """)
+
+    assert resultado == "vista-busqueda"
