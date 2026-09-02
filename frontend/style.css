@@ -45,7 +45,14 @@
      desentonar con el fondo hueso del panel. */
   --estrella-apagada: #b8b2a8;
   --borde-fuerte: #ded8ce;
-  --gris-superficie: #f2f2f2;
+  /* Papel cálido, no gris frío. Era #f2f2f2 y estaba en cuatro superficies
+     seguidas de la parte alta del panel —buscador, bandeja de filtros, hueco
+     del icono de red y botón de planos—, enfriando justo la franja donde se
+     lee la marca en un sistema cuyo norte es el papel cálido.
+     Y además fallaba WCAG: --texto-suave sobre #f2f2f2 daba 4,37, por debajo
+     del 4,5 de AA, en las etiquetas de los filtros inactivos. Sobre este
+     valor da 4,54, con un poco de margen sobre el límite. */
+  --gris-superficie: #f8f6f3;
 
   /* --- PROFUNDIDAD ---
      Sombras en dos capas en vez de bordes de 1px. La capa corta define el
@@ -160,25 +167,30 @@ body {
   border-radius: 999px;
   background: var(--borde-fuerte);
 
-  /* Fuera del flujo, y por eso se anima "height" sin culpa: un elemento
-     absolutamente posicionado no reflowa a sus hermanos ni al contenedor, así
-     que el coste queda contenido en él mismo.
-     
-     Se probó antes con scaleY, que es más barato todavía, pero deformaba el
-     radio: escalar una píldora convierte sus tapas semicirculares en elipses.
-     A 4px de ancho apenas se veía, pero esto no cuesta más y no deforma. */
+  /* Crece con scaleY y no con height: animar height dispara maquetación y
+     pintado en cada pointermove sobre el divisor, mientras que el transform
+     lo mueve el compositor.
+
+     El primer intento con scaleY se descartó porque escalar una píldora
+     convierte sus tapas semicirculares en elipses. La solución está en el
+     SENTIDO: el reposo se queda en su altura real, con las tapas redondas, y
+     el 1,727 se aplica solo al señalarlo. Así lo exacto es lo que se ve el
+     99% del tiempo, y la deformación vive en un estado momentáneo de 120 ms.
+     Escalando al revés —desde la altura grande hacia abajo— la tapa deformada
+     habría sido justo la del reposo. */
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  transition: background 0.12s var(--ease-out), height 0.12s var(--ease-out);
+  transition: background 0.12s var(--ease-out), transform 0.12s var(--ease-out);
 }
 
 #divisor:hover::before,
 #divisor:focus-visible::before,
 #divisor.arrastrando::before {
   background: var(--acento);
-  height: 76px;
+  /* 76/44, la misma altura de antes pero por escala. */
+  transform: translate(-50%, -50%) scaleY(1.727);
 }
 
 #divisor:focus {
@@ -225,8 +237,19 @@ body {
    dentro. El icono va como background-image en data URI y no como <img> en
    el HTML porque así el campo sigue siendo un único elemento: no hay que
    envolverlo en un contenedor ni posicionar nada encima. */
+/* La fila del buscador. Antes el padding iba en un style= en línea. */
+.fila-buscador {
+  position: relative;
+  padding: 12px 16px 0;
+}
+
 #input-buscar {
   width: 100%;
+  /* 44px es la Regla del Pulgar de DESIGN.md, y este campo medía 40: el
+     control principal del panel era más pequeño que el botón secundario que
+     tenía al lado. */
+  min-height: 44px;
+  box-sizing: border-box;
   padding: 11px 12px 11px 38px;
   font-size: 15px;
   border: none;
@@ -237,11 +260,14 @@ body {
   background-position: 12px center;
   background-size: 16px 16px;
   color: var(--texto);
-  transition: background-color 0.15s, box-shadow 0.15s;
+  transition: background-color 0.15s var(--ease-out),
+    box-shadow 0.15s var(--ease-out);
 }
 
 #input-buscar::placeholder {
-  color: var(--gris-desactivado);
+  /* Texto, no adorno: es la única etiqueta visible del campo. Con
+     --gris-desactivado daba 2,91 sobre el fondo del propio campo. */
+  color: var(--texto-suave);
 }
 
 /* Al enfocar, el campo pasa a blanco y se levanta con un aro del color de
@@ -286,7 +312,8 @@ body {
   font-size: 11px;
   font-family: inherit;
   cursor: pointer;
-  transition: background 0.18s, box-shadow 0.18s, color 0.18s;
+  transition: background 0.18s var(--ease-out), box-shadow 0.18s var(--ease-out),
+    color 0.18s var(--ease-out);
 }
 
 /* El icono ya no necesita su propio cuadro de color: dentro de la bandeja
@@ -527,7 +554,8 @@ body {
   background: var(--gris-superficie);
   color: var(--texto-suave);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+  transition: background 0.15s var(--ease-out), color 0.15s var(--ease-out),
+    box-shadow 0.15s var(--ease-out);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -912,7 +940,7 @@ body {
   box-shadow: var(--sombra-flotante), inset 0 0 0 0.5px rgba(255, 255, 255, 0.6);
   font-size: 19px;
   cursor: pointer;
-  transition: transform 0.14s, box-shadow 0.14s;
+  transition: transform 0.14s var(--ease-out), box-shadow 0.14s var(--ease-out);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1288,9 +1316,38 @@ body {
   border-top: 1px solid var(--separador);
 }
 
-#pie-legal a {
+#pie-legal a,
+#boton-informacion {
   color: var(--texto-suave);
   text-decoration: none;
+}
+
+/* "Planos y tarifas" bajó aquí desde la pila del panel, y con ello pierde el
+   relleno: era una caja gris del mismo tamaño y color que el buscador, y el
+   viajero tenía que leer las dos para saber cuál era el campo. Aquí es una
+   fila de texto más, al lado del enlace legal, que es donde vive lo que se
+   consulta de vez en cuando. */
+#boton-informacion {
+  min-height: 44px;
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+#boton-informacion:hover,
+#pie-legal a:hover {
+  color: var(--acento-texto);
+}
+
+/* Un punto entre los dos, porque pegados se leen como una sola frase:
+   "Planos y tarifas Privacidad y condiciones de uso". */
+#boton-informacion::after {
+  content: "·";
+  margin-left: 8px;
+  opacity: 0.5;
 }
 
 #pie-legal a:hover {
@@ -1853,50 +1910,8 @@ body {
 }
 
 /* --- PLANOS Y TARIFAS ---
-   El botón es neutro a propósito, al revés que el de avisos: ese llama la
-   atención porque solo aparece cuando pasa algo, y este está siempre. Si los
-   dos gritaran, dejarían de gritar los dos. */
-#boton-informacion {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: calc(100% - 32px);
-  margin: 0 16px 8px;
-  min-height: 44px;
-  padding: 10px 14px;
-  border: 0;
-  border-radius: var(--radio-pequeno);
-  background: var(--gris-superficie);
-  color: var(--texto);
-  font: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.18s;
-}
-
-#boton-informacion::before {
-  content: "";
-  flex-shrink: 0;
-  width: 16px;
-  height: 16px;
-  background: currentColor;
-  -webkit-mask: var(--icono-plano) center / contain no-repeat;
-  mask: var(--icono-plano) center / contain no-repeat;
-}
-
-#boton-informacion::after {
-  content: "›";
-  margin-left: auto;
-  font-size: 17px;
-  opacity: 0.6;
-}
-
-#boton-informacion:hover {
-  background: #e8e8ea;
-}
-
+   El botón vive en el pie (ver #boton-informacion, más arriba). Lo que queda
+   aquí es la vista. */
 #vista-informacion {
   display: none;
   flex-direction: column;
@@ -2029,4 +2044,55 @@ body {
   font-weight: 700;
   color: var(--texto);
   font-variant-numeric: tabular-nums;
+}
+
+/* --- INTERRUPTOR DE ACCESIBILIDAD ---
+   Comparte fila con el grupo de modos en vez de ocupar una propia: al sacarlo
+   del grupo excluyente había ganado una fila de 52px, y eso se comía justo lo
+   que se acababa de recuperar quitando "Planos y tarifas" de la pila.
+
+   Fuera del grupo a propósito: no es una red de transporte sino una propiedad,
+   y como quinta píldora excluyente hacía desaparecer la EMT y el CRTM enteros
+   al pulsarla. */
+.fila-filtros {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 16px 0;
+}
+
+.fila-filtros #filtros-fuente {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+
+/* Solo el símbolo, sin etiqueta: es el internacional de accesibilidad, de los
+   pocos que se entienden sin leer, y la etiqueta va en aria-label y en title.
+   Con texto no cabía sin estrechar "Interurbano" hasta truncarlo. */
+#filtro-accesibles {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--texto-suave);
+  cursor: pointer;
+  transition: background 0.18s var(--ease-out), color 0.18s var(--ease-out);
+}
+
+#filtro-accesibles:hover {
+  color: var(--texto);
+}
+
+/* Encendido: el mismo verde que el distintivo de las estaciones accesibles,
+   para que se lea como "estoy viendo esas" y no como un botón cualquiera. El
+   color aquí significa algo, que es la única condición para usarlo. */
+#filtro-accesibles.activo {
+  background: rgba(52, 199, 89, 0.14);
+  color: #1c7a35;
 }

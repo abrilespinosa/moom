@@ -130,3 +130,26 @@ def test_volver_la_primera_vez_no_deja_una_ficha_vacia(render):
     """)
 
     assert resultado == "vista-busqueda"
+
+
+def test_pulsar_planos_estando_ya_en_planos_no_atasca_el_volver(render):
+    """
+    El botón vive en el pie, así que se puede pulsar estando ya en esa vista.
+    Sin guarda, vistaAntesDeInformacion pasaba a valer "informacion" y Volver
+    dejaba de hacer nada: sin historial de navegador, la única salida era
+    recargar la página.
+    """
+    resultado = render("""
+        await esperarA(() => TODAS_LAS_PARADAS.length > 0);
+
+        document.getElementById("boton-informacion").click();
+        await esperarA(() => vistaVisible() === "vista-informacion");
+
+        // Otra vez, desde dentro de la propia vista.
+        document.getElementById("boton-informacion").click();
+        document.getElementById("boton-volver-informacion").click();
+
+        responder(vistaVisible());
+    """)
+
+    assert resultado == "vista-busqueda"
