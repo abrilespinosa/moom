@@ -374,11 +374,29 @@ def cargar_todas_las_paradas():
     sirven exactamente los mismos datos.
     """
     paradas = _leer_precalculado("paradas.json") or _paradas_desde_gtfs()
+    nombres_metro = cargar_nombres_metro()
 
     for parada in paradas:
-        parada["nombre"] = titular(parada["nombre"])
+        # La grafía buena de Metro manda sobre titular(), porque trae algo que
+        # titular() no puede saber: dónde va la tilde. Del GTFS solo se puede
+        # sacar "Gran Via"; de aquí sale "Gran Vía".
+        bueno = nombres_metro.get(parada["id"])
+        parada["nombre"] = bueno if bueno else titular(parada["nombre"])
 
     return paradas
+
+
+def cargar_nombres_metro():
+    """
+    La grafía correcta de las estaciones de Metro, por id. {} si no está.
+
+    Existe porque el volcado de Metro ha perdido las tildes agudas y no hay
+    ninguna fuente de datos que las tenga: la API del CRTM en vivo devuelve
+    "GRAN VIA" igual que el GTFS. La lista la genera
+    scripts/precalcular_nombres_metro.py cruzando con el anexo de Wikipedia, y
+    allí está explicado cómo se verifica que no se cuele nada inventado.
+    """
+    return _leer_precalculado("nombres_metro.json") or {}
 
 
 def cargar_accesibilidad():

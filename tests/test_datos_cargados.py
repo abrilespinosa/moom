@@ -274,3 +274,37 @@ def test_ninguna_parada_ni_linea_se_queda_gritando():
 
     gritando = [l["nombre"] for l in cargar_lineas() if grita(l["nombre"])]
     assert not gritando, f"{len(gritando)} líneas en mayúsculas: {gritando[:5]}"
+
+
+def test_las_estaciones_de_metro_llevan_sus_tildes():
+    """
+    El volcado de Metro conserva la ñ y la ü pero ha perdido las tildes
+    agudas, y no hay fuente de datos que las tenga: la API del CRTM en vivo
+    devuelve "GRAN VIA" igual que el GTFS. Las repone
+    scripts/precalcular_nombres_metro.py contra el anexo de Wikipedia,
+    exigiendo que el nombre coincida letra por letra ignorando tildes.
+
+    Sin esto lo mejor que se podía hacer era "Gran Via", mal escrito.
+    """
+    from backend.gtfs_loader import cargar_nombres_metro
+
+    por_nombre = {p["nombre"] for p in PARADAS if p["fuente"] == "METRO"}
+
+    for esperado in (
+        "Gran Vía",
+        "Antón Martín",
+        "Menéndez Pelayo",
+        "Núñez de Balboa",
+        "Gregorio Marañón",
+        "Estación del Arte",
+    ):
+        assert esperado in por_nombre, f"falta {esperado}"
+
+    # Y las que el GTFS ya escribía bien siguen igual: son los 8
+    # intercambiadores, que no casan con el anexo y no lo necesitan.
+    assert "Puerta del Sol" in por_nombre
+    assert "Intercambiador de Plaza de Castilla" in por_nombre
+
+    # La lista cubre casi todas; si un volcado nuevo renumera los ids, esto
+    # cae en picado y hay que volver a generarla.
+    assert len(cargar_nombres_metro()) > 200
