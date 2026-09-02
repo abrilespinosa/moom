@@ -2750,11 +2750,21 @@ botonVolverIncidencias.addEventListener("click", () => {
       : "Busca una parada o una línea";
 });
 
+// Cuál de las vistas se está viendo AHORA. La usan los botones de avisos y de
+// planos para saber a dónde tiene que devolver su "Volver".
+//
+// Mide con getComputedStyle y no con elemento.style, y esa es toda la
+// historia: style solo lee el atributo EN LÍNEA, que está vacío hasta que
+// mostrarVista() lo escribe la primera vez. Las vistas arrancan ocultas desde
+// style.css, así que recién cargada la página "" !== "none" daba verdadero y
+// esto contestaba "llegadas" sin que hubiera ninguna parada abierta: pulsar
+// Avisos y luego Volver dejaba una ficha de llegadas vacía. Solo fallaba la
+// primera vez, porque después ya había estilos en línea que leer.
 function vistaVisibleAhora() {
-  if (vistaLlegadas.style.display !== "none") return "llegadas";
-  if (vistaLinea.style.display !== "none") return "linea";
-  if (vistaIncidencias.style.display !== "none") return "incidencias";
-  if (vistaInformacion.style.display !== "none") return "informacion";
+  if (getComputedStyle(vistaLlegadas).display !== "none") return "llegadas";
+  if (getComputedStyle(vistaLinea).display !== "none") return "linea";
+  if (getComputedStyle(vistaIncidencias).display !== "none") return "incidencias";
+  if (getComputedStyle(vistaInformacion).display !== "none") return "informacion";
   return "busqueda";
 }
 

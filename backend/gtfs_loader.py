@@ -1,6 +1,7 @@
 import csv
 import json
 import os
+import re
 
 # Los datos ya precalculados por scripts/precalcular_datos.py.
 #
@@ -250,6 +251,119 @@ def _paradas_desde_gtfs():
     return paradas
 
 
+# --- NOMBRES EN MAYÚSCULAS ---
+#
+# El GTFS del CRTM y el de Metro escriben los nombres GRITANDO: 8.397 paradas
+# interurbanas y 229 estaciones de Metro de las 242. Los de la EMT vienen bien
+# desde el origen, y las 13 estaciones que faltan son los intercambiadores.
+#
+# Se arregla al cargar y no en el precalculado a propósito: así vale igual en
+# un clon limpio que no tenga los GTFS pesados, y no depende de que nadie se
+# acuerde de regenerar nada. Son 8.626 cadenas cortas una vez en el import.
+#
+# LO QUE NO ARREGLA, Y CONVIENE SABERLO: el volcado de Metro trae la ñ y la ü
+# ("ESPAÑA", "ARGÜELLES") pero ha perdido las tildes agudas, así que salen
+# "Gran Via", "Nuñez de Balboa" y "Gregorio Marañon". No se pueden recuperar
+# desde los datos: la API del CRTM en vivo devuelve exactamente lo mismo
+# ("GRAN VIA"), o sea que no hay ninguna fuente limpia que consultar. Haría
+# falta una lista escrita a mano y verificada, como la de accesibilidad.
+# El CRTM sí conserva las suyas: 3.265 de sus 8.397 llevan alguna.
+
+# Estas van siempre en minúscula salvo que abran el nombre.
+NEXOS = {"de", "del", "y", "e"}
+
+# Los artículos son otra cosa, y la diferencia la decidieron los datos:
+# lowercase siempre daría "Urb. la Marazuela" y "Pol. los Ángeles", que están
+# mal. Contados en las 8.626 paradas, los artículos sueltos (709) superan a
+# los que van detrás de "de" (384), así que el buen defecto es MAYÚSCULA y
+# solo se bajan cuando siguen a un nexo: "Paseo de la Castellana", pero
+# "Urbanización La Marazuela".
+ARTICULOS_TRAS_NEXO = {"la", "las", "los"}
+
+# "el" queda fuera a propósito, aunque parezca del grupo anterior. En español
+# "de el" se contrae en "del", así que un "DE EL" literal en los datos delata
+# casi siempre un nombre propio: San Lorenzo de El Escorial, de El Álamo. Hay
+# 287 nombres con EL suelto y son todos topónimos (EL GURUGÚ, EL ESPINAR...).
+#
+# Por lo mismo "san" tampoco está: 351 nombres lo llevan en medio y todos son
+# "San Antonio", "San Pascual" y compañía.
+
+# Los que se han visto de verdad en los datos. Es una lista cerrada y no un
+# patrón [IVXLC]+ porque ese también casa con CIVIL y con LILI, que son
+# palabras, y con las siglas sueltas C y L.
+NUMEROS_ROMANOS = {
+    "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X",
+    "XI", "XII", "XIII", "XVI", "XVII", "XX", "XXI", "XXIII",
+}
+
+# La ª y la º quedan FUERA de lo que cuenta como letra, aunque Unicode las
+# clasifique como tales. El CRTM las usa de marca de abreviatura pegada a la
+# palabra siguiente —"GªMÁRQUEZ" es García Márquez, "Mª" es María— así que
+# tratarlas como letra fundía las dos palabras en una y salía "Gªmárquez".
+# Siglas que se quedan como están. Lista corta y explícita, no una regla:
+# cualquier heurística razonable (por ejemplo "sin vocales") también se
+# llevaría por delante PZA, CTRA y GTA, que sí deben quedar como Pza, Ctra y
+# Gta. Aquí solo están las que aparecen de verdad en los datos; si sale otra,
+# se añade. RENFE no está porque la propia empresa se escribe "Renfe".
+SIGLAS = {"UNED", "DGT"}
+
+_PALABRA = re.compile(r"[^\W\d_ªº]+(?:'[^\W\d_ªº]+)?", re.UNICODE)
+
+
+def titular(nombre):
+    """
+    "PLAZA DE CASTILLA" -> "Plaza de Castilla". Deja en paz lo que ya está bien.
+
+    Decide PALABRA A PALABRA y no por el nombre entero, y esa es la parte que
+    costó: los nombres de línea vienen a medias, "MADRID (Legazpi)-PINTO", con
+    el municipio gritando y el matiz entre paréntesis bien escrito. Mirando el
+    nombre completo, 275 de ellos se quedaban sin tocar.
+
+    Una palabra solo se convierte si viene ENTERA en mayúsculas. Así los
+    nombres de la EMT, que ya vienen correctos, pasan intactos, incluida su
+    manía de escribir "Paseo De La Habana": será discutible, pero es suyo y no
+    es asunto de esta función.
+    """
+    if not nombre:
+        return nombre
+
+    primera = True
+    anterior = ""
+
+    def convertir(coincidencia):
+        nonlocal primera, anterior
+        palabra = coincidencia.group(0)
+
+        # Ya escrita como toca, o una sola letra: no se toca. Sí cuenta como
+        # palabra anterior, que la regla de los artículos la necesita.
+        if palabra != palabra.upper() or len(palabra) < 2:
+            primera = False
+            anterior = palabra.lower()
+            return palabra
+
+        if palabra in NUMEROS_ROMANOS or palabra in SIGLAS:
+            primera = False
+            anterior = palabra.lower()
+            return palabra
+
+        minuscula = palabra.lower()
+
+        # La primera palabra siempre en mayúscula, aunque sea un nexo: hay
+        # paradas que empiezan por ahí.
+        va_en_minuscula = not primera and (
+            minuscula in NEXOS
+            or (minuscula in ARTICULOS_TRAS_NEXO and anterior in NEXOS)
+        )
+
+        resultado = minuscula if va_en_minuscula else minuscula[0].upper() + minuscula[1:]
+
+        primera = False
+        anterior = minuscula
+        return resultado
+
+    return _PALABRA.sub(convertir, nombre)
+
+
 def cargar_todas_las_paradas():
     """
     Las paradas de las tres redes, del JSON precalculado si lo hay.
@@ -259,7 +373,12 @@ def cargar_todas_las_paradas():
     despliegue los stops.txt podrían no estar, y que así producción y local
     sirven exactamente los mismos datos.
     """
-    return _leer_precalculado("paradas.json") or _paradas_desde_gtfs()
+    paradas = _leer_precalculado("paradas.json") or _paradas_desde_gtfs()
+
+    for parada in paradas:
+        parada["nombre"] = titular(parada["nombre"])
+
+    return paradas
 
 
 def cargar_accesibilidad():
@@ -518,7 +637,14 @@ def cargar_lineas():
     repositorio. Sin el JSON, un clon limpio o un despliegue se quedan sin
     búsqueda por línea. Ver scripts/precalcular_datos.py.
     """
-    return _leer_precalculado("lineas.json") or _lineas_desde_gtfs()
+    lineas = _leer_precalculado("lineas.json") or _lineas_desde_gtfs()
+
+    # Mismo motivo que en las paradas: 78 de las 603 vienen gritando, y una
+    # línea en mayúsculas junto a una parada bien escrita canta más todavía.
+    for linea in lineas:
+        linea["nombre"] = titular(linea["nombre"])
+
+    return lineas
 
 
 def _lineas_desde_gtfs():
