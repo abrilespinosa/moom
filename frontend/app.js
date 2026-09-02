@@ -358,6 +358,7 @@ const listaResultados = document.getElementById("lista-resultados");
 const vistaBusqueda = document.getElementById("vista-busqueda");
 const vistaLlegadas = document.getElementById("vista-llegadas");
 const vistaIncidencias = document.getElementById("vista-incidencias");
+const vistaInformacion = document.getElementById("vista-informacion");
 const nombreParadaActual = document.getElementById("nombre-parada-actual");
 const codigoParadaActual = document.getElementById("codigo-parada-actual");
 const iconoParadaActual = document.getElementById("icono-parada-actual");
@@ -990,6 +991,7 @@ function mostrarVista(nombre) {
   vistaLinea.style.display = nombre === "linea" ? "flex" : "none";
   vistaLlegadas.style.display = nombre === "llegadas" ? "flex" : "none";
   vistaIncidencias.style.display = nombre === "incidencias" ? "flex" : "none";
+  vistaInformacion.style.display = nombre === "informacion" ? "flex" : "none";
 }
 
 // Desde dónde se llegó al panel de llegadas. Sirve para que "Volver"
@@ -2751,7 +2753,276 @@ botonVolverIncidencias.addEventListener("click", () => {
 function vistaVisibleAhora() {
   if (vistaLlegadas.style.display !== "none") return "llegadas";
   if (vistaLinea.style.display !== "none") return "linea";
+  if (vistaIncidencias.style.display !== "none") return "incidencias";
+  if (vistaInformacion.style.display !== "none") return "informacion";
   return "busqueda";
 }
 
 cargarIncidencias();
+
+// --- PLANOS Y TARIFAS ---
+//
+// Información de referencia: lo que no cambia cada diez segundos pero hace
+// falta justo cuando no te sabes la red o no sabes qué billete comprar.
+//
+// TODO SON ENLACES, no copias. Los planos son PDF de entre 1,6 y 6,2 MB y
+// pertenecen a Metro y al CRTM: rehospedarlos sería un problema de derechos y
+// además obligaría a rehacerlo con cada versión nueva. Se enlaza a los
+// canales oficiales, que ya están declarados en la página de privacidad.
+//
+// EL PESO SE DICE SIEMPRE. Seis megas en la calle, con datos móviles, no es
+// un detalle: es la diferencia entre abrirlo y arrepentirse. Medido con curl,
+// no estimado.
+//
+// OJO con los nombres de archivo: "planometrocartografico_mar2026.pdf" lleva
+// la fecha dentro, así que ese enlace caducará cuando publiquen el siguiente.
+// Los otros dos tienen nombre estable. Si uno deja de responder, el arreglo
+// es ir a la página de planos de Metro y coger la URL nueva.
+const PLANOS = [
+  {
+    titulo: "Plano de Metro y Metro Ligero",
+    detalle: "El esquemático de toda la red, con las zonas tarifarias",
+    peso: "PDF · 6,2 MB",
+    url: "https://www.metromadrid.es/sites/default/files/web/planos/planoesquematico_0.pdf",
+  },
+  {
+    titulo: "Plano de Metro sobre callejero",
+    detalle: "Las mismas líneas, pero situadas sobre el mapa de la ciudad",
+    peso: "PDF · 3,6 MB",
+    url: "https://www.metromadrid.es/sites/default/files/web/planos/planometrocartografico_mar2026.pdf",
+  },
+  {
+    titulo: "Plano turístico",
+    detalle: "Con los museos y las zonas de interés señalados",
+    peso: "PDF · 1,6 MB",
+    url: "https://www.metromadrid.es/sites/default/files/web/planos/Planoturistico.pdf",
+  },
+  {
+    titulo: "Planos de autobuses urbanos (EMT)",
+    detalle: "La red de la EMT, en la web del Consorcio",
+    peso: "Web",
+    url: "https://www.crtm.es/tu-transporte-publico/autobuses-emt/planos/",
+  },
+  {
+    titulo: "Planos de autobuses interurbanos",
+    detalle: "Los verdes, los que salen de Madrid",
+    peso: "Web",
+    url: "https://www.crtm.es/tu-transporte-publico/autobuses-interurbanos/planos/",
+  },
+  {
+    titulo: "Plano de Cercanías",
+    detalle: "La red de tren, que esta aplicación no cubre",
+    peso: "Web",
+    url: "https://www.crtm.es/tu-transporte-publico/cercanias-renfe/planos/",
+  },
+  {
+    titulo: "Planos por municipio",
+    detalle: "El transporte de un municipio concreto, en un solo plano",
+    peso: "Web",
+    url: "https://www.crtm.es/tu-transporte-publico/info-por-municipio/planos",
+  },
+];
+
+// Los precios salen del BOCM del 31-12-2025, que es la fuente oficial, y
+// están cruzados con la nota de prensa de la Comunidad de Madrid: las dos
+// coinciden en los abonos, en el de 10 viajes y en la Tarjeta Azul.
+//
+// LLEVAN FECHA A LA VISTA A PROPÓSITO. Cambian al menos una vez al año —en
+// 2025 cambiaron dos veces— y aquí no hay forma de enterarse solo. Un precio
+// viejo sin fecha es una mentira; con la fecha delante, sigue informando.
+// Al actualizarlos hay que tocar VIGENCIA_TARIFAS también.
+const VIGENCIA_TARIFAS = "Precios vigentes desde el 1 de enero de 2026";
+
+const TARIFAS = [
+  {
+    grupo: "Un viaje suelto",
+    filas: [
+      { que: "Autobús de la EMT", precio: "1,50 €" },
+      { que: "Metro, zona A", precio: "1,50 € a 2,00 €", nota: "según cuántas estaciones" },
+      { que: "Metro + Metro Ligero (combinado)", precio: "3,00 €" },
+      { que: "Autobús interurbano", precio: "1,50 € a 3,00 €", nota: "según las zonas que cruces" },
+      { que: "Exprés Aeropuerto (EMT)", precio: "5,00 €" },
+    ],
+  },
+  {
+    grupo: "Diez viajes",
+    filas: [
+      { que: "Metro zona A, EMT y ML1", precio: "7,30 €", nota: "el antiguo Metrobús" },
+      { que: "MetroEste, MetroNorte y MetroSur", precio: "6,70 €" },
+      { que: "Combinado Metro", precio: "10,90 €" },
+    ],
+  },
+  {
+    grupo: "Abono de 30 días",
+    filas: [
+      { que: "Zona A", precio: "32,70 €" },
+      { que: "Zona B1", precio: "38,20 €" },
+      { que: "Zona B2", precio: "43,20 €" },
+      { que: "Zonas B3, C1 y C2", precio: "49,20 €" },
+      { que: "Abono Joven, hasta 25 años", precio: "10,00 €", nota: "cualquier zona" },
+      { que: "Tarjeta Azul", precio: "3,70 €" },
+    ],
+  },
+  {
+    grupo: "Gratis",
+    filas: [
+      { que: "De 7 a 14 años", precio: "0 €" },
+      { que: "Menores de 7 años", precio: "0 €" },
+    ],
+  },
+];
+
+const ENLACES_DE_TARIFAS = [
+  {
+    titulo: "Todos los precios, en el CRTM",
+    detalle: "Incluye familias numerosas, discapacidad y el resto de zonas",
+    url: "https://www.crtm.es/billetes-y-tarifas/",
+  },
+  {
+    titulo: "La tarifa oficial (BOCM)",
+    detalle: "El boletín del que salen estas cifras",
+    peso: "PDF · 0,15 MB",
+    url: "https://www.crtm.es/media/s1qi0nmo/bocm-20251231-precios_transporte.pdf",
+  },
+];
+
+const botonInformacion = document.getElementById("boton-informacion");
+const contenidoInformacion = document.getElementById("contenido-informacion");
+const botonVolverInformacion = document.getElementById("boton-volver-informacion");
+
+let vistaAntesDeInformacion = "busqueda";
+
+// Se pinta una sola vez y se reutiliza: son datos fijos, no hay nada que
+// refrescar y volver a construir el DOM en cada visita no aporta nada.
+let informacionPintada = false;
+
+function crearEnlaceExterno({ titulo, detalle, peso, url }) {
+  const item = document.createElement("li");
+  item.className = "ficha-enlace";
+
+  const enlace = document.createElement("a");
+  enlace.href = url;
+  enlace.target = "_blank";
+  // noopener siempre que se abre en pestaña nueva: sin él, la página de
+  // destino recibe una referencia a la nuestra por window.opener.
+  enlace.rel = "noopener";
+
+  const texto = document.createElement("span");
+  texto.className = "ficha-texto";
+
+  const nombre = document.createElement("span");
+  nombre.className = "ficha-titulo";
+  nombre.textContent = titulo;
+  texto.appendChild(nombre);
+
+  if (detalle) {
+    const sub = document.createElement("span");
+    sub.className = "ficha-detalle";
+    sub.textContent = detalle;
+    texto.appendChild(sub);
+  }
+
+  enlace.appendChild(texto);
+
+  if (peso) {
+    const etiqueta = document.createElement("span");
+    etiqueta.className = "ficha-peso";
+    etiqueta.textContent = peso;
+    enlace.appendChild(etiqueta);
+  }
+
+  // El icono de "se abre fuera" es decorativo; lo que cuenta para un lector
+  // de pantalla es esta parte del nombre accesible.
+  const aviso = document.createElement("span");
+  aviso.className = "solo-lector";
+  aviso.textContent = " (se abre en una pestaña nueva)";
+  enlace.appendChild(aviso);
+
+  item.appendChild(enlace);
+  return item;
+}
+
+function pintarInformacion() {
+  if (informacionPintada) {
+    return;
+  }
+
+  contenidoInformacion.innerHTML = "";
+
+  const titulo = document.createElement("h2");
+  titulo.className = "informacion-titulo";
+  titulo.textContent = "Planos";
+  contenidoInformacion.appendChild(titulo);
+
+  const listaPlanos = document.createElement("ul");
+  listaPlanos.className = "lista-fichas";
+  PLANOS.forEach((p) => listaPlanos.appendChild(crearEnlaceExterno(p)));
+  contenidoInformacion.appendChild(listaPlanos);
+
+  const tituloTarifas = document.createElement("h2");
+  tituloTarifas.className = "informacion-titulo";
+  tituloTarifas.textContent = "Billetes y tarifas";
+  contenidoInformacion.appendChild(tituloTarifas);
+
+  const vigencia = document.createElement("p");
+  vigencia.className = "informacion-vigencia";
+  vigencia.textContent = VIGENCIA_TARIFAS;
+  contenidoInformacion.appendChild(vigencia);
+
+  TARIFAS.forEach((bloque) => {
+    const encabezado = document.createElement("h3");
+    encabezado.className = "tarifa-grupo";
+    encabezado.textContent = bloque.grupo;
+    contenidoInformacion.appendChild(encabezado);
+
+    const lista = document.createElement("ul");
+    lista.className = "lista-tarifas";
+
+    bloque.filas.forEach((fila) => {
+      const item = document.createElement("li");
+      item.className = "tarifa";
+
+      const que = document.createElement("span");
+      que.className = "tarifa-que";
+      que.textContent = fila.que;
+
+      if (fila.nota) {
+        const nota = document.createElement("span");
+        nota.className = "tarifa-nota";
+        nota.textContent = fila.nota;
+        que.appendChild(nota);
+      }
+
+      const precio = document.createElement("span");
+      precio.className = "tarifa-precio";
+      precio.textContent = fila.precio;
+
+      item.append(que, precio);
+      lista.appendChild(item);
+    });
+
+    contenidoInformacion.appendChild(lista);
+  });
+
+  const listaEnlaces = document.createElement("ul");
+  listaEnlaces.className = "lista-fichas";
+  ENLACES_DE_TARIFAS.forEach((e) => listaEnlaces.appendChild(crearEnlaceExterno(e)));
+  contenidoInformacion.appendChild(listaEnlaces);
+
+  informacionPintada = true;
+}
+
+botonInformacion.addEventListener("click", () => {
+  vistaAntesDeInformacion = vistaVisibleAhora();
+  pintarInformacion();
+  mostrarVista("informacion");
+  subtituloHeader.textContent = "Planos y tarifas";
+});
+
+botonVolverInformacion.addEventListener("click", () => {
+  mostrarVista(vistaAntesDeInformacion);
+  subtituloHeader.textContent =
+    vistaAntesDeInformacion === "busqueda"
+      ? "Busca una parada o una línea"
+      : subtituloHeader.textContent;
+});

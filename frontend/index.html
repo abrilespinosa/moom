@@ -86,6 +86,11 @@
          botón permanente que casi siempre no lleva a nada deja de mirarse. -->
     <button id="boton-incidencias" type="button" hidden></button>
 
+    <!-- Planos y tarifas. A diferencia del de avisos, este SIEMPRE está: no
+         depende de que haya pasado nada, y es lo que se busca justo cuando no
+         te sabes la red o no sabes qué billete comprar. -->
+    <button id="boton-informacion" type="button">Planos y tarifas</button>
+
     <!-- VISTA 1: buscador -->
     <div id="vista-busqueda">
       <!-- Filtros por modo. Cada uno lleva el mismo icono con el que se
@@ -215,6 +220,11 @@
       <button id="boton-volver-incidencias" class="boton-volver">← Volver</button>
       <div id="titulo-incidencias"></div>
       <ul id="lista-incidencias"></ul>
+    </div>
+
+    <div id="vista-informacion">
+      <button id="boton-volver-informacion" class="boton-volver">← Volver</button>
+      <div id="contenido-informacion"></div>
     </div>
 
     <!-- Va fuera de las tres vistas, así que aparece bajo la que esté activa
