@@ -95,3 +95,46 @@ def test_solo_hay_una_vista_visible_a_la_vez(render):
     """)
 
     assert resultado == ["vista-llegadas"]
+
+
+def test_los_filtros_van_encima_de_los_botones_y_solo_al_buscar(render):
+    """
+    Los filtros son el control principal del panel y los dos botones los
+    empujaban hacia abajo. Al sacarlos de la vista de búsqueda para poder
+    subirlos, dejan de ocultarse solos: si mostrarVista() se olvidara de
+    ellos, se quedarían puestos mirando unas llegadas, donde filtrar por modo
+    no significa nada.
+    """
+    resultado = render("""
+        await esperarA(() => TODAS_LAS_PARADAS.length > 0);
+
+        const arriba = (id) => document.getElementById(id).getBoundingClientRect().top;
+        const orden = {
+          filtros: arriba("filtros-fuente"),
+          informacion: arriba("boton-informacion"),
+        };
+
+        escribirEnBuscador("cibeles");
+        await esperarA(() => resultados().length > 0);
+        pulsarResultado();
+        await esperarA(() => vistaVisible() === "vista-llegadas");
+
+        const enLlegadas = getComputedStyle(
+          document.getElementById("filtros-fuente")
+        ).display;
+
+        document.getElementById("boton-volver").click();
+        await esperarA(() => vistaVisible() === "vista-busqueda");
+
+        responder({
+          filtrosArriba: orden.filtros < orden.informacion,
+          enLlegadas,
+          alVolver: getComputedStyle(
+            document.getElementById("filtros-fuente")
+          ).display,
+        });
+    """)
+
+    assert resultado["filtrosArriba"] is True
+    assert resultado["enLlegadas"] == "none"
+    assert resultado["alVolver"] != "none"

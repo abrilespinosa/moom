@@ -378,6 +378,7 @@ const tituloRecorrido = document.getElementById("titulo-recorrido");
 const listaRecorrido = document.getElementById("lista-recorrido");
 const subtituloHeader = document.getElementById("subtitulo-header");
 const avisoConexion = document.getElementById("aviso-conexion");
+const filtrosFuente = document.getElementById("filtros-fuente");
 const botonesFiltro = document.querySelectorAll(".filtro-boton");
 
 // Un solo listener sirve para los tres botones: leemos data-filtro
@@ -988,6 +989,11 @@ inputBuscar.addEventListener("input", actualizarResultadosBusqueda);
 // el recorrido de una línea y las llegadas de una parada.
 function mostrarVista(nombre) {
   vistaBusqueda.style.display = nombre === "busqueda" ? "block" : "none";
+
+  // Los filtros están fuera de las vistas para poder ir por encima de los
+  // botones de avisos y planos, así que hay que ocultarlos a mano: filtrar
+  // por modo no significa nada mirando unas llegadas o un plano.
+  filtrosFuente.style.display = nombre === "busqueda" ? "flex" : "none";
   vistaLinea.style.display = nombre === "linea" ? "flex" : "none";
   vistaLlegadas.style.display = nombre === "llegadas" ? "flex" : "none";
   vistaIncidencias.style.display = nombre === "incidencias" ? "flex" : "none";
