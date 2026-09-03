@@ -452,6 +452,8 @@ const CLAVE_RECIENTES = "moom:recientes";
 // Tres. Es el número de paradas entre las que se mueve alguien con una rutina
 // (ida, vuelta y el trasbordo); con más, la lista deja de ser un atajo y pasa
 // a ser otra cosa que hay que leer.
+// Tres: cuántas se enseñan, y también cuántas se guardan POR RED. Es entre
+// las que se mueve alguien con una rutina; con más deja de ser un atajo.
 const MAXIMO_RECIENTES = 3;
 
 // La clave anterior guardaba una sola parada. Se borra al escribir la nueva
@@ -472,10 +474,26 @@ function recordarParadaReciente(id) {
   try {
     // La recién mirada va primero, y si ya estaba en la lista se mueve arriba
     // en vez de duplicarse.
-    const ids = [id, ...idsRecientes().filter((otro) => otro !== id)].slice(
-      0,
-      MAXIMO_RECIENTES
-    );
+    const enOrden = [id, ...idsRecientes().filter((otro) => otro !== id)];
+
+    // Se recortan TRES POR RED, no tres en total, y ese es el arreglo.
+    //
+    // Guardando solo tres en total, quien mirase tres autobuses seguidos se
+    // quedaba sin recientes de Metro aunque hubiera consultado una estación
+    // un rato antes: al filtrar por Metro no salía nada. Reportado en uso.
+    //
+    // La lista sigue siendo UNA y ordenada por lo más reciente, así que
+    // "Todos" enseña las tres últimas de verdad, sean de donde sean. El tope
+    // por red solo decide qué se tira cuando sobra.
+    const cuantas = {};
+    const ids = enOrden.filter((otro) => {
+      const parada = PARADAS_POR_ID.get(otro);
+      // Un id que ya no existe se conserva: puede volver con el próximo
+      // volcado, y al pintar ya se omite.
+      const red = parada ? parada.fuente : "desconocida";
+      cuantas[red] = (cuantas[red] ?? 0) + 1;
+      return cuantas[red] <= MAXIMO_RECIENTES;
+    });
 
     localStorage.setItem(CLAVE_RECIENTES, JSON.stringify(ids));
     localStorage.removeItem(CLAVE_ANTIGUA_ULTIMA_PARADA);
@@ -1003,9 +1021,12 @@ function actualizarResultadosBusqueda() {
     // manda. Y se omite la que ya haya salido ahí arriba, que es lo que ocurre
     // justamente en el caso más común —estás en tu parada de siempre— y
     // repetirla sería ruido.
-    const recientes = paradasRecientes().filter(
-      (parada) => pasaElFiltroDeModo(parada) && !yaListadas.includes(parada)
-    );
+    // Se recorta DESPUÉS de filtrar, no antes: con el filtro en Metro
+    // interesan las tres últimas de Metro, no las tres últimas de todo que
+    // además sean de Metro, que es lo que fallaba.
+    const recientes = paradasRecientes()
+      .filter((parada) => pasaElFiltroDeModo(parada) && !yaListadas.includes(parada))
+      .slice(0, MAXIMO_RECIENTES);
 
     if (recientes.length > 0) {
       listaResultados.appendChild(encabezadoDeGrupo("Recientes"));

@@ -78,7 +78,7 @@ Los dos se cuentan **una vez**, en «Planos y tarifas», y no en la ficha de cad
 
 **Favoritos, recientes y cercanía**
 - Paradas y líneas se pueden marcar como favoritas, y se guardan en el navegador (`localStorage`).
-- Las **tres últimas paradas consultadas** se recuerdan y aparecen con el buscador vacío, porque quien usa esto a diario se mueve entre unas pocas paradas y tenía que buscarlas otra vez en cada visita.
+- Las **tres últimas paradas consultadas de cada red** se recuerdan y aparecen con el buscador vacío, porque quien usa esto a diario se mueve entre unas pocas paradas y tenía que buscarlas otra vez en cada visita. Se guardan tres **por red** y no tres en total: con el tope global, mirar tres autobuses seguidos borraba la estación de Metro y al filtrar por Metro no quedaba ningún atajo. La lista sigue ordenada por lo más reciente, así que sin filtro salen las tres últimas de verdad.
 - Con el buscador vacío, la lista muestra los favoritos, filtrados por el modo de transporte activo igual que una búsqueda.
 - Al compartir tu ubicación aparece un grupo **Cerca de ti** con las paradas más próximas, y cada una indica a qué distancia está y cuánto se tarda andando. Es una estimación: línea recta más un 25% por el rodeo de las manzanas, y tira ligeramente alto a propósito, porque quedarse corto hace perder el autobús.
 
