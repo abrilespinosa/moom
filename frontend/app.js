@@ -593,11 +593,12 @@ function prepararBotonFavorito(boton, tipo, id) {
 
     pintarEstadoFavorito(boton, alternarFavorito(tipo, id));
 
-    // Si lo que se acaba de tocar es una fila de la lista de favoritos, esa
-    // fila ya no pertenece ahí: repintamos para que desaparezca.
-    if (vistaBusqueda.style.display !== "none") {
-      actualizarResultadosBusqueda();
-    }
+    // Repinta siempre, sin preguntar qué vista se ve. Antes lo condicionaba a
+    // vistaBusqueda.style.display, o sea al estilo EN LÍNEA, que es el mismo
+    // patrón que ya ha fallado tres veces en este archivo; y además marcar la
+    // estrella desde la ficha de una parada dejaba la lista sin actualizar.
+    // Pintar una lista de veinte filas que está oculta no cuesta nada.
+    actualizarResultadosBusqueda();
   };
 
   return boton;
@@ -1034,6 +1035,18 @@ inputBuscar.addEventListener("input", actualizarResultadosBusqueda);
 // el recorrido de una línea y las llegadas de una parada.
 function mostrarVista(nombre) {
   vistaBusqueda.style.display = nombre === "busqueda" ? "block" : "none";
+
+  // La lista se repinta al entrar, no solo al buscar. Los favoritos y los
+  // recientes cambian mientras se está en OTRA vista —se marca la estrella
+  // desde la ficha de la parada, o se consulta una parada, que la mete en
+  // recientes—, y al volver la lista seguía mostrando lo de antes hasta
+  // recargar la página. Reportado en uso real.
+  //
+  // Va aquí y no en cada botón "Volver" porque hay varias formas de llegar al
+  // buscador y la próxima que se añada nacería con el mismo fallo.
+  if (nombre === "busqueda") {
+    actualizarResultadosBusqueda();
+  }
 
   // En la vista de búsqueda el subtítulo sobra: dice "Busca una parada o una
   // línea" justo encima de un campo cuyo placeholder dice "Buscar parada o
