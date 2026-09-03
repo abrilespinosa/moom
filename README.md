@@ -64,10 +64,12 @@ Funciona en móvil, tableta y escritorio, y no necesita instalación ni cuenta.
 
 **Lo que sí se sabe de las paradas de autobús**
 
-Ninguna de las tres fuentes publica un dato fiable de accesibilidad por parada: la EMT no trae siquiera la columna, y el CRTM marca 5.964 de sus paradas como «no accesible» y ninguna como accesible, que es un valor por defecto y no un inventario. Así que **de la acera y el bordillo de una parada concreta no se afirma nada**. Pero hay dos hechos verificados que sí valen para todas las de la EMT, y se muestran en su ficha:
+Ninguna de las tres fuentes publica un dato fiable de accesibilidad por parada: la EMT no trae siquiera la columna, y el CRTM marca 5.964 de sus paradas como «no accesible» y ninguna como accesible, que es un valor por defecto y no un inventario. Así que **de la acera y el bordillo de una parada concreta no se afirma nada**. Pero hay dos hechos verificados que sí valen para todas las de la EMT:
 
 - **Toda la flota lleva piso bajo y rampa.** Es [el único modo de transporte de Madrid 100% accesible](https://www.emtmadrid.es/Empresa/RSC/Accesibilidad). El distintivo habla del **autobús**, no de la parada.
 - **Todas las paradas tienen código NaviLens** desde mayo de 2023: 4.499 marquesinas y 1.041 postes, validado por la ONCE y el CERMI. Se lee con la cámara del móvil hasta a 15 metros y en movimiento, y dice en voz las líneas y los tiempos ([nota de prensa](https://www.emtmadrid.es/Noticias/EMT-instala-codigos-NaviLens-en-sus-paradas-para-m.aspx)).
+
+Los dos se cuentan **una vez**, en «Planos y tarifas», y no en la ficha de cada parada. Son idénticos en las 4.894, así que un distintivo permanente no distinguiría nada y sí ocuparía sitio delante del tiempo de llegada. En Metro es al contrario —el dato varía entre estaciones— y por eso allí sí va en la ficha.
 
 **Nombres escritos como se escriben**
 

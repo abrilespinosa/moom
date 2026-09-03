@@ -2130,11 +2130,36 @@ body {
   font-weight: 600;
 }
 
-/* El distintivo de flota de la EMT va en NEUTRO, no en el verde de las
-   estaciones accesibles, y la diferencia importa: el verde significa "puedes
-   entrar aquí", y esto solo dice que el autobús lleva rampa. De la acera de
-   esta parada no se sabe nada. */
-.accesibilidad-flota {
-  background: var(--gris-superficie);
+
+/* El bloque de accesibilidad de la vista de consulta. Es prosa y no fichas
+   porque lo que hay que transmitir es un matiz —qué se sabe y qué no—, y una
+   ficha con un distintivo lo aplanaría justo en el sitio donde aplanarlo
+   sería mentir. */
+.bloque-accesibilidad {
+  margin: 10px 0 4px;
+  padding: 12px 14px;
+  border-radius: var(--radio-pequeno);
+  background: var(--superficie);
+  box-shadow: var(--sombra-sutil);
+  font-size: 13px;
+  line-height: 1.5;
   color: var(--texto-suave);
+}
+
+.bloque-accesibilidad p {
+  margin: 0 0 8px;
+}
+
+.bloque-accesibilidad ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.bloque-accesibilidad li + li {
+  margin-top: 6px;
+}
+
+.bloque-accesibilidad strong {
+  color: var(--texto);
+  font-weight: 600;
 }

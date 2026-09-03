@@ -240,16 +240,16 @@ def test_el_nombre_accesible_lleva_todo_lo_que_lleva_la_ficha(render):
     assert "min" in etiqueta or "metro" in etiqueta.lower(), etiqueta
 
 
-def test_una_parada_de_bus_dice_lo_que_se_sabe_de_ella(render):
+def test_lo_que_se_sabe_del_bus_se_cuenta_una_vez_y_no_en_cada_ficha(render):
     """
-    El filtro de accesibilidad solo cubre el Metro, y eso decía por omisión
-    que las paradas de bus no son accesibles. Es lo contrario: la flota de la
-    EMT es la única 100% accesible de Madrid, y todas sus paradas llevan
-    código NaviLens desde mayo de 2023.
+    Los dos hechos de la EMT —flota con rampa y NaviLens— son ciertos y están
+    verificados, pero son IDÉNTICOS en las 4.894 paradas. Un distintivo que
+    sale siempre no distingue nada: solo ocupa sitio delante del tiempo, que
+    es el dato por el que se abre la aplicación.
 
-    Las dos afirmaciones van sobre el AUTOBÚS y sobre el CÓDIGO, nunca sobre
-    la parada: del bordillo y la acera no hay ningún dato, y decir que una
-    parada es accesible sin saberlo es el error que más daño hace aquí.
+    Por eso viven en "Planos y tarifas", que se consulta una vez. En Metro es
+    al revés y su distintivo sí va en la ficha: allí el dato varía, 166
+    estaciones con él y 76 sin él.
     """
     resultado = render("""
         await esperarA(() => TODAS_LAS_PARADAS.length > 0);
@@ -257,21 +257,25 @@ def test_una_parada_de_bus_dice_lo_que_se_sabe_de_ella(render):
         await esperarA(() => resultados().length > 0);
         pulsarResultado();
         await esperarA(() => vistaVisible() === "vista-llegadas");
+        const fichaBus = document.getElementById("codigo-parada-actual").textContent;
 
-        const cod = document.getElementById("codigo-parada-actual");
-        responder({
-          texto: cod.textContent.trim(),
-          titulos: [...cod.querySelectorAll(".accesibilidad-flota")]
-                     .map((e) => e.getAttribute("title")),
-        });
+        document.getElementById("boton-volver").click();
+        document.getElementById("boton-informacion").click();
+        await esperarA(() => vistaVisible() === "vista-informacion");
+        const consulta = document.querySelector(".bloque-accesibilidad").textContent;
+
+        responder({ fichaBus, consulta });
     """)
 
-    assert "rampa" in resultado["texto"], resultado["texto"]
-    assert "NaviLens" in resultado["texto"], resultado["texto"]
+    # En la ficha de la parada, nada: sería ruido en las 4.894.
+    assert "NaviLens" not in resultado["fichaBus"]
+    assert "rampa" not in resultado["fichaBus"]
 
-    todos = " ".join(resultado["titulos"])
-    # Lo que hace honesta la afirmación: acota su alcance.
-    assert "bordillo" in todos, todos
+    # Contado una vez, donde se consulta.
+    assert "NaviLens" in resultado["consulta"]
+    assert "rampa" in resultado["consulta"]
+    # Y acotando lo que NO se sabe, que es la parte honesta.
+    assert "bordillo" in resultado["consulta"] or "acera" in resultado["consulta"]
 
 
 def test_la_nota_del_filtro_solo_sale_con_el_filtro_puesto(render):

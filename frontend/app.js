@@ -1647,39 +1647,16 @@ function pintarCabeceraParada(parada) {
     codigoParadaActual.appendChild(accesibilidad);
   }
 
-  // En la EMT el dato accesible que SÍ existe es del vehículo, no de la
-  // parada: toda su flota lleva piso bajo y rampa, y es el único modo de
-  // transporte de Madrid 100% accesible (fuente: emtmadrid.es/Empresa/RSC/
-  // Accesibilidad). Se dice así, hablando del autobús, porque de la acera y
-  // el bordillo de esta parada concreta no hay ningún dato: afirmar que la
-  // parada es accesible sería inventárselo.
+  // NO se pone aquí lo que se sabe de las paradas de la EMT —flota con rampa
+  // y código NaviLens— aunque sea cierto y esté verificado. Es idéntico en
+  // las 4.894, así que un distintivo que sale siempre no distingue nada: solo
+  // ocupa sitio delante del tiempo, que es el dato por el que se abre esto.
+  // Vive en "Planos y tarifas", que es donde se consulta una vez, y en la
+  // nota del filtro de accesibilidad, que es cuando la ausencia de autobuses
+  // pide explicación.
   //
-  // No se pone en el interurbano: la EMT es la única que declara el 100%.
-  if (parada.fuente === "EMT") {
-    const flota = document.createElement("span");
-    flota.className = "accesibilidad accesibilidad-flota";
-    flota.title =
-      "Toda la flota de la EMT tiene piso bajo y rampa. No dice nada del " +
-      "bordillo ni de la acera de esta parada.";
-    flota.innerHTML = SVG_SILLA + "<span>Autobuses con rampa</span>";
-    codigoParadaActual.appendChild(flota);
-
-    // NaviLens: el otro dato que SÍ se sabe de todas las paradas de la EMT.
-    // Son códigos que se leen con la cámara del móvil hasta a 15 metros y en
-    // movimiento, para llegar a la parada y oír las líneas y las esperas sin
-    // ver la pantalla. Desplegados desde mayo de 2023 en 4.499 marquesinas Y
-    // 1.041 postes, o sea también donde no hay marquesina, y validados por la
-    // ONCE y el CERMI. Fuente: emtmadrid.es, nota de prensa del 21-03-2023.
-    //
-    // Este sí se puede afirmar de cada parada, al revés que el bordillo.
-    const navilens = document.createElement("span");
-    navilens.className = "accesibilidad accesibilidad-flota";
-    navilens.title =
-      "Código NaviLens en la marquesina o el poste: se lee con la cámara " +
-      "del móvil hasta a 15 metros y dice las líneas y los tiempos en voz.";
-    navilens.innerHTML = SVG_NAVILENS + "<span>NaviLens</span>";
-    codigoParadaActual.appendChild(navilens);
-  }
+  // En Metro es al revés y por eso su distintivo sí está arriba: ahí el dato
+  // VARÍA —166 estaciones con él y 76 sin él—, así que informa.
 
   prepararBotonFavorito(botonFavoritoParada, "paradas", parada.id);
 }
@@ -3029,6 +3006,27 @@ const ENLACES_DE_TARIFAS = [
   },
 ];
 
+// Las fuentes de lo que se afirma sobre accesibilidad. Van enlazadas porque
+// son afirmaciones sobre accesibilidad y quien dependa de ellas tiene derecho
+// a comprobarlas, no a creerme.
+const ENLACES_DE_ACCESIBILIDAD = [
+  {
+    titulo: "Accesibilidad de Metro de Madrid",
+    detalle: "La lista oficial de estaciones, de donde salen los distintivos",
+    url: "https://www.metromadrid.es/es/accesibilidad",
+  },
+  {
+    titulo: "Accesibilidad de la EMT",
+    detalle: "Flota, rampas y medidas para personas con movilidad reducida",
+    url: "https://www.emtmadrid.es/Empresa/RSC/Accesibilidad",
+  },
+  {
+    titulo: "NaviLens en las paradas de la EMT",
+    detalle: "La nota que anunció el despliegue, de marzo de 2023",
+    url: "https://www.emtmadrid.es/Noticias/EMT-instala-codigos-NaviLens-en-sus-paradas-para-m.aspx",
+  },
+];
+
 const botonInformacion = document.getElementById("boton-informacion");
 const contenidoInformacion = document.getElementById("contenido-informacion");
 const botonVolverInformacion = document.getElementById("boton-volver-informacion");
@@ -3151,6 +3149,47 @@ function pintarInformacion() {
   listaEnlaces.className = "lista-fichas";
   ENLACES_DE_TARIFAS.forEach((e) => listaEnlaces.appendChild(crearEnlaceExterno(e)));
   contenidoInformacion.appendChild(listaEnlaces);
+
+  const tituloAcceso = document.createElement("h2");
+  tituloAcceso.className = "informacion-titulo";
+  tituloAcceso.textContent = "Accesibilidad";
+  contenidoInformacion.appendChild(tituloAcceso);
+
+  const explicacion = document.createElement("div");
+  explicacion.className = "bloque-accesibilidad";
+  explicacion.innerHTML = `
+    <p>
+      En <strong>Metro</strong>, cada estación dice si tiene ascensor o rampa,
+      y se puede filtrar por ello. Son 166 de 242; el resto no aparece en la
+      lista oficial.
+    </p>
+    <p>
+      En <strong>autobús no existe ese dato por parada</strong>: la EMT no lo
+      publica y el CRTM marca casi todas sus paradas con un valor por defecto.
+      Así que aquí no se afirma nada del bordillo ni de la acera.
+    </p>
+    <p>
+      Lo que sí vale para <strong>todas</strong> las paradas de la EMT:
+    </p>
+    <ul>
+      <li>
+        Sus autobuses tienen <strong>piso bajo y rampa</strong>, en el 100% de
+        la flota. Es el único modo de transporte de Madrid que lo declara.
+      </li>
+      <li>
+        Todas llevan <strong>código NaviLens</strong> desde mayo de 2023
+        —4.499 marquesinas y 1.041 postes—, validado por la ONCE y el CERMI.
+        Se lee con la cámara del móvil hasta a 15 metros y en movimiento, y
+        dice en voz las líneas y los tiempos de espera.
+      </li>
+    </ul>
+  `;
+  contenidoInformacion.appendChild(explicacion);
+
+  const listaAcceso = document.createElement("ul");
+  listaAcceso.className = "lista-fichas";
+  ENLACES_DE_ACCESIBILIDAD.forEach((e) => listaAcceso.appendChild(crearEnlaceExterno(e)));
+  contenidoInformacion.appendChild(listaAcceso);
 
   informacionPintada = true;
 }
