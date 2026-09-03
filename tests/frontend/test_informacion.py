@@ -12,7 +12,7 @@ pytestmark = pytest.mark.navegador
 
 # Los únicos hosts a los que puede apuntar esto. Coincide con lo declarado en
 # frontend/privacidad.html; si aparece otro, el test de terceros también salta.
-HOSTS_OFICIALES = ("www.metromadrid.es", "www.crtm.es")
+HOSTS_OFICIALES = ("www.metromadrid.es", "www.crtm.es", "www.emtmadrid.es")
 
 
 def test_el_boton_esta_siempre_y_abre_la_vista(render):
@@ -38,7 +38,7 @@ def test_el_boton_esta_siempre_y_abre_la_vista(render):
 
     assert resultado["visibleAntes"] is True
     assert resultado["vista"] == "vista-informacion"
-    assert resultado["titulos"] == ["Planos", "Billetes y tarifas"]
+    assert resultado["titulos"] == ["Planos", "Billetes y tarifas", "Accesibilidad"]
 
 
 def test_cada_plano_dice_lo_que_pesa_antes_de_abrirlo(render):

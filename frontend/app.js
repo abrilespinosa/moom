@@ -384,11 +384,17 @@ const avisoConexion = document.getElementById("aviso-conexion");
 const botonesFiltro = document.querySelectorAll(".filtro-boton");
 const botonAccesibles = document.getElementById("filtro-accesibles");
 
+const notaAccesibles = document.getElementById("nota-accesibles");
+
 botonAccesibles.addEventListener("click", () => {
   soloAccesibles = !soloAccesibles;
 
   botonAccesibles.classList.toggle("activo", soloAccesibles);
   botonAccesibles.setAttribute("aria-pressed", String(soloAccesibles));
+
+  // La nota solo aparece con el filtro puesto, que es cuando desaparecen los
+  // autobuses y hace falta decir por qué.
+  notaAccesibles.hidden = !soloAccesibles;
 
   actualizarVisibilidadParadas();
   actualizarResultadosBusqueda();
@@ -446,6 +452,8 @@ const CLAVE_RECIENTES = "moom:recientes";
 // Tres. Es el número de paradas entre las que se mueve alguien con una rutina
 // (ida, vuelta y el trasbordo); con más, la lista deja de ser un atajo y pasa
 // a ser otra cosa que hay que leer.
+// Tres: cuántas se enseñan, y también cuántas se guardan POR RED. Es entre
+// las que se mueve alguien con una rutina; con más deja de ser un atajo.
 const MAXIMO_RECIENTES = 3;
 
 // La clave anterior guardaba una sola parada. Se borra al escribir la nueva
@@ -466,10 +474,26 @@ function recordarParadaReciente(id) {
   try {
     // La recién mirada va primero, y si ya estaba en la lista se mueve arriba
     // en vez de duplicarse.
-    const ids = [id, ...idsRecientes().filter((otro) => otro !== id)].slice(
-      0,
-      MAXIMO_RECIENTES
-    );
+    const enOrden = [id, ...idsRecientes().filter((otro) => otro !== id)];
+
+    // Se recortan TRES POR RED, no tres en total, y ese es el arreglo.
+    //
+    // Guardando solo tres en total, quien mirase tres autobuses seguidos se
+    // quedaba sin recientes de Metro aunque hubiera consultado una estación
+    // un rato antes: al filtrar por Metro no salía nada. Reportado en uso.
+    //
+    // La lista sigue siendo UNA y ordenada por lo más reciente, así que
+    // "Todos" enseña las tres últimas de verdad, sean de donde sean. El tope
+    // por red solo decide qué se tira cuando sobra.
+    const cuantas = {};
+    const ids = enOrden.filter((otro) => {
+      const parada = PARADAS_POR_ID.get(otro);
+      // Un id que ya no existe se conserva: puede volver con el próximo
+      // volcado, y al pintar ya se omite.
+      const red = parada ? parada.fuente : "desconocida";
+      cuantas[red] = (cuantas[red] ?? 0) + 1;
+      return cuantas[red] <= MAXIMO_RECIENTES;
+    });
 
     localStorage.setItem(CLAVE_RECIENTES, JSON.stringify(ids));
     localStorage.removeItem(CLAVE_ANTIGUA_ULTIMA_PARADA);
@@ -593,11 +617,12 @@ function prepararBotonFavorito(boton, tipo, id) {
 
     pintarEstadoFavorito(boton, alternarFavorito(tipo, id));
 
-    // Si lo que se acaba de tocar es una fila de la lista de favoritos, esa
-    // fila ya no pertenece ahí: repintamos para que desaparezca.
-    if (vistaBusqueda.style.display !== "none") {
-      actualizarResultadosBusqueda();
-    }
+    // Repinta siempre, sin preguntar qué vista se ve. Antes lo condicionaba a
+    // vistaBusqueda.style.display, o sea al estilo EN LÍNEA, que es el mismo
+    // patrón que ya ha fallado tres veces en este archivo; y además marcar la
+    // estrella desde la ficha de una parada dejaba la lista sin actualizar.
+    // Pintar una lista de veinte filas que está oculta no cuesta nada.
+    actualizarResultadosBusqueda();
   };
 
   return boton;
@@ -996,9 +1021,12 @@ function actualizarResultadosBusqueda() {
     // manda. Y se omite la que ya haya salido ahí arriba, que es lo que ocurre
     // justamente en el caso más común —estás en tu parada de siempre— y
     // repetirla sería ruido.
-    const recientes = paradasRecientes().filter(
-      (parada) => pasaElFiltroDeModo(parada) && !yaListadas.includes(parada)
-    );
+    // Se recorta DESPUÉS de filtrar, no antes: con el filtro en Metro
+    // interesan las tres últimas de Metro, no las tres últimas de todo que
+    // además sean de Metro, que es lo que fallaba.
+    const recientes = paradasRecientes()
+      .filter((parada) => pasaElFiltroDeModo(parada) && !yaListadas.includes(parada))
+      .slice(0, MAXIMO_RECIENTES);
 
     if (recientes.length > 0) {
       listaResultados.appendChild(encabezadoDeGrupo("Recientes"));
@@ -1034,6 +1062,18 @@ inputBuscar.addEventListener("input", actualizarResultadosBusqueda);
 // el recorrido de una línea y las llegadas de una parada.
 function mostrarVista(nombre) {
   vistaBusqueda.style.display = nombre === "busqueda" ? "block" : "none";
+
+  // La lista se repinta al entrar, no solo al buscar. Los favoritos y los
+  // recientes cambian mientras se está en OTRA vista —se marca la estrella
+  // desde la ficha de la parada, o se consulta una parada, que la mete en
+  // recientes—, y al volver la lista seguía mostrando lo de antes hasta
+  // recargar la página. Reportado en uso real.
+  //
+  // Va aquí y no en cada botón "Volver" porque hay varias formas de llegar al
+  // buscador y la próxima que se añada nacería con el mismo fallo.
+  if (nombre === "busqueda") {
+    actualizarResultadosBusqueda();
+  }
 
   // En la vista de búsqueda el subtítulo sobra: dice "Busca una parada o una
   // línea" justo encima de un campo cuyo placeholder dice "Buscar parada o
@@ -1628,6 +1668,17 @@ function pintarCabeceraParada(parada) {
     codigoParadaActual.appendChild(accesibilidad);
   }
 
+  // NO se pone aquí lo que se sabe de las paradas de la EMT —flota con rampa
+  // y código NaviLens— aunque sea cierto y esté verificado. Es idéntico en
+  // las 4.894, así que un distintivo que sale siempre no distingue nada: solo
+  // ocupa sitio delante del tiempo, que es el dato por el que se abre esto.
+  // Vive en "Planos y tarifas", que es donde se consulta una vez, y en la
+  // nota del filtro de accesibilidad, que es cuando la ausencia de autobuses
+  // pide explicación.
+  //
+  // En Metro es al revés y por eso su distintivo sí está arriba: ahí el dato
+  // VARÍA —166 estaciones con él y 76 sin él—, así que informa.
+
   prepararBotonFavorito(botonFavoritoParada, "paradas", parada.id);
 }
 
@@ -1707,6 +1758,17 @@ function crearDistintivoAccesibilidadCompacto(parada) {
 
   return distintivo;
 }
+
+// El código NaviLens es una retícula de cuadros de colores sobre negro. Se
+// dibuja en vez de usar el logotipo de la marca: es una señal de "aquí hay
+// uno", no un uso de su identidad.
+const SVG_NAVILENS = `
+  <svg viewBox="0 0 24 24" aria-hidden="true" width="13" height="13">
+    <rect x="3" y="3" width="7" height="7" rx="1.5" fill="currentColor" />
+    <rect x="14" y="3" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.55" />
+    <rect x="3" y="14" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.55" />
+    <rect x="14" y="14" width="7" height="7" rx="1.5" fill="currentColor" />
+  </svg>`;
 
 function crearDistintivoAccesibilidad(parada) {
   const grado = GRADOS_DE_ACCESIBILIDAD[parada.accesibilidad];
@@ -2965,6 +3027,27 @@ const ENLACES_DE_TARIFAS = [
   },
 ];
 
+// Las fuentes de lo que se afirma sobre accesibilidad. Van enlazadas porque
+// son afirmaciones sobre accesibilidad y quien dependa de ellas tiene derecho
+// a comprobarlas, no a creerme.
+const ENLACES_DE_ACCESIBILIDAD = [
+  {
+    titulo: "Accesibilidad de Metro de Madrid",
+    detalle: "La lista oficial de estaciones, de donde salen los distintivos",
+    url: "https://www.metromadrid.es/es/accesibilidad",
+  },
+  {
+    titulo: "Accesibilidad de la EMT",
+    detalle: "Flota, rampas y medidas para personas con movilidad reducida",
+    url: "https://www.emtmadrid.es/Empresa/RSC/Accesibilidad",
+  },
+  {
+    titulo: "NaviLens en las paradas de la EMT",
+    detalle: "La nota que anunció el despliegue, de marzo de 2023",
+    url: "https://www.emtmadrid.es/Noticias/EMT-instala-codigos-NaviLens-en-sus-paradas-para-m.aspx",
+  },
+];
+
 const botonInformacion = document.getElementById("boton-informacion");
 const contenidoInformacion = document.getElementById("contenido-informacion");
 const botonVolverInformacion = document.getElementById("boton-volver-informacion");
@@ -3087,6 +3170,47 @@ function pintarInformacion() {
   listaEnlaces.className = "lista-fichas";
   ENLACES_DE_TARIFAS.forEach((e) => listaEnlaces.appendChild(crearEnlaceExterno(e)));
   contenidoInformacion.appendChild(listaEnlaces);
+
+  const tituloAcceso = document.createElement("h2");
+  tituloAcceso.className = "informacion-titulo";
+  tituloAcceso.textContent = "Accesibilidad";
+  contenidoInformacion.appendChild(tituloAcceso);
+
+  const explicacion = document.createElement("div");
+  explicacion.className = "bloque-accesibilidad";
+  explicacion.innerHTML = `
+    <p>
+      En <strong>Metro</strong>, cada estación dice si tiene ascensor o rampa,
+      y se puede filtrar por ello. Son 166 de 242; el resto no aparece en la
+      lista oficial.
+    </p>
+    <p>
+      En <strong>autobús no existe ese dato por parada</strong>: la EMT no lo
+      publica y el CRTM marca casi todas sus paradas con un valor por defecto.
+      Así que aquí no se afirma nada del bordillo ni de la acera.
+    </p>
+    <p>
+      Lo que sí vale para <strong>todas</strong> las paradas de la EMT:
+    </p>
+    <ul>
+      <li>
+        Sus autobuses tienen <strong>piso bajo y rampa</strong>, en el 100% de
+        la flota. Es el único modo de transporte de Madrid que lo declara.
+      </li>
+      <li>
+        Todas llevan <strong>código NaviLens</strong> desde mayo de 2023
+        —4.499 marquesinas y 1.041 postes—, validado por la ONCE y el CERMI.
+        Se lee con la cámara del móvil hasta a 15 metros y en movimiento, y
+        dice en voz las líneas y los tiempos de espera.
+      </li>
+    </ul>
+  `;
+  contenidoInformacion.appendChild(explicacion);
+
+  const listaAcceso = document.createElement("ul");
+  listaAcceso.className = "lista-fichas";
+  ENLACES_DE_ACCESIBILIDAD.forEach((e) => listaAcceso.appendChild(crearEnlaceExterno(e)));
+  contenidoInformacion.appendChild(listaAcceso);
 
   informacionPintada = true;
 }

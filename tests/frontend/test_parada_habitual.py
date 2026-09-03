@@ -43,18 +43,34 @@ def test_la_mas_reciente_va_primera_y_no_se_duplica(render):
     assert resultado == ["72", "270"]
 
 
-def test_solo_se_guardan_tres(render):
-    """Cuatro paradas distintas: la más antigua se cae."""
+def test_se_guardan_tres_por_red_y_no_tres_en_total(render):
+    """
+    Cuatro paradas de EMT: la más antigua de esa red se cae. Pero el tope es
+    POR RED, así que la de Metro y la del interurbano siguen ahí.
+
+    Guardando tres en total, quien mirase tres autobuses seguidos se quedaba
+    sin recientes de Metro al filtrar por Metro, aunque hubiera consultado una
+    estación poco antes.
+    """
     resultado = render("""
         await esperarA(() => TODAS_LAS_PARADAS.length > 0);
 
-        ["72", "270", "par_8_06002", "est_4_323"].forEach(recordarParadaReciente);
+        ["est_4_323", "par_8_06002", "72", "270", "est_4_77", "4966"]
+          .forEach(recordarParadaReciente);
 
         responder(JSON.parse(localStorage.getItem("moom:recientes")));
     """)
 
-    assert resultado == ["est_4_323", "par_8_06002", "270"]
-    assert len(resultado) == 3
+    # Orden por lo más reciente, que es lo que ve "Todos".
+    assert resultado[0] == "4966"
+
+    # De EMT hay tres: la cuarta (72) se cayó.
+    emt = [i for i in resultado if not i.startswith(("est_", "par_"))]
+    assert emt == ["4966", "270", "72"] or len(emt) == 3, resultado
+
+    # Y las otras dos redes conservan las suyas pese a los autobuses de después.
+    assert "est_4_323" in resultado, "la estación de Metro se perdió"
+    assert "par_8_06002" in resultado, "la parada interurbana se perdió"
 
 
 def test_al_volver_se_ofrecen_las_recientes(render):
@@ -141,3 +157,65 @@ def test_el_reloj_se_para_con_la_pestana_oculta(render):
     assert resultado["alArrancar"] is True
     assert resultado["conPestanaOculta"] is False, "el reloj debía pararse"
     assert resultado["alVolver"] is True, "y volver a arrancar al mirar otra vez"
+
+
+def test_cada_red_conserva_sus_propias_recientes(render):
+    """
+    Reportado en uso: al filtrar por Metro no salían recientes, aunque se
+    hubiera consultado una estación poco antes.
+
+    La causa era que se guardaban tres EN TOTAL. Mirando tres autobuses
+    seguidos, la estación de Metro se caía de la lista y con el filtro puesto
+    no quedaba nada que enseñar. Ahora se guardan tres POR RED, en una sola
+    lista ordenada por lo más reciente: "Todos" sigue enseñando las tres
+    últimas de verdad, y cada filtro las suyas.
+    """
+    resultado = render("""
+        await esperarA(() => TODAS_LAS_PARADAS.length > 0);
+
+        // Primero una estación de Metro, y después tres autobuses: con el
+        // tope de tres en total, Alsacia se caía.
+        for (const nombre of ["alsacia", "cibeles", "atocha", "avenida"]) {
+          escribirEnBuscador(nombre);
+          await esperarA(() => resultados().length > 0);
+          const fila = resultados().find((li) => !li.classList.contains("resultado-linea"));
+          fila.querySelector(".resultado-principal").click();
+          await esperarA(() => vistaVisible() === "vista-llegadas");
+          document.getElementById("boton-volver").click();
+          await esperarA(() => vistaVisible() === "vista-busqueda");
+        }
+
+        const grupoYFilas = () => {
+          const nombres = [];
+          let dentro = false;
+          for (const li of document.querySelectorAll("#lista-resultados li")) {
+            if (li.classList.contains("grupo-resultados")) {
+              dentro = li.textContent.trim() === "Recientes";
+              continue;
+            }
+            if (dentro && !li.classList.contains("pista-favoritos")) {
+              nombres.push(li.textContent.trim());
+            }
+          }
+          return nombres;
+        };
+
+        escribirEnBuscador("");
+        const enTodos = grupoYFilas();
+
+        document.querySelector('[data-filtro="METRO"]').click();
+        const enMetro = grupoYFilas();
+
+        responder({ enTodos, enMetro, guardadas: JSON.parse(
+          localStorage.getItem("moom:recientes")).length });
+    """)
+
+    # "Todos" sigue enseñando tres como máximo.
+    assert len(resultado["enTodos"]) <= 3
+
+    # Y Metro conserva la suya pese a los tres autobuses posteriores.
+    metro = " · ".join(resultado["enMetro"])
+    assert "Alsacia" in metro, f"la estación se perdió: {metro}"
+
+    # Se guardan más de tres, porque el tope es por red.
+    assert resultado["guardadas"] > 3

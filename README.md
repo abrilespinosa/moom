@@ -60,6 +60,16 @@ Funciona en móvil, tableta y escritorio, y no necesita instalación ni cuenta.
 - Las estaciones de Metro con ascensor o rampa llevan un distintivo, y hay un interruptor para ver **solo** esas.
 - **No es un modo de transporte, así que no está en el grupo de filtros**: se cruza con ellos. Como quinta píldora excluyente, activarlo hacía desaparecer la EMT y el CRTM enteros, y quien buscaba una parada de bus accesible leía «no hay ninguna» cuando lo cierto es que ese dato no existe fuera del Metro.
 - Los datos salen de la [lista oficial de Metro de Madrid](https://www.metromadrid.es/es/accesibilidad). **Las estaciones con medidas complementarias pero sin ascensor ni rampa no llevan el símbolo de silla**: para quien va en silla, marcarlas sería el error que más daño hace.
+- **El filtro dice explícitamente que solo cubre el Metro**, y al activarlo se explica por qué desaparecen los autobuses. Sin eso, la ausencia se leería como «las paradas de bus no son accesibles», que es justo lo contrario.
+
+**Lo que sí se sabe de las paradas de autobús**
+
+Ninguna de las tres fuentes publica un dato fiable de accesibilidad por parada: la EMT no trae siquiera la columna, y el CRTM marca 5.964 de sus paradas como «no accesible» y ninguna como accesible, que es un valor por defecto y no un inventario. Así que **de la acera y el bordillo de una parada concreta no se afirma nada**. Pero hay dos hechos verificados que sí valen para todas las de la EMT:
+
+- **Toda la flota lleva piso bajo y rampa.** Es [el único modo de transporte de Madrid 100% accesible](https://www.emtmadrid.es/Empresa/RSC/Accesibilidad). El distintivo habla del **autobús**, no de la parada.
+- **Todas las paradas tienen código NaviLens** desde mayo de 2023: 4.499 marquesinas y 1.041 postes, validado por la ONCE y el CERMI. Se lee con la cámara del móvil hasta a 15 metros y en movimiento, y dice en voz las líneas y los tiempos ([nota de prensa](https://www.emtmadrid.es/Noticias/EMT-instala-codigos-NaviLens-en-sus-paradas-para-m.aspx)).
+
+Los dos se cuentan **una vez**, en «Planos y tarifas», y no en la ficha de cada parada. Son idénticos en las 4.894, así que un distintivo permanente no distinguiría nada y sí ocuparía sitio delante del tiempo de llegada. En Metro es al contrario —el dato varía entre estaciones— y por eso allí sí va en la ficha.
 
 **Nombres escritos como se escriben**
 
@@ -68,7 +78,7 @@ Funciona en móvil, tableta y escritorio, y no necesita instalación ni cuenta.
 
 **Favoritos, recientes y cercanía**
 - Paradas y líneas se pueden marcar como favoritas, y se guardan en el navegador (`localStorage`).
-- Las **tres últimas paradas consultadas** se recuerdan y aparecen con el buscador vacío, porque quien usa esto a diario se mueve entre unas pocas paradas y tenía que buscarlas otra vez en cada visita.
+- Las **tres últimas paradas consultadas de cada red** se recuerdan y aparecen con el buscador vacío, porque quien usa esto a diario se mueve entre unas pocas paradas y tenía que buscarlas otra vez en cada visita. Se guardan tres **por red** y no tres en total: con el tope global, mirar tres autobuses seguidos borraba la estación de Metro y al filtrar por Metro no quedaba ningún atajo. La lista sigue ordenada por lo más reciente, así que sin filtro salen las tres últimas de verdad.
 - Con el buscador vacío, la lista muestra los favoritos, filtrados por el modo de transporte activo igual que una búsqueda.
 - Al compartir tu ubicación aparece un grupo **Cerca de ti** con las paradas más próximas, y cada una indica a qué distancia está y cuánto se tarda andando. Es una estimación: línea recta más un 25% por el rodeo de las manzanas, y tira ligeramente alto a propósito, porque quedarse corto hace perder el autobús.
 

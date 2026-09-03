@@ -116,3 +116,42 @@ def test_un_favorito_que_ya_no_existe_se_omite_sin_romper_nada(render):
 
     assert any("Cibeles" in texto for texto in resultado), resultado
     assert not any("ya-no-existe" in texto for texto in resultado), resultado
+
+
+def test_marcar_favorito_desde_la_parada_y_volver_lo_muestra(render):
+    """
+    Reportado en uso real: se guardaba una parada en favoritos desde su propia
+    ficha, se pulsaba Volver, y no aparecía en la lista hasta recargar.
+
+    Eran dos fallos a la vez. El botón Volver no repintaba nunca, y la
+    estrella solo repintaba si `vistaBusqueda.style.display !== "none"` —el
+    estilo EN LÍNEA otra vez—, que estando en la vista de llegadas es falso.
+    """
+    resultado = render("""
+        await esperarA(() => TODAS_LAS_PARADAS.length > 0);
+        escribirEnBuscador("cibeles");
+        await esperarA(() => resultados().length > 0);
+        pulsarResultado();
+        await esperarA(() => vistaVisible() === "vista-llegadas");
+
+        // La estrella de la ficha de la parada, no la de la lista.
+        document.getElementById("boton-favorito-parada").click();
+
+        document.getElementById("boton-volver").click();
+        await esperarA(() => vistaVisible() === "vista-busqueda");
+
+        // Se mira el ENCABEZADO del grupo, no si "Cibeles" está en la lista.
+        // Consultar una parada la mete además en Recientes, así que el nombre
+        // aparece igual aunque los favoritos no se hayan repintado: buscarlo
+        // hacía que el test pasara con el fallo puesto.
+        responder({
+          guardado: JSON.parse(localStorage.getItem("moom:favoritos")).paradas,
+          grupos: [...document.querySelectorAll("#lista-resultados li.grupo-resultados")]
+                    .map((li) => li.textContent.trim()),
+        });
+    """)
+
+    assert "72" in resultado["guardado"], "no llegó a guardarse"
+    assert "Favoritos" in resultado["grupos"], (
+        f"guardada pero el grupo no se pintó al volver: {resultado['grupos']}"
+    )

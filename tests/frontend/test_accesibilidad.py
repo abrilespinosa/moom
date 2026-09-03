@@ -238,3 +238,61 @@ def test_el_nombre_accesible_lleva_todo_lo_que_lleva_la_ficha(render):
     # Lo que antes se perdía:
     assert "accesibilidad" in etiqueta.lower(), etiqueta
     assert "min" in etiqueta or "metro" in etiqueta.lower(), etiqueta
+
+
+def test_lo_que_se_sabe_del_bus_se_cuenta_una_vez_y_no_en_cada_ficha(render):
+    """
+    Los dos hechos de la EMT —flota con rampa y NaviLens— son ciertos y están
+    verificados, pero son IDÉNTICOS en las 4.894 paradas. Un distintivo que
+    sale siempre no distingue nada: solo ocupa sitio delante del tiempo, que
+    es el dato por el que se abre la aplicación.
+
+    Por eso viven en "Planos y tarifas", que se consulta una vez. En Metro es
+    al revés y su distintivo sí va en la ficha: allí el dato varía, 166
+    estaciones con él y 76 sin él.
+    """
+    resultado = render("""
+        await esperarA(() => TODAS_LAS_PARADAS.length > 0);
+        escribirEnBuscador("cibeles");
+        await esperarA(() => resultados().length > 0);
+        pulsarResultado();
+        await esperarA(() => vistaVisible() === "vista-llegadas");
+        const fichaBus = document.getElementById("codigo-parada-actual").textContent;
+
+        document.getElementById("boton-volver").click();
+        document.getElementById("boton-informacion").click();
+        await esperarA(() => vistaVisible() === "vista-informacion");
+        const consulta = document.querySelector(".bloque-accesibilidad").textContent;
+
+        responder({ fichaBus, consulta });
+    """)
+
+    # En la ficha de la parada, nada: sería ruido en las 4.894.
+    assert "NaviLens" not in resultado["fichaBus"]
+    assert "rampa" not in resultado["fichaBus"]
+
+    # Contado una vez, donde se consulta.
+    assert "NaviLens" in resultado["consulta"]
+    assert "rampa" in resultado["consulta"]
+    # Y acotando lo que NO se sabe, que es la parte honesta.
+    assert "bordillo" in resultado["consulta"] or "acera" in resultado["consulta"]
+
+
+def test_la_nota_del_filtro_solo_sale_con_el_filtro_puesto(render):
+    resultado = render("""
+        await esperarA(() => TODAS_LAS_PARADAS.length > 0);
+        const nota = document.getElementById("nota-accesibles");
+        const antes = nota.getBoundingClientRect().height;
+
+        document.getElementById("filtro-accesibles").click();
+        const durante = nota.getBoundingClientRect().height;
+
+        document.getElementById("filtro-accesibles").click();
+        responder({ antes, durante, despues: nota.getBoundingClientRect().height,
+                    texto: nota.textContent.trim() });
+    """)
+
+    assert resultado["antes"] == 0, "la nota no debe salir sin filtrar"
+    assert resultado["durante"] > 0, "con el filtro puesto hay que explicar por qué faltan los buses"
+    assert resultado["despues"] == 0
+    assert "EMT" in resultado["texto"]
