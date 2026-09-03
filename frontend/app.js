@@ -384,11 +384,17 @@ const avisoConexion = document.getElementById("aviso-conexion");
 const botonesFiltro = document.querySelectorAll(".filtro-boton");
 const botonAccesibles = document.getElementById("filtro-accesibles");
 
+const notaAccesibles = document.getElementById("nota-accesibles");
+
 botonAccesibles.addEventListener("click", () => {
   soloAccesibles = !soloAccesibles;
 
   botonAccesibles.classList.toggle("activo", soloAccesibles);
   botonAccesibles.setAttribute("aria-pressed", String(soloAccesibles));
+
+  // La nota solo aparece con el filtro puesto, que es cuando desaparecen los
+  // autobuses y hace falta decir por qué.
+  notaAccesibles.hidden = !soloAccesibles;
 
   actualizarVisibilidadParadas();
   actualizarResultadosBusqueda();
@@ -1641,6 +1647,40 @@ function pintarCabeceraParada(parada) {
     codigoParadaActual.appendChild(accesibilidad);
   }
 
+  // En la EMT el dato accesible que SÍ existe es del vehículo, no de la
+  // parada: toda su flota lleva piso bajo y rampa, y es el único modo de
+  // transporte de Madrid 100% accesible (fuente: emtmadrid.es/Empresa/RSC/
+  // Accesibilidad). Se dice así, hablando del autobús, porque de la acera y
+  // el bordillo de esta parada concreta no hay ningún dato: afirmar que la
+  // parada es accesible sería inventárselo.
+  //
+  // No se pone en el interurbano: la EMT es la única que declara el 100%.
+  if (parada.fuente === "EMT") {
+    const flota = document.createElement("span");
+    flota.className = "accesibilidad accesibilidad-flota";
+    flota.title =
+      "Toda la flota de la EMT tiene piso bajo y rampa. No dice nada del " +
+      "bordillo ni de la acera de esta parada.";
+    flota.innerHTML = SVG_SILLA + "<span>Autobuses con rampa</span>";
+    codigoParadaActual.appendChild(flota);
+
+    // NaviLens: el otro dato que SÍ se sabe de todas las paradas de la EMT.
+    // Son códigos que se leen con la cámara del móvil hasta a 15 metros y en
+    // movimiento, para llegar a la parada y oír las líneas y las esperas sin
+    // ver la pantalla. Desplegados desde mayo de 2023 en 4.499 marquesinas Y
+    // 1.041 postes, o sea también donde no hay marquesina, y validados por la
+    // ONCE y el CERMI. Fuente: emtmadrid.es, nota de prensa del 21-03-2023.
+    //
+    // Este sí se puede afirmar de cada parada, al revés que el bordillo.
+    const navilens = document.createElement("span");
+    navilens.className = "accesibilidad accesibilidad-flota";
+    navilens.title =
+      "Código NaviLens en la marquesina o el poste: se lee con la cámara " +
+      "del móvil hasta a 15 metros y dice las líneas y los tiempos en voz.";
+    navilens.innerHTML = SVG_NAVILENS + "<span>NaviLens</span>";
+    codigoParadaActual.appendChild(navilens);
+  }
+
   prepararBotonFavorito(botonFavoritoParada, "paradas", parada.id);
 }
 
@@ -1720,6 +1760,17 @@ function crearDistintivoAccesibilidadCompacto(parada) {
 
   return distintivo;
 }
+
+// El código NaviLens es una retícula de cuadros de colores sobre negro. Se
+// dibuja en vez de usar el logotipo de la marca: es una señal de "aquí hay
+// uno", no un uso de su identidad.
+const SVG_NAVILENS = `
+  <svg viewBox="0 0 24 24" aria-hidden="true" width="13" height="13">
+    <rect x="3" y="3" width="7" height="7" rx="1.5" fill="currentColor" />
+    <rect x="14" y="3" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.55" />
+    <rect x="3" y="14" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.55" />
+    <rect x="14" y="14" width="7" height="7" rx="1.5" fill="currentColor" />
+  </svg>`;
 
 function crearDistintivoAccesibilidad(parada) {
   const grado = GRADOS_DE_ACCESIBILIDAD[parada.accesibilidad];

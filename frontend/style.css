@@ -2104,3 +2104,37 @@ body {
   background: rgba(52, 199, 89, 0.14);
   color: #1c7a35;
 }
+
+/* La nota que explica el alcance del filtro de accesibilidad. Aparece solo
+   con el filtro puesto: es cuando desaparecen los autobuses de la lista y hay
+   que decir por qué, para que la ausencia no se lea como "no son accesibles".
+
+   [hidden] con el id delante, porque una regla de id gana al [hidden] que
+   trae el navegador y el atributo se quedaría sin efecto. Ha pasado ya. */
+#nota-accesibles {
+  margin: 12px 16px 0;
+  padding: 10px 12px;
+  border-radius: var(--radio-pequeno);
+  background: var(--gris-superficie);
+  color: var(--texto-suave);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+#nota-accesibles[hidden] {
+  display: none;
+}
+
+#nota-accesibles strong {
+  color: var(--texto);
+  font-weight: 600;
+}
+
+/* El distintivo de flota de la EMT va en NEUTRO, no en el verde de las
+   estaciones accesibles, y la diferencia importa: el verde significa "puedes
+   entrar aquí", y esto solo dice que el autobús lleva rampa. De la acera de
+   esta parada no se sabe nada. */
+.accesibilidad-flota {
+  background: var(--gris-superficie);
+  color: var(--texto-suave);
+}

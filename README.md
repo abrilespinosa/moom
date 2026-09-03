@@ -60,6 +60,14 @@ Funciona en móvil, tableta y escritorio, y no necesita instalación ni cuenta.
 - Las estaciones de Metro con ascensor o rampa llevan un distintivo, y hay un interruptor para ver **solo** esas.
 - **No es un modo de transporte, así que no está en el grupo de filtros**: se cruza con ellos. Como quinta píldora excluyente, activarlo hacía desaparecer la EMT y el CRTM enteros, y quien buscaba una parada de bus accesible leía «no hay ninguna» cuando lo cierto es que ese dato no existe fuera del Metro.
 - Los datos salen de la [lista oficial de Metro de Madrid](https://www.metromadrid.es/es/accesibilidad). **Las estaciones con medidas complementarias pero sin ascensor ni rampa no llevan el símbolo de silla**: para quien va en silla, marcarlas sería el error que más daño hace.
+- **El filtro dice explícitamente que solo cubre el Metro**, y al activarlo se explica por qué desaparecen los autobuses. Sin eso, la ausencia se leería como «las paradas de bus no son accesibles», que es justo lo contrario.
+
+**Lo que sí se sabe de las paradas de autobús**
+
+Ninguna de las tres fuentes publica un dato fiable de accesibilidad por parada: la EMT no trae siquiera la columna, y el CRTM marca 5.964 de sus paradas como «no accesible» y ninguna como accesible, que es un valor por defecto y no un inventario. Así que **de la acera y el bordillo de una parada concreta no se afirma nada**. Pero hay dos hechos verificados que sí valen para todas las de la EMT, y se muestran en su ficha:
+
+- **Toda la flota lleva piso bajo y rampa.** Es [el único modo de transporte de Madrid 100% accesible](https://www.emtmadrid.es/Empresa/RSC/Accesibilidad). El distintivo habla del **autobús**, no de la parada.
+- **Todas las paradas tienen código NaviLens** desde mayo de 2023: 4.499 marquesinas y 1.041 postes, validado por la ONCE y el CERMI. Se lee con la cámara del móvil hasta a 15 metros y en movimiento, y dice en voz las líneas y los tiempos ([nota de prensa](https://www.emtmadrid.es/Noticias/EMT-instala-codigos-NaviLens-en-sus-paradas-para-m.aspx)).
 
 **Nombres escritos como se escriben**
 

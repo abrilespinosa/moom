@@ -146,8 +146,8 @@
            grupo vuelve a tener cuatro opciones, que es el límite de lo que
            cabe en la memoria de trabajo. -->
         <button id="filtro-accesibles" type="button" aria-pressed="false"
-                aria-label="Ver solo estaciones accesibles"
-                title="Solo estaciones con ascensor o rampa">
+                aria-label="Ver solo estaciones de Metro con ascensor o rampa"
+                title="Solo estaciones de Metro con ascensor o rampa">
           <svg viewBox="0 0 24 24" aria-hidden="true" width="19" height="19"
                fill="none" stroke="currentColor" stroke-width="2"
                stroke-linecap="round" stroke-linejoin="round">
@@ -158,6 +158,18 @@
           </svg>
         </button>
       </div>
+
+      <!-- Por qué desaparecen los autobuses al filtrar por accesibilidad.
+           Sin esto, el filtro decía por omisión que las paradas de bus no son
+           accesibles, que es lo contrario de lo que pasa: la flota de la EMT
+           es la única 100% accesible de Madrid. Lo que no existe es el dato
+           de cada parada. -->
+      <p id="nota-accesibles" hidden>
+        Solo el Metro publica si cada estación tiene ascensor o rampa.
+        <strong>Los autobuses de la EMT llevan rampa en toda la flota</strong>
+        y todas sus paradas tienen código NaviLens, pero del bordillo y la
+        acera de cada una no hay dato.
+      </p>
 
       <!-- Avisos, después de los filtros y solo aquí. Estaba por encima de
            las cinco vistas, así que en la de llegadas se colaba entre tu

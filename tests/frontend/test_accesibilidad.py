@@ -238,3 +238,57 @@ def test_el_nombre_accesible_lleva_todo_lo_que_lleva_la_ficha(render):
     # Lo que antes se perdía:
     assert "accesibilidad" in etiqueta.lower(), etiqueta
     assert "min" in etiqueta or "metro" in etiqueta.lower(), etiqueta
+
+
+def test_una_parada_de_bus_dice_lo_que_se_sabe_de_ella(render):
+    """
+    El filtro de accesibilidad solo cubre el Metro, y eso decía por omisión
+    que las paradas de bus no son accesibles. Es lo contrario: la flota de la
+    EMT es la única 100% accesible de Madrid, y todas sus paradas llevan
+    código NaviLens desde mayo de 2023.
+
+    Las dos afirmaciones van sobre el AUTOBÚS y sobre el CÓDIGO, nunca sobre
+    la parada: del bordillo y la acera no hay ningún dato, y decir que una
+    parada es accesible sin saberlo es el error que más daño hace aquí.
+    """
+    resultado = render("""
+        await esperarA(() => TODAS_LAS_PARADAS.length > 0);
+        escribirEnBuscador("cibeles");
+        await esperarA(() => resultados().length > 0);
+        pulsarResultado();
+        await esperarA(() => vistaVisible() === "vista-llegadas");
+
+        const cod = document.getElementById("codigo-parada-actual");
+        responder({
+          texto: cod.textContent.trim(),
+          titulos: [...cod.querySelectorAll(".accesibilidad-flota")]
+                     .map((e) => e.getAttribute("title")),
+        });
+    """)
+
+    assert "rampa" in resultado["texto"], resultado["texto"]
+    assert "NaviLens" in resultado["texto"], resultado["texto"]
+
+    todos = " ".join(resultado["titulos"])
+    # Lo que hace honesta la afirmación: acota su alcance.
+    assert "bordillo" in todos, todos
+
+
+def test_la_nota_del_filtro_solo_sale_con_el_filtro_puesto(render):
+    resultado = render("""
+        await esperarA(() => TODAS_LAS_PARADAS.length > 0);
+        const nota = document.getElementById("nota-accesibles");
+        const antes = nota.getBoundingClientRect().height;
+
+        document.getElementById("filtro-accesibles").click();
+        const durante = nota.getBoundingClientRect().height;
+
+        document.getElementById("filtro-accesibles").click();
+        responder({ antes, durante, despues: nota.getBoundingClientRect().height,
+                    texto: nota.textContent.trim() });
+    """)
+
+    assert resultado["antes"] == 0, "la nota no debe salir sin filtrar"
+    assert resultado["durante"] > 0, "con el filtro puesto hay que explicar por qué faltan los buses"
+    assert resultado["despues"] == 0
+    assert "EMT" in resultado["texto"]
