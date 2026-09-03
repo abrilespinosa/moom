@@ -1139,6 +1139,11 @@ function seleccionarParada(parada, origen = "busqueda") {
   paradaSeleccionada = parada;
   recordarParadaReciente(parada.id);
 
+  // La dirección de esta parada. Es lo que permite guardarla en marcadores o
+  // en la pantalla de inicio y abrir directamente en sus llegadas, en vez de
+  // buscarla otra vez cada mañana.
+  escribirRuta(RUTAS.parada(parada.id));
+
   // Centramos el mapa en la parada elegida, con buen zoom
   mapa.setView([parada.lat, parada.lon], 17);
 
@@ -1189,12 +1194,15 @@ function seleccionarParada(parada, origen = "busqueda") {
 
 // Botón para salir del panel de llegadas. Vuelve al recorrido de la línea
 // si se entró desde ahí, y al buscador en cualquier otro caso.
-botonVolver.addEventListener("click", () => {
+// Deja de mirar la parada actual y vuelve a de donde se vino. Es una función
+// y no el cuerpo del botón porque ahora también entra por aquí la navegación
+// por URL: dos caminos haciendo "lo mismo" acaban haciendo cosas parecidas.
+function soltarLaParadaYVolver(destino = vistaDeOrigen) {
   STOP_ID = null;
   STOP_ID_METRO = null;
-  mostrarVista(vistaDeOrigen);
+  mostrarVista(destino);
   subtituloHeader.textContent =
-    vistaDeOrigen === "linea"
+    destino === "linea"
       ? "Recorrido de la línea"
       : "Busca una parada o una línea";
 
@@ -1214,6 +1222,11 @@ botonVolver.addEventListener("click", () => {
   limpiarMarcadoresAutobuses();
   limpiarMarcadoresTrenes();
   limpiarChipsLineas();
+}
+
+botonVolver.addEventListener("click", () => {
+  soltarLaParadaYVolver();
+  escribirRuta(vistaDeOrigen === "linea" ? RUTAS.linea(lineaActual?.id ?? "") : RUTAS.busqueda());
 });
 
 // --- VISTA DE LÍNEA ---
@@ -1289,6 +1302,7 @@ async function seleccionarLinea(linea) {
     }
 
     lineaActual = datos;
+    escribirRuta(RUTAS.linea(linea.id));
 
     // Se pliega y se vacía al cambiar de línea. Si no, el bloque se quedaría
     // abierto enseñando los horarios de la línea ANTERIOR bajo el nombre de
@@ -2859,9 +2873,11 @@ botonIncidencias.addEventListener("click", () => {
   pintarIncidencias(incidenciasCargadas);
   mostrarVista("incidencias");
   subtituloHeader.textContent = "Avisos de servicio de la EMT";
+  escribirRuta(RUTAS.avisos());
 });
 
 botonVolverIncidencias.addEventListener("click", () => {
+  escribirRuta(RUTAS.busqueda());
   mostrarVista(vistaAntesDeIncidencias);
   subtituloHeader.textContent =
     vistaAntesDeIncidencias === "linea"
@@ -3229,12 +3245,144 @@ botonInformacion.addEventListener("click", () => {
   pintarInformacion();
   mostrarVista("informacion");
   subtituloHeader.textContent = "Planos y tarifas";
+  escribirRuta(RUTAS.planos());
 });
 
 botonVolverInformacion.addEventListener("click", () => {
+  escribirRuta(RUTAS.busqueda());
   mostrarVista(vistaAntesDeInformacion);
   subtituloHeader.textContent =
     vistaAntesDeInformacion === "busqueda"
       ? "Busca una parada o una línea"
       : subtituloHeader.textContent;
 });
+
+// --- LA DIRECCIÓN DE CADA VISTA ---
+//
+// Hasta ahora la barra de direcciones decía lo mismo estuvieras donde
+// estuvieras, y de ahí salían cuatro problemas de golpe: no se podía guardar
+// una parada en marcadores ni en la pantalla de inicio, no se podía compartir,
+// recargar te devolvía al principio, y el gesto de atrás del móvil te sacaba
+// de la aplicación entera desde cualquiera de las cinco vistas, porque no
+// había historial que recorrer.
+//
+// Va con almohadilla y no con History API a propósito. Con rutas de verdad
+// (/parada/72) haría falta que el servidor sirviera index.html en cualquier
+// ruta —tocando vercel.json Y el service worker— y una URL mal escrita daría
+// un 404. La almohadilla no necesita nada de eso y no puede fallar así.
+const RUTAS = {
+  parada: (id) => `#/parada/${encodeURIComponent(id)}`,
+  linea: (id) => `#/linea/${encodeURIComponent(id)}`,
+  avisos: () => "#/avisos",
+  planos: () => "#/planos",
+  busqueda: () => "#/",
+};
+
+// Cuando la URL la escribimos nosotros no hay que volver a interpretarla: el
+// cambio de vista ya ha ocurrido. Sin esto, escribir la ruta dispararía
+// hashchange, que volvería a navegar, que volvería a escribirla.
+let navegandoNosotros = false;
+
+function escribirRuta(ruta) {
+  if (location.hash === ruta) {
+    return;
+  }
+
+  navegandoNosotros = true;
+  location.hash = ruta;
+
+  // Se libera en el siguiente turno, cuando hashchange ya ha pasado.
+  setTimeout(() => {
+    navegandoNosotros = false;
+  }, 0);
+}
+
+function leerRuta() {
+  const partes = location.hash.replace(/^#\/?/, "").split("/");
+  return { tipo: partes[0] ?? "", id: partes[1] ? decodeURIComponent(partes[1]) : null };
+}
+
+async function irADondeDigaLaRuta() {
+  const { tipo, id } = leerRuta();
+
+  if (tipo === "parada" && id) {
+    // Hay que esperar a que estén las paradas: PARADAS_POR_ID se rellena de
+    // forma asíncrona, así que leer la URL y buscar el id de inmediato daría
+    // "no existe" en cada recarga.
+    await esperarAQueCarguenLasParadas();
+
+    const parada = PARADAS_POR_ID.get(id);
+
+    if (parada) {
+      // Se entra por seleccionarParada() y no pintando a mano, para no
+      // saltarse la limpieza de marcadores ni las protecciones de
+      // siguesMirando() contra respuestas que llegan tarde.
+      seleccionarParada(parada);
+      return;
+    }
+  }
+
+  if (tipo === "linea" && id) {
+    await esperarAQueCarguenLasParadas();
+    const linea = LINEAS_POR_ID.get(id);
+
+    if (linea) {
+      seleccionarLinea(linea);
+      return;
+    }
+  }
+
+  if (tipo === "avisos" && incidenciasCargadas) {
+    vistaAntesDeIncidencias = "busqueda";
+    pintarIncidencias(incidenciasCargadas);
+    mostrarVista("incidencias");
+    subtituloHeader.textContent = "Avisos de servicio de la EMT";
+    return;
+  }
+
+  if (tipo === "planos") {
+    vistaAntesDeInformacion = "busqueda";
+    pintarInformacion();
+    mostrarVista("informacion");
+    subtituloHeader.textContent = "Planos y tarifas";
+    return;
+  }
+
+  // Cualquier otra cosa —vacío, o una ruta que ya no existe— es el buscador.
+  // No se avisa del error: una parada que desapareció de un volcado no es
+  // culpa de quien guardó el enlace.
+  soltarLaParadaYVolver("busqueda");
+}
+
+function esperarAQueCarguenLasParadas() {
+  if (PARADAS_POR_ID.size > 0) {
+    return Promise.resolve();
+  }
+
+  return new Promise((listo) => {
+    const revisar = setInterval(() => {
+      if (PARADAS_POR_ID.size > 0) {
+        clearInterval(revisar);
+        listo();
+      }
+    }, 100);
+
+    // Si el callejero no llega nunca, se sigue adelante: el aviso de conexión
+    // ya explica lo que pasa, y quedarse esperando para siempre es peor.
+    setTimeout(() => {
+      clearInterval(revisar);
+      listo();
+    }, 10000);
+  });
+}
+
+window.addEventListener("hashchange", () => {
+  if (navegandoNosotros) {
+    return;
+  }
+
+  irADondeDigaLaRuta();
+});
+
+// Y al abrir: si el enlace trae una parada, se abre en ella.
+irADondeDigaLaRuta();
