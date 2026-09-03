@@ -154,3 +154,39 @@ def test_los_avisos_no_se_meten_entre_la_parada_y_su_tiempo(render):
 
     assert resultado["avisos"] is False
     assert resultado["filtros"] is False
+
+
+def test_los_bloques_del_panel_respiran_lo_mismo(render):
+    """
+    Reportado mirando la pantalla: el botón de avisos salía pegado a la
+    bandeja de filtros y el aviso de conexión pegado a la banda naranja.
+
+    Los dos nacieron colocados justo bajo la cabecera, donde el margen
+    superior sobraba. Al reordenar el panel quedaron detrás de otros bloques
+    y se quedaron sin separación, porque su margen la ponía por abajo.
+
+    El ritmo del panel es de 12px, así que se comprueban todos los bordes de
+    la pila y no solo el que se reportó.
+    """
+    resultado = render("""
+        await esperarA(() => TODAS_LAS_PARADAS.length > 0);
+        await esperarA(() => !document.getElementById("boton-incidencias").hidden);
+        mostrarAvisoConexion("Prueba.");
+        await esperarA(() => !document.getElementById("aviso-conexion").hidden);
+
+        const r = (s) => document.querySelector(s).getBoundingClientRect();
+        const primera = document.querySelector("#lista-resultados > *");
+
+        responder({
+          cabeceraAviso: Math.round(r("#aviso-conexion").top - r("#panel-header").bottom),
+          avisoBuscador: Math.round(r("#input-buscar").top - r("#aviso-conexion").bottom),
+          buscadorFiltros: Math.round(r(".fila-filtros").top - r("#input-buscar").bottom),
+          filtrosAvisos: Math.round(r("#boton-incidencias").top - r(".fila-filtros").bottom),
+          avisosFicha: primera
+            ? Math.round(primera.getBoundingClientRect().top - r("#boton-incidencias").bottom)
+            : null,
+        });
+    """)
+
+    for borde, hueco in resultado.items():
+        assert hueco == 12, f"{borde} respira {hueco}px en vez de 12"

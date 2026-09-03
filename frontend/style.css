@@ -369,7 +369,10 @@ body {
 #lista-resultados {
   list-style: none;
   margin: 0;
-  padding: 6px 12px 12px 12px;
+  /* 12px arriba, como todos los bordes del panel. Estaba en 6 y era el único
+     salto a media altura de la pila, así que la primera ficha se leía pegada
+     a lo que tuviera encima. */
+  padding: 12px 12px 12px 12px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -841,7 +844,9 @@ body {
    blanco, así que el texto usa --acento-texto y el naranja se queda en el
    fondo y el borde. */
 #aviso-conexion {
-  margin: 0 16px 10px;
+  /* Mismo caso que el botón de avisos: sin margen superior se pegaba a la
+     banda naranja de la cabecera. */
+  margin: 12px 16px 0;
   padding: 10px 13px;
   /* El borde sólido se cambia por un aro interior traslúcido: marca el
      canto sin dibujar una raya, igual que el resto de superficies. */
@@ -1767,7 +1772,10 @@ body {
   align-items: center;
   gap: 8px;
   width: calc(100% - 32px);
-  margin: 0 16px 8px;
+  /* 12px arriba como el resto de bloques del panel. Nació pegado bajo la
+     cabecera, donde el margen superior sobraba; al bajarlo detrás de los
+     filtros se quedó sin separación. */
+  margin: 12px 16px 0;
   min-height: 44px;
   padding: 10px 14px;
   border: 0;
